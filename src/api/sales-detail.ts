@@ -1,35 +1,35 @@
-import { apiClient } from './client'
+import { apiClient } from "./client";
 
 export interface SalesDetail {
-  id: string
-  id_sale: string
-  id_product: string
-  quantity: number
-  unit_price: string
-  discount: string
-  subtotal: string
-  created_at: string
+  id: string;
+  id_sale: string;
+  id_product: string;
+  quantity: number;
+  unit_price: string;
+  discount: string;
+  subtotal: string;
+  created_at: string;
 }
 
 export interface CreateSalesDetailInput {
-  id_sale: string
-  id_product: string
-  quantity: number
-  unit_price: string
-  discount?: string
-  subtotal: string
+  id_sale: string;
+  id_product: string;
+  quantity: number;
+  unit_price: string;
+  discount?: string;
+  subtotal: string;
 }
 
-const BASE = '/sales-detail'
+const BASE = "/sales-detail";
 
 export const getSalesDetailBySale = (id_sale: string) =>
-  apiClient.get<{ data: SalesDetail[] }>(`${BASE}/sale/${id_sale}`).then((r) => r.data.data ?? r.data)
+  apiClient.get<SalesDetail[]>(`${BASE}/sale/${id_sale}`).then((r) => r.data);
 
 export const getSalesDetailById = (id: string) =>
-  apiClient.get<{ data: SalesDetail }>(`${BASE}/${id}`).then((r) => r.data.data ?? r.data)
+  apiClient.get<SalesDetail>(`${BASE}/${id}`).then((r) => r.data);
 
 export const createSalesDetail = (data: CreateSalesDetailInput) =>
-  apiClient.post<{ data: SalesDetail }>(BASE, data).then((r) => r.data.data ?? r.data)
+  apiClient.post<SalesDetail>(BASE, data).then((r) => r.data);
 
 export const deleteSalesDetail = (id: string) =>
-  apiClient.delete(`${BASE}/${id}`)
+  apiClient.delete(`${BASE}/${id}`);
