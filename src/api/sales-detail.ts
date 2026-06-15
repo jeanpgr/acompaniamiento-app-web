@@ -23,13 +23,13 @@ export interface CreateSalesDetailInput {
 const BASE = '/sales-detail'
 
 export const getSalesDetailBySale = (id_sale: string) =>
-  apiClient.get<{ data: SalesDetail[] }>(`${BASE}/sale/${id_sale}`).then((r) => r.data.data ?? r.data)
+  apiClient.get<SalesDetail[]>(`${BASE}/sale/${id_sale}`).then((r) => r.data)
 
 export const getSalesDetailById = (id: string) =>
-  apiClient.get<{ data: SalesDetail }>(`${BASE}/${id}`).then((r) => r.data.data ?? r.data)
+  apiClient.get<SalesDetail>(`${BASE}/${id}`).then((r) => r.data)
 
 export const createSalesDetail = (data: CreateSalesDetailInput) =>
-  apiClient.post<{ data: SalesDetail }>(BASE, data).then((r) => r.data.data ?? r.data)
+  apiClient.post<SalesDetail>(BASE, data).then((r) => r.data)
 
 export const deleteSalesDetail = (id: string) =>
   apiClient.delete(`${BASE}/${id}`)

@@ -30,19 +30,19 @@ export interface CreateSaleInput {
 const BASE = '/sales'
 
 export const getSales = () =>
-  apiClient.get<{ data: Sale[] }>(BASE).then((r) => r.data.data ?? r.data)
+  apiClient.get<Sale[]>(BASE).then((r) => r.data)
 
 export const getSaleById = (id: string) =>
-  apiClient.get<{ data: Sale }>(`${BASE}/${id}`).then((r) => r.data.data ?? r.data)
+  apiClient.get<Sale>(`${BASE}/${id}`).then((r) => r.data)
 
 export const getSalesByUser = (id_user: string) =>
-  apiClient.get<{ data: Sale[] }>(`${BASE}/user/${id_user}`).then((r) => r.data.data ?? r.data)
+  apiClient.get<Sale[]>(`${BASE}/user/${id_user}`).then((r) => r.data)
 
 export const createSale = (data: CreateSaleInput) =>
-  apiClient.post<{ data: Sale }>(BASE, data).then((r) => r.data.data ?? r.data)
+  apiClient.post<Sale>(BASE, data).then((r) => r.data)
 
 export const updateSale = (id: string, data: Partial<CreateSaleInput>) =>
-  apiClient.put<{ data: Sale }>(`${BASE}/${id}`, data).then((r) => r.data.data ?? r.data)
+  apiClient.put<Sale>(`${BASE}/${id}`, data).then((r) => r.data)
 
 export const deleteSale = (id: string) =>
   apiClient.delete(`${BASE}/${id}`)
