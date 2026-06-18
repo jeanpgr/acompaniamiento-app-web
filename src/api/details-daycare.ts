@@ -3,6 +3,8 @@ import { apiClient } from "./client";
 export interface ServiceMode {
   name?: string;
   hours?: number;
+  price_pickup?: number;
+  price_dropoff?: number;
 }
 
 export interface DetailDaycare {

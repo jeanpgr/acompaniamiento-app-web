@@ -18,10 +18,11 @@ export interface DetailTourism {
 export interface CreateDetailTourismInput {
   id_service: string;
   name: string;
-  description?: string;
+  description: string;
   date_output: string;
   date_arrival: string;
   quotas: number;
+  quotas_available: number;
   itinerary?: { hour?: string; place?: string }[];
   meeting_point_address?: string;
 }
