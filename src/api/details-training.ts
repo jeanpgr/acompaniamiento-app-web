@@ -8,6 +8,8 @@ export interface DetailTraining {
   date_time: string;
   duration: number;
   link_meet: string | null;
+  /** Precio del taller como string decimal ("15.50"). NULL = gratuito */
+  price: string | null;
   active: boolean;
   created_at: string;
 }
@@ -19,6 +21,8 @@ export interface CreateDetailTrainingInput {
   date_time: string;
   duration: number;
   link_meet?: string;
+  /** String decimal, ej. "15.50". Omitir = gratuito */
+  price?: string;
 }
 
 const BASE = "/detail-training";

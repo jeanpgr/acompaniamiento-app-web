@@ -16,6 +16,7 @@ import {
   type CreateDetailTourismInput,
 } from "@/api/details-tourism";
 import { getServices } from "@/api/services";
+import { getErrorMessage } from "@/api/client";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 
@@ -27,6 +28,9 @@ const schema = z.object({
   date_arrival: z.string().min(1, "Fecha de llegada requerida"),
   quotas: z.number().int().positive("Debe ser un número positivo"),
   meeting_point_address: z.string().optional(),
+  price_adult: z.number({ message: "Ingresa un número" }).nonnegative("Debe ser 0 o mayor").optional(),
+  price_child: z.number({ message: "Ingresa un número" }).nonnegative("Debe ser 0 o mayor").optional(),
+  price_senior: z.number({ message: "Ingresa un número" }).nonnegative("Debe ser 0 o mayor").optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -80,8 +84,7 @@ export default function TourismDetailPage() {
     },
     onError: (err: unknown) =>
       toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Error al crear",
+        getErrorMessage(err, "Error al crear"),
       ),
   });
 
@@ -95,8 +98,7 @@ export default function TourismDetailPage() {
     },
     onError: (err: unknown) =>
       toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Error al actualizar",
+        getErrorMessage(err, "Error al actualizar"),
       ),
   });
 
@@ -108,8 +110,7 @@ export default function TourismDetailPage() {
     },
     onError: (err: unknown) =>
       toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Error al eliminar",
+        getErrorMessage(err, "Error al eliminar"),
       ),
   });
 
@@ -131,6 +132,9 @@ export default function TourismDetailPage() {
       date_arrival: "",
       quotas: 1,
       meeting_point_address: "",
+      price_adult: undefined,
+      price_child: undefined,
+      price_senior: undefined,
     });
     setModalOpen(true);
   };
@@ -151,12 +155,19 @@ export default function TourismDetailPage() {
       date_arrival: item.date_arrival?.slice(0, 16) ?? "",
       quotas: item.quotas,
       meeting_point_address: item.meeting_point_address ?? "",
+      price_adult: item.prices?.adult,
+      price_child: item.prices?.child,
+      price_senior: item.prices?.senior,
     });
     setModalOpen(true);
   };
 
   const onSubmit = (data: FormData) => {
     const stops = itinerary.filter((s) => s.hour || s.place);
+    const prices: Record<string, number> = {};
+    if (data.price_adult !== undefined) prices.adult = data.price_adult;
+    if (data.price_child !== undefined) prices.child = data.price_child;
+    if (data.price_senior !== undefined) prices.senior = data.price_senior;
     const payload: CreateDetailTourismInput = {
       id_service: data.id_service,
       name: data.name,
@@ -169,6 +180,7 @@ export default function TourismDetailPage() {
         meeting_point_address: data.meeting_point_address,
       }),
       ...(stops.length > 0 && { itinerary: stops }),
+      ...(Object.keys(prices).length > 0 && { prices }),
     };
     if (editTarget) {
       updateMut.mutate({ id: editTarget.id, data: payload });
@@ -230,6 +242,7 @@ export default function TourismDetailPage() {
                     <Users size={12} /> Cupos
                   </div>
                 </th>
+                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">Tarifas</th>
                 <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
                   <div className="flex items-center gap-1">
                     <MapPin size={12} /> Punto encuentro
@@ -265,6 +278,35 @@ export default function TourismDetailPage() {
                       <td className="px-5 py-3.5 text-sm text-slate-600">
                         <span className="font-medium">{item.quotas_available}</span>
                         <span className="text-slate-400"> / {item.quotas}</span>
+                      </td>
+                      <td className="px-5 py-3.5 text-xs text-slate-600">
+                        {item.prices &&
+                        (item.prices.adult !== undefined ||
+                          item.prices.child !== undefined ||
+                          item.prices.senior !== undefined) ? (
+                          <div className="space-y-0.5">
+                            {item.prices.adult !== undefined && (
+                              <div>
+                                <span className="text-slate-400">Adulto:</span>{" "}
+                                <span className="font-medium">${item.prices.adult.toFixed(2)}</span>
+                              </div>
+                            )}
+                            {item.prices.child !== undefined && (
+                              <div>
+                                <span className="text-slate-400">Niño:</span>{" "}
+                                <span className="font-medium">${item.prices.child.toFixed(2)}</span>
+                              </div>
+                            )}
+                            {item.prices.senior !== undefined && (
+                              <div>
+                                <span className="text-slate-400">3ra edad:</span>{" "}
+                                <span className="font-medium">${item.prices.senior.toFixed(2)}</span>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-slate-300 italic">—</span>
+                        )}
                       </td>
                       <td className="px-5 py-3.5 text-sm text-slate-500 max-w-40 truncate">
                         {item.meeting_point_address ?? (
@@ -305,7 +347,7 @@ export default function TourismDetailPage() {
                     </tr>
                     {isExpanded && hasItinerary && (
                       <tr key={`${item.id}-itinerary`} className="bg-slate-50/70">
-                        <td colSpan={6} className="px-8 py-4">
+                        <td colSpan={7} className="px-8 py-4">
                           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
                             Itinerario
                           </p>
@@ -341,7 +383,7 @@ export default function TourismDetailPage() {
               })}
               {items.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-5 py-8 text-center text-slate-400 text-sm">
+                  <td colSpan={7} className="px-5 py-8 text-center text-slate-400 text-sm">
                     No hay excursiones registradas
                   </td>
                 </tr>
@@ -488,6 +530,52 @@ export default function TourismDetailPage() {
                 {...register("meeting_point_address")}
               />
             </div>
+          </div>
+
+          {/* Tarifas por categoría */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Tarifas por persona
+            </label>
+            <div className="grid grid-cols-3 gap-3">
+              {(
+                [
+                  { field: "price_adult", label: "Adulto" },
+                  { field: "price_child", label: "Niño" },
+                  { field: "price_senior", label: "Tercera edad" },
+                ] as const
+              ).map(({ field, label }) => (
+                <div key={field}>
+                  <label className="block text-xs text-slate-500 mb-1">{label}</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">
+                      $
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      placeholder="0.00"
+                      className={`w-full border rounded-lg pl-6 pr-3 py-2 text-sm focus:outline-none ${
+                        errors[field] ? "border-red-400 bg-red-50" : "border-slate-200"
+                      }`}
+                      {...register(field, {
+                        setValueAs: (v) =>
+                          v === "" || v === null || Number.isNaN(Number(v))
+                            ? undefined
+                            : Number(v),
+                      })}
+                    />
+                  </div>
+                  {errors[field] && (
+                    <p className="text-red-500 text-xs mt-1">{errors[field]?.message}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-slate-400 mt-1.5">
+              Deja vacía una categoría si no aplica para esta excursión
+            </p>
           </div>
 
           {/* Itinerario */}

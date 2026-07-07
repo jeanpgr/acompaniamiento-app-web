@@ -16,6 +16,7 @@ import {
   type CreateDetailTrainingInput,
 } from "@/api/details-training";
 import { getServices } from "@/api/services";
+import { getErrorMessage } from "@/api/client";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 
@@ -26,6 +27,7 @@ const schema = z.object({
   date_time: z.string().min(1, "Fecha y hora requeridas"),
   duration: z.number().int().positive("Debe ser un número positivo"),
   link_meet: z.string().url("URL inválida").optional().or(z.literal("")),
+  price: z.number({ message: "Ingresa un número" }).nonnegative("Debe ser 0 o mayor").optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -62,8 +64,7 @@ export default function TrainingDetailPage() {
     },
     onError: (err: unknown) =>
       toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Error al crear",
+        getErrorMessage(err, "Error al crear"),
       ),
   });
 
@@ -82,8 +83,7 @@ export default function TrainingDetailPage() {
     },
     onError: (err: unknown) =>
       toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Error al actualizar",
+        getErrorMessage(err, "Error al actualizar"),
       ),
   });
 
@@ -95,8 +95,7 @@ export default function TrainingDetailPage() {
     },
     onError: (err: unknown) =>
       toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Error al eliminar",
+        getErrorMessage(err, "Error al eliminar"),
       ),
   });
 
@@ -116,6 +115,7 @@ export default function TrainingDetailPage() {
       date_time: "",
       duration: 60,
       link_meet: "",
+      price: undefined,
     });
     setModalOpen(true);
   };
@@ -129,6 +129,7 @@ export default function TrainingDetailPage() {
       date_time: item.date_time?.slice(0, 16) ?? "",
       duration: item.duration,
       link_meet: item.link_meet ?? "",
+      price: item.price != null ? Number(item.price) : undefined,
     });
     setModalOpen(true);
   };
@@ -141,6 +142,7 @@ export default function TrainingDetailPage() {
       date_time: new Date(data.date_time).toISOString(),
       duration: data.duration,
       ...(data.link_meet ? { link_meet: data.link_meet } : {}),
+      ...(data.price !== undefined ? { price: data.price.toFixed(2) } : {}),
     };
     if (editTarget) {
       updateMut.mutate({ id: editTarget.id, data: payload });
@@ -193,6 +195,7 @@ export default function TrainingDetailPage() {
                     <Clock size={12} /> Duración (min)
                   </div>
                 </th>
+                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">Precio</th>
                 <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
                   <div className="flex items-center gap-1">
                     <Video size={12} /> Enlace Meet
@@ -220,6 +223,17 @@ export default function TrainingDetailPage() {
                     })}
                   </td>
                   <td className="px-5 py-3.5 text-sm text-slate-600">{item.duration}</td>
+                  <td className="px-5 py-3.5 text-sm">
+                    {item.price != null ? (
+                      <span className="font-medium text-slate-700">
+                        ${Number(item.price).toFixed(2)}
+                      </span>
+                    ) : (
+                      <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 font-medium">
+                        Gratuito
+                      </span>
+                    )}
+                  </td>
                   <td className="px-5 py-3.5">
                     {item.link_meet ? (
                       <a
@@ -256,7 +270,7 @@ export default function TrainingDetailPage() {
               ))}
               {items.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-5 py-8 text-center text-slate-400 text-sm">
+                  <td colSpan={6} className="px-5 py-8 text-center text-slate-400 text-sm">
                     No hay capacitaciones registradas
                   </td>
                 </tr>
@@ -374,6 +388,31 @@ export default function TrainingDetailPage() {
                 <p className="text-red-500 text-xs mt-1">{errors.duration.message}</p>
               )}
             </div>
+          </div>
+
+          {/* Precio */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Precio</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">
+                $
+              </span>
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                placeholder="0.00"
+                className={`w-full border rounded-lg pl-6 pr-3 py-2 text-sm focus:outline-none ${
+                  errors.price ? "border-red-400 bg-red-50" : "border-slate-200"
+                }`}
+                {...register("price", {
+                  setValueAs: (v) =>
+                    v === "" || v === null || Number.isNaN(Number(v)) ? undefined : Number(v),
+                })}
+              />
+            </div>
+            {errors.price && <p className="text-red-500 text-xs mt-1">{errors.price.message}</p>}
+            <p className="text-xs text-slate-400 mt-1">Deja vacío si el taller es gratuito</p>
           </div>
 
           {/* Enlace Meet */}

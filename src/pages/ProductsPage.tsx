@@ -13,6 +13,7 @@ import {
   type Product,
 } from "@/api/products";
 import { getCategories } from "@/api/categories";
+import { getErrorMessage } from "@/api/client";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 
@@ -220,8 +221,7 @@ export default function ProductsPage() {
     },
     onError: (err: unknown) =>
       toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Error al crear el producto",
+        getErrorMessage(err, "Error al crear el producto"),
       ),
   });
 
@@ -235,8 +235,7 @@ export default function ProductsPage() {
     },
     onError: (err: unknown) =>
       toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Error al actualizar",
+        getErrorMessage(err, "Error al actualizar"),
       ),
   });
 
@@ -248,8 +247,7 @@ export default function ProductsPage() {
     },
     onError: (err: unknown) =>
       toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Error al eliminar",
+        getErrorMessage(err, "Error al eliminar"),
       ),
   });
 

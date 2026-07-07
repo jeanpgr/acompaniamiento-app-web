@@ -13,10 +13,9 @@ import {
   type DiscountCoupon,
   type CreateDiscountCouponInput,
 } from "@/api/discount-coupons";
+import { getErrorMessage } from "@/api/client";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
-
-type ApiError = { response?: { data?: { message?: string } } };
 
 const schema = z.object({
   coupon: z.string().min(1, "Código requerido").max(50),
@@ -47,9 +46,7 @@ export default function DiscountCouponsPage() {
       toast.success("Cupón creado");
     },
     onError: (err: unknown) =>
-      toast.error(
-        (err as ApiError)?.response?.data?.message ?? "Error al crear",
-      ),
+      toast.error(getErrorMessage(err, "Error al crear")),
   });
 
   const updateMut = useMutation({
@@ -66,9 +63,7 @@ export default function DiscountCouponsPage() {
       toast.success("Cupón actualizado");
     },
     onError: (err: unknown) =>
-      toast.error(
-        (err as ApiError)?.response?.data?.message ?? "Error al actualizar",
-      ),
+      toast.error(getErrorMessage(err, "Error al actualizar")),
   });
 
   const deleteMut = useMutation({
@@ -78,9 +73,7 @@ export default function DiscountCouponsPage() {
       toast.success("Cupón eliminado");
     },
     onError: (err: unknown) =>
-      toast.error(
-        (err as ApiError)?.response?.data?.message ?? "Error al eliminar",
-      ),
+      toast.error(getErrorMessage(err, "Error al eliminar")),
   });
 
   const {

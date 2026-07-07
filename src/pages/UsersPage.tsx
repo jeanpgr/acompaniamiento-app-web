@@ -23,6 +23,7 @@ import {
   type UpdateUserInput,
 } from "@/api/users";
 import { getRoles } from "@/api/roles";
+import { getErrorMessage } from "@/api/client";
 import StatCard from "@/components/ui/StatCard";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
@@ -123,15 +124,8 @@ export default function UsersPage() {
       setModalOpen(false);
       toast.success("Usuario creado correctamente");
     },
-    onError: (err: unknown) => {
-      const e = err as {
-        response?: { data?: { message?: string } };
-        message?: string;
-      };
-      toast.error(
-        e?.response?.data?.message ?? e?.message ?? "Error al crear el usuario",
-      );
-    },
+    onError: (err: unknown) =>
+      toast.error(getErrorMessage(err, "Error al crear el usuario")),
   });
 
   const updateMut = useMutation({
@@ -142,17 +136,8 @@ export default function UsersPage() {
       setModalOpen(false);
       toast.success("Usuario actualizado correctamente");
     },
-    onError: (err: unknown) => {
-      const e = err as {
-        response?: { data?: { message?: string } };
-        message?: string;
-      };
-      toast.error(
-        e?.response?.data?.message ??
-          e?.message ??
-          "Error al actualizar el usuario",
-      );
-    },
+    onError: (err: unknown) =>
+      toast.error(getErrorMessage(err, "Error al actualizar el usuario")),
   });
 
   const deleteMut = useMutation({
@@ -161,17 +146,8 @@ export default function UsersPage() {
       qc.invalidateQueries({ queryKey: ["users"] });
       toast.success("Usuario desactivado");
     },
-    onError: (err: unknown) => {
-      const e = err as {
-        response?: { data?: { message?: string } };
-        message?: string;
-      };
-      toast.error(
-        e?.response?.data?.message ??
-          e?.message ??
-          "Error al eliminar el usuario",
-      );
-    },
+    onError: (err: unknown) =>
+      toast.error(getErrorMessage(err, "Error al eliminar el usuario")),
   });
 
   // ── Form ─────────────────────────────────────────────────────

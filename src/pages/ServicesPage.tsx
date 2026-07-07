@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@/api/client";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -110,10 +111,7 @@ export default function ServicesPage() {
       setModalOpen(false);
       toast.success("Servicio creado correctamente");
     },
-    onError: (err: unknown) => {
-      const e = err as { response?: { data?: { message?: string } }; message?: string };
-      toast.error(e?.response?.data?.message ?? e?.message ?? "Error al crear el servicio");
-    },
+    onError: (err: unknown) => toast.error(getErrorMessage(err, "Error al crear el servicio")),
   });
 
   const updateMut = useMutation({
@@ -124,10 +122,7 @@ export default function ServicesPage() {
       setModalOpen(false);
       toast.success("Servicio actualizado correctamente");
     },
-    onError: (err: unknown) => {
-      const e = err as { response?: { data?: { message?: string } }; message?: string };
-      toast.error(e?.response?.data?.message ?? e?.message ?? "Error al actualizar el servicio");
-    },
+    onError: (err: unknown) => toast.error(getErrorMessage(err, "Error al actualizar el servicio")),
   });
 
   const deleteMut = useMutation({
@@ -136,10 +131,7 @@ export default function ServicesPage() {
       qc.invalidateQueries({ queryKey: ["services"] });
       toast.success("Servicio eliminado");
     },
-    onError: (err: unknown) => {
-      const e = err as { response?: { data?: { message?: string } }; message?: string };
-      toast.error(e?.response?.data?.message ?? e?.message ?? "Error al eliminar el servicio");
-    },
+    onError: (err: unknown) => toast.error(getErrorMessage(err, "Error al eliminar el servicio")),
   });
 
   const {

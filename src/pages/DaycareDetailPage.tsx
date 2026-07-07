@@ -16,6 +16,7 @@ import {
   type CreateDetailDaycareInput,
 } from "@/api/details-daycare";
 import { getServices } from "@/api/services";
+import { getErrorMessage } from "@/api/client";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 
@@ -71,8 +72,7 @@ export default function DaycareDetailPage() {
     },
     onError: (err: unknown) =>
       toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Error al crear",
+        getErrorMessage(err, "Error al crear"),
       ),
   });
 
@@ -91,8 +91,7 @@ export default function DaycareDetailPage() {
     },
     onError: (err: unknown) =>
       toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Error al actualizar",
+        getErrorMessage(err, "Error al actualizar"),
       ),
   });
 
@@ -104,8 +103,7 @@ export default function DaycareDetailPage() {
     },
     onError: (err: unknown) =>
       toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Error al eliminar",
+        getErrorMessage(err, "Error al eliminar"),
       ),
   });
 
