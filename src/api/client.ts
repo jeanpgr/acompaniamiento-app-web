@@ -2,6 +2,14 @@ import axios from "axios";
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001/api/v1";
 
+/** Extrae el mensaje de error del backend, o retorna el fallback. */
+export function getErrorMessage(err: unknown, fallback: string): string {
+  return (
+    (err as { response?: { data?: { message?: string } } })?.response?.data
+      ?.message ?? fallback
+  );
+}
+
 export const apiClient = axios.create({
   baseURL: BASE_URL,
   headers: { "Content-Type": "application/json" },

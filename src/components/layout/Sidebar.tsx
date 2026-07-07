@@ -12,9 +12,6 @@ import {
   HelpCircle,
   Heart,
   LogOut,
-  Compass,
-  GraduationCap,
-  Baby,
   MessageCircleQuestion,
   Tag,
   Package,
@@ -33,9 +30,6 @@ const NAV_MODULES = [
   { to: "/acompanamiento", icon: Eye, label: "Acompañamiento" },
   { to: "/assign-staff", icon: UserCheck, label: "Asignar personal" },
   { to: "/vehicles", icon: Truck, label: "Vehículos" },
-  { to: "/tourism-details", icon: Compass, label: "Detalles turismo" },
-  { to: "/training-details", icon: GraduationCap, label: "Capacitaciones" },
-  { to: "/daycare-details", icon: Baby, label: "Guardería" },
   { to: "/faqs", icon: MessageCircleQuestion, label: "FAQ" },
 ];
 
