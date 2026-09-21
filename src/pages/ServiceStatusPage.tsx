@@ -7,10 +7,14 @@ import {
   Phone,
   User,
   ChevronDown,
+  CalendarX,
+  XCircle,
+  Landmark,
 } from "lucide-react";
 import {
   getSchedulesAcompan,
   updateScheduleAcompan,
+  markRefundCompleteAcompan,
   type ScheduleStatus,
 } from "@/api/schedules";
 import Badge from "@/components/ui/Badge";
@@ -20,7 +24,7 @@ const STATUS_CONFIG: Record<
   ScheduleStatus,
   {
     label: string;
-    variant: "warning" | "info" | "success";
+    variant: "warning" | "info" | "success" | "danger" | "default";
     icon: React.ElementType;
     dot: string;
   }
@@ -43,7 +47,28 @@ const STATUS_CONFIG: Record<
     icon: CheckCircle,
     dot: "#22C55E",
   },
+  OLVIDADA: {
+    label: "No asistió",
+    variant: "default",
+    icon: CalendarX,
+    dot: "#94A3B8",
+  },
+  CANCELADA: {
+    label: "Cancelada",
+    variant: "danger",
+    icon: XCircle,
+    dot: "#EF4444",
+  },
 };
+
+const STATUS_TABS: (ScheduleStatus | "all")[] = [
+  "all",
+  "PENDIENTE",
+  "EN CURSO",
+  "COMPLETADO",
+  "OLVIDADA",
+  "CANCELADA",
+];
 
 export default function ServiceStatusPage() {
   const qc = useQueryClient();
@@ -64,6 +89,11 @@ export default function ServiceStatusPage() {
     },
   });
 
+  const refundMut = useMutation({
+    mutationFn: (id: string) => markRefundCompleteAcompan(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["schedules-acompan"] }),
+  });
+
   const items = schedules.map((s) => ({
     id: s.id,
     title: s.service?.name ?? "Servicio",
@@ -74,6 +104,11 @@ export default function ServiceStatusPage() {
     destination: s.destination_address,
     status: (s.status ?? "PENDIENTE") as ScheduleStatus,
     vehicle: s.vehicle?.name ?? null,
+    refundStatus: s.refund_status,
+    refundBank: s.refund_bank_name,
+    refundAccount: s.refund_bank_account,
+    refundAccountType: s.refund_account_type,
+    refundHolderCedula: s.refund_holder_cedula,
     date: new Date(s.date_time).toLocaleDateString("es-CO", {
       day: "numeric",
       month: "short",
@@ -84,10 +119,12 @@ export default function ServiceStatusPage() {
 
   const filtered =
     filter === "all" ? items : items.filter((i) => i.status === filter);
-  const counts = {
+  const counts: Record<ScheduleStatus, number> = {
     PENDIENTE: items.filter((i) => i.status === "PENDIENTE").length,
     "EN CURSO": items.filter((i) => i.status === "EN CURSO").length,
     COMPLETADO: items.filter((i) => i.status === "COMPLETADO").length,
+    OLVIDADA: items.filter((i) => i.status === "OLVIDADA").length,
+    CANCELADA: items.filter((i) => i.status === "CANCELADA").length,
   };
 
   return (
@@ -104,7 +141,7 @@ export default function ServiceStatusPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-5">
+      <div className="grid grid-cols-5 gap-4 mb-5">
         <StatCard
           icon={Clock}
           iconBg="#FEF3C7"
@@ -126,11 +163,25 @@ export default function ServiceStatusPage() {
           value={counts["COMPLETADO"]}
           label="Completados"
         />
+        <StatCard
+          icon={CalendarX}
+          iconBg="#F1F5F9"
+          iconColor="#94A3B8"
+          value={counts["OLVIDADA"]}
+          label="No asistió"
+        />
+        <StatCard
+          icon={XCircle}
+          iconBg="#FEE2E2"
+          iconColor="#EF4444"
+          value={counts["CANCELADA"]}
+          label="Canceladas"
+        />
       </div>
 
       {/* Status filter tabs */}
-      <div className="flex items-center gap-2 mb-4">
-        {(["all", "PENDIENTE", "EN CURSO", "COMPLETADO"] as const).map((f) => {
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        {STATUS_TABS.map((f) => {
           const cfg = f !== "all" ? STATUS_CONFIG[f] : null;
           return (
             <button
@@ -218,8 +269,8 @@ export default function ServiceStatusPage() {
                   <span className="text-xs text-slate-400">{item.date}</span>
                 </div>
 
-                {/* Status update — only for non-completed */}
-                {item.status !== "COMPLETADO" && (
+                {/* Status update — solo para estados que aún pueden avanzar */}
+                {item.status !== "COMPLETADO" && item.status !== "CANCELADA" && (
                   <div className="mt-3">
                     {updatingId === item.id ? (
                       <div className="flex gap-2">
@@ -249,6 +300,40 @@ export default function ServiceStatusPage() {
                         className="w-full flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs text-slate-600 border border-slate-200 hover:bg-slate-50"
                       >
                         Cambiar estado <ChevronDown size={11} />
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Reembolso — solo para citas canceladas */}
+                {item.status === "CANCELADA" && (
+                  <div className="mt-3 pt-3 border-t border-slate-50">
+                    {(item.refundBank || item.refundAccount) && (
+                      <div className="flex items-start gap-1.5 text-xs text-slate-500 mb-2">
+                        <Landmark size={11} className="mt-0.5 shrink-0" />
+                        <span>
+                          {item.refundAccountType ?? "Cuenta"} · {item.refundBank ?? "—"} ·{" "}
+                          {item.refundAccount ?? "—"}
+                          {item.refundHolderCedula
+                            ? ` · CC ${item.refundHolderCedula}`
+                            : ""}
+                        </span>
+                      </div>
+                    )}
+                    {item.refundStatus === "REALIZADO" ? (
+                      <div className="flex items-center gap-1.5 text-xs font-medium text-green-600 bg-green-50 rounded-lg py-1.5 px-2">
+                        <CheckCircle size={12} /> Reembolso realizado
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => refundMut.mutate(item.id)}
+                        disabled={refundMut.isPending}
+                        className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium text-white disabled:opacity-50"
+                        style={{ backgroundColor: "#1D3461" }}
+                      >
+                        {refundMut.isPending && refundMut.variables === item.id
+                          ? "Guardando…"
+                          : "Marcar reembolso realizado"}
                       </button>
                     )}
                   </div>

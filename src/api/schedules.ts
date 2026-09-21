@@ -1,9 +1,27 @@
 import { apiClient } from "./client";
 
-export type ScheduleStatus = "PENDIENTE" | "EN CURSO" | "COMPLETADO";
+export type ScheduleStatus =
+  | "PENDIENTE"
+  | "EN CURSO"
+  | "COMPLETADO"
+  | "OLVIDADA"
+  | "CANCELADA";
+
+export type RefundStatus = "EN_PROCESO" | "REALIZADO";
+
+/** Campos de reembolso presentes en las 4 tablas de agendamiento. */
+export interface RefundFields {
+  id_user?: string | null;
+  refund_status: RefundStatus | null;
+  refund_bank_name: string | null;
+  refund_bank_account: string | null;
+  refund_account_type: string | null;
+  refund_holder_cedula: string | null;
+  cancelled_at: string | null;
+}
 
 // ─── Acompañamiento ──────────────────────────────────────────────────────────
-export interface ScheduleAcompan {
+export interface ScheduleAcompan extends RefundFields {
   id: string;
   id_service: string;
   id_vehicle: string;
@@ -48,11 +66,15 @@ export const updateScheduleAcompan = (
   apiClient
     .put<{ data: ScheduleAcompan }>(`/schedule-acompan/${id}`, body)
     .then((r) => r.data.data ?? r.data);
+export const markRefundCompleteAcompan = (id: string) =>
+  apiClient
+    .put<{ data: ScheduleAcompan }>(`/schedule-acompan/${id}/refund-complete`)
+    .then((r) => r.data.data ?? r.data);
 export const deleteScheduleAcompan = (id: string) =>
   apiClient.delete(`/schedule-acompan/${id}`);
 
 // ─── Turismo ─────────────────────────────────────────────────────────────────
-export interface ScheduleTourism {
+export interface ScheduleTourism extends RefundFields {
   id: string;
   id_detail_tourism: string;
   id_vehicle: string;
@@ -79,9 +101,13 @@ export const updateScheduleTourism = (
   apiClient
     .put<{ data: ScheduleTourism }>(`/schedule-tourism/${id}`, body)
     .then((r) => r.data.data ?? r.data);
+export const markRefundCompleteTourism = (id: string) =>
+  apiClient
+    .put<{ data: ScheduleTourism }>(`/schedule-tourism/${id}/refund-complete`)
+    .then((r) => r.data.data ?? r.data);
 
 // ─── Capacitación ────────────────────────────────────────────────────────────
-export interface ScheduleTraining {
+export interface ScheduleTraining extends RefundFields {
   id: string;
   id_detail_training: string;
   name: string;
@@ -105,9 +131,13 @@ export const updateScheduleTraining = (
   apiClient
     .put<{ data: ScheduleTraining }>(`/schedule-training/${id}`, body)
     .then((r) => r.data.data ?? r.data);
+export const markRefundCompleteTraining = (id: string) =>
+  apiClient
+    .put<{ data: ScheduleTraining }>(`/schedule-training/${id}/refund-complete`)
+    .then((r) => r.data.data ?? r.data);
 
 // ─── Guardería ───────────────────────────────────────────────────────────────
-export interface ScheduleDaycare {
+export interface ScheduleDaycare extends RefundFields {
   id: string;
   id_detail_daycare: string;
   id_vehicle: string;
@@ -133,4 +163,8 @@ export const updateScheduleDaycare = (
 ) =>
   apiClient
     .put<{ data: ScheduleDaycare }>(`/schedule-daycare/${id}`, body)
+    .then((r) => r.data.data ?? r.data);
+export const markRefundCompleteDaycare = (id: string) =>
+  apiClient
+    .put<{ data: ScheduleDaycare }>(`/schedule-daycare/${id}/refund-complete`)
     .then((r) => r.data.data ?? r.data);

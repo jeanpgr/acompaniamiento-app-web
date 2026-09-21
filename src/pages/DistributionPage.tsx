@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Clock, User, MapPin, Car } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, User, MapPin, Car, Landmark, CheckCircle } from "lucide-react";
 import {
   getSchedulesAcompan,
   getSchedulesTourism,
@@ -10,11 +10,16 @@ import {
   updateScheduleTourism,
   updateScheduleTraining,
   updateScheduleDaycare,
+  markRefundCompleteAcompan,
+  markRefundCompleteTourism,
+  markRefundCompleteTraining,
+  markRefundCompleteDaycare,
   type ScheduleAcompan,
   type ScheduleTourism,
   type ScheduleTraining,
   type ScheduleDaycare,
   type ScheduleStatus,
+  type RefundStatus,
 } from "@/api/schedules";
 import { getVehicles } from "@/api/vehicles";
 
@@ -33,6 +38,11 @@ interface Unified {
   address?: string;
   needsVehicle: boolean;         // CAPACITACION no necesita vehículo
   vehicleId?: string;
+  refundStatus: RefundStatus | null;
+  refundBank: string | null;
+  refundAccount: string | null;
+  refundAccountType: string | null;
+  refundHolderCedula: string | null;
 }
 
 const TYPE_STYLE: Record<string, { bg: string; text: string; border: string; label: string }> = {
@@ -54,6 +64,11 @@ function normalizeAcompan(s: ScheduleAcompan): Unified {
     address: s.origin_address,
     needsVehicle: true,
     vehicleId: s.id_vehicle,
+    refundStatus: s.refund_status,
+    refundBank: s.refund_bank_name,
+    refundAccount: s.refund_bank_account,
+    refundAccountType: s.refund_account_type,
+    refundHolderCedula: s.refund_holder_cedula,
   };
 }
 function normalizeTourism(s: ScheduleTourism): Unified {
@@ -69,6 +84,11 @@ function normalizeTourism(s: ScheduleTourism): Unified {
     status: s.status,
     needsVehicle: true,
     vehicleId: s.id_vehicle,
+    refundStatus: s.refund_status,
+    refundBank: s.refund_bank_name,
+    refundAccount: s.refund_bank_account,
+    refundAccountType: s.refund_account_type,
+    refundHolderCedula: s.refund_holder_cedula,
   };
 }
 function normalizeTraining(s: ScheduleTraining): Unified {
@@ -80,6 +100,11 @@ function normalizeTraining(s: ScheduleTraining): Unified {
     dateTime: s.detail?.date_time ?? s.created_at,
     status: s.status,
     needsVehicle: false,
+    refundStatus: s.refund_status,
+    refundBank: s.refund_bank_name,
+    refundAccount: s.refund_bank_account,
+    refundAccountType: s.refund_account_type,
+    refundHolderCedula: s.refund_holder_cedula,
   };
 }
 function normalizeDaycare(s: ScheduleDaycare): Unified {
@@ -93,6 +118,11 @@ function normalizeDaycare(s: ScheduleDaycare): Unified {
     address: s.address_pick_home ?? undefined,
     needsVehicle: true,
     vehicleId: s.id_vehicle,
+    refundStatus: s.refund_status,
+    refundBank: s.refund_bank_name,
+    refundAccount: s.refund_bank_account,
+    refundAccountType: s.refund_account_type,
+    refundHolderCedula: s.refund_holder_cedula,
   };
 }
 
@@ -174,6 +204,7 @@ export default function DistributionPage() {
   });
 
   const pending = filtered.filter((s) => !s.status || s.status === "PENDIENTE");
+  const cancelled = filtered.filter((s) => s.status === "CANCELADA");
 
   // ── Mutaciones de asignación ────────────────────────────────────────────────
 
@@ -201,6 +232,19 @@ export default function DistributionPage() {
   }
 
   const anyMutating = acompanMut.isPending || tourismMut.isPending || daycareMut.isPending || trainingMut.isPending;
+
+  // ── Reembolsos de citas canceladas ──────────────────────────────────────────
+
+  const refundMutByType: Record<OriginalType, (id: string) => Promise<unknown>> = {
+    acompan: markRefundCompleteAcompan,
+    tourism: markRefundCompleteTourism,
+    training: markRefundCompleteTraining,
+    daycare: markRefundCompleteDaycare,
+  };
+  const refundMut = useMutation({
+    mutationFn: ({ s }: { s: Unified }) => refundMutByType[s.originalType](s.id),
+    onSuccess: invalidateAll,
+  });
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -426,6 +470,54 @@ export default function DistributionPage() {
               })}
             </div>
           </div>
+
+          {/* ── PANEL REEMBOLSOS ── */}
+          {cancelled.length > 0 && (
+            <div className="mt-3 bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
+                <Landmark size={14} className="text-red-500" />
+                <span className="font-semibold text-slate-700 text-sm">
+                  Reembolsos ({cancelled.length})
+                </span>
+              </div>
+              <div className="p-3 space-y-3 max-h-[50vh] overflow-y-auto">
+                {cancelled.map((s) => {
+                  const st = TYPE_STYLE[s.serviceType] ?? TYPE_STYLE.default;
+                  const isPendingRefund = s.refundStatus !== "REALIZADO";
+                  const isSaving = refundMut.isPending && refundMut.variables?.s.id === s.id;
+                  return (
+                    <div key={`refund-${s.originalType}-${s.id}`} className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+                      <span className="inline-block text-xs px-2 py-0.5 rounded-full font-medium mb-1.5" style={{ backgroundColor: st.bg, color: st.text }}>
+                        {st.label}
+                      </span>
+                      <p className="font-semibold text-slate-800 text-sm leading-tight">{s.title}</p>
+                      <p className="text-xs text-slate-500 mt-1">{s.personName}</p>
+                      {(s.refundBank || s.refundAccount) && (
+                        <p className="text-xs text-slate-500 mt-1">
+                          {s.refundAccountType ?? "Cuenta"} · {s.refundBank ?? "—"} · {s.refundAccount ?? "—"}
+                          {s.refundHolderCedula ? ` · CC ${s.refundHolderCedula}` : ""}
+                        </p>
+                      )}
+                      {isPendingRefund ? (
+                        <button
+                          onClick={() => refundMut.mutate({ s })}
+                          disabled={isSaving}
+                          className="mt-2.5 w-full py-1.5 rounded-lg text-xs text-white font-medium disabled:opacity-50"
+                          style={{ backgroundColor: "#1D3461" }}
+                        >
+                          {isSaving ? "Guardando…" : "Marcar reembolso realizado"}
+                        </button>
+                      ) : (
+                        <div className="mt-2.5 flex items-center gap-1.5 text-xs font-medium text-green-600 bg-green-50 rounded-lg py-1.5 px-2">
+                          <CheckCircle size={12} /> Reembolso realizado
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Leyenda */}
           <div className="mt-3 bg-white rounded-xl shadow-sm border border-slate-100 p-3">
