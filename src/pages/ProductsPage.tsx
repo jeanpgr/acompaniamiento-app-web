@@ -167,6 +167,8 @@ function ProductThumbnail({ photo, name }: { photo: string; name: string }) {
           src={photo}
           alt={name}
           className="w-full h-full object-cover"
+          loading="lazy"
+          decoding="async"
           onError={() => setImgError(true)}
         />
       ) : (
