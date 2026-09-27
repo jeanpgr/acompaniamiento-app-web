@@ -19,6 +19,8 @@ import { getServices } from "@/api/services";
 import { getErrorMessage } from "@/api/client";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import TableSkeleton from "@/components/ui/TableSkeleton";
 
 const schema = z.object({
   id_service: z.string().min(1, "Selecciona un servicio"),
@@ -27,13 +29,17 @@ const schema = z.object({
   date_time: z.string().min(1, "Fecha y hora requeridas"),
   duration: z.number().int().positive("Debe ser un número positivo"),
   link_meet: z.string().url("URL inválida").optional().or(z.literal("")),
-  price: z.number({ message: "Ingresa un número" }).nonnegative("Debe ser 0 o mayor").optional(),
+  price: z
+    .number({ message: "Ingresa un número" })
+    .nonnegative("Debe ser 0 o mayor")
+    .optional(),
 });
 
 type FormData = z.infer<typeof schema>;
 
 export default function TrainingDetailPage() {
   const qc = useQueryClient();
+  const confirm = useConfirm();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const serviceId = searchParams.get("service");
@@ -52,8 +58,12 @@ export default function TrainingDetailPage() {
     queryFn: getServices,
   });
 
-  const trainingServices = services.filter((s) => s.type === "CAPACITACION" && s.active);
-  const currentService = serviceId ? services.find((s) => s.id === serviceId) : null;
+  const trainingServices = services.filter(
+    (s) => s.type === "CAPACITACION" && s.active,
+  );
+  const currentService = serviceId
+    ? services.find((s) => s.id === serviceId)
+    : null;
 
   const createMut = useMutation({
     mutationFn: createDetailTraining,
@@ -63,9 +73,7 @@ export default function TrainingDetailPage() {
       toast.success("Capacitación creada correctamente");
     },
     onError: (err: unknown) =>
-      toast.error(
-        getErrorMessage(err, "Error al crear"),
-      ),
+      toast.error(getErrorMessage(err, "Error al crear")),
   });
 
   const updateMut = useMutation({
@@ -82,9 +90,7 @@ export default function TrainingDetailPage() {
       toast.success("Capacitación actualizada");
     },
     onError: (err: unknown) =>
-      toast.error(
-        getErrorMessage(err, "Error al actualizar"),
-      ),
+      toast.error(getErrorMessage(err, "Error al actualizar")),
   });
 
   const deleteMut = useMutation({
@@ -94,9 +100,7 @@ export default function TrainingDetailPage() {
       toast.success("Capacitación eliminada");
     },
     onError: (err: unknown) =>
-      toast.error(
-        getErrorMessage(err, "Error al eliminar"),
-      ),
+      toast.error(getErrorMessage(err, "Error al eliminar")),
   });
 
   const {
@@ -156,20 +160,22 @@ export default function TrainingDetailPage() {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
           {serviceId && (
             <button
               onClick={() => navigate("/services")}
-              className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 mb-1 transition-colors"
+              className="flex items-center gap-1 text-xs text-ink-3 hover:text-ink-2 mb-1 transition-colors"
             >
               <ArrowLeft size={12} /> Volver a servicios
             </button>
           )}
-          <h1 className="text-xl font-semibold text-slate-800">
-            {currentService ? `Capacitación · ${currentService.name}` : "Detalles de capacitación"}
+          <h1 className="text-xl font-semibold text-ink">
+            {currentService
+              ? `Capacitación · ${currentService.name}`
+              : "Detalles de capacitación"}
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-sm text-ink-3 mt-0.5">
             {serviceId
               ? "Talleres y sesiones de este servicio de capacitación"
               : "Gestiona talleres y cursos de formación"}
@@ -181,39 +187,52 @@ export default function TrainingDetailPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
         {isLoading ? (
-          <div className="p-8 text-center text-slate-400 text-sm">Cargando capacitaciones...</div>
+          <TableSkeleton label="Cargando capacitaciones…" />
         ) : (
-          <table className="w-full">
+          <table className="w-full min-w-160">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/60">
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">Tema</th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">Fecha y hora</th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+              <tr className="border-b border-line bg-surface-2">
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                  Tema
+                </th>
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                  Fecha y hora
+                </th>
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                   <div className="flex items-center gap-1">
                     <Clock size={12} /> Duración (min)
                   </div>
                 </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">Precio</th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                  Precio
+                </th>
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                   <div className="flex items-center gap-1">
                     <Video size={12} /> Enlace Meet
                   </div>
                 </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">Acciones</th>
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                  Acciones
+                </th>
               </tr>
             </thead>
             <tbody>
               {items.map((item) => (
-                <tr key={item.id} className="border-b border-slate-50 hover:bg-slate-50/50">
+                <tr
+                  key={item.id}
+                  className="border-b border-line/70 hover:bg-surface-2"
+                >
                   <td className="px-5 py-3.5">
-                    <p className="font-medium text-slate-800 text-sm">{item.topic}</p>
+                    <p className="font-medium text-ink text-sm">{item.topic}</p>
                     {item.description && (
-                      <p className="text-xs text-slate-400 truncate max-w-52">{item.description}</p>
+                      <p className="text-xs text-ink-3 truncate max-w-52">
+                        {item.description}
+                      </p>
                     )}
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-slate-500">
+                  <td className="px-5 py-3.5 text-sm text-ink-3">
                     {new Date(item.date_time).toLocaleString("es-CO", {
                       day: "2-digit",
                       month: "short",
@@ -222,14 +241,16 @@ export default function TrainingDetailPage() {
                       minute: "2-digit",
                     })}
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-slate-600">{item.duration}</td>
+                  <td className="px-5 py-3.5 text-sm text-ink-2">
+                    {item.duration}
+                  </td>
                   <td className="px-5 py-3.5 text-sm">
                     {item.price != null ? (
-                      <span className="font-medium text-slate-700">
+                      <span className="font-medium text-ink">
                         ${Number(item.price).toFixed(2)}
                       </span>
                     ) : (
-                      <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 font-medium">
+                      <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-success-bg text-success-fg font-medium">
                         Gratuito
                       </span>
                     )}
@@ -240,25 +261,35 @@ export default function TrainingDetailPage() {
                         href={item.link_meet}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs text-blue-600 hover:underline truncate max-w-36 block"
+                        className="text-xs text-info-fg hover:underline truncate max-w-36 block"
                       >
                         {item.link_meet}
                       </a>
                     ) : (
-                      <span className="text-slate-300 italic text-xs">—</span>
+                      <span className="text-ink-3 italic text-xs">—</span>
                     )}
                   </td>
                   <td className="px-5 py-3.5">
                     <div className="flex gap-2">
-                      <Button size="sm" onClick={() => openEdit(item)}>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => openEdit(item)}
+                      >
                         <Pencil size={12} /> Editar
                       </Button>
                       <Button
                         size="sm"
-                        variant="danger"
-                        loading={deleteMut.isPending && deleteMut.variables === item.id}
-                        onClick={() => {
-                          if (window.confirm(`¿Eliminar "${item.topic}"?`))
+                        variant="danger-soft"
+                        loading={
+                          deleteMut.isPending && deleteMut.variables === item.id
+                        }
+                        onClick={async () => {
+                          if (
+                            await confirm({
+                              title: `¿Eliminar "${item.topic}"?`,
+                            })
+                          )
                             deleteMut.mutate(item.id);
                         }}
                       >
@@ -270,7 +301,10 @@ export default function TrainingDetailPage() {
               ))}
               {items.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-5 py-8 text-center text-slate-400 text-sm">
+                  <td
+                    colSpan={6}
+                    className="px-5 py-8 text-center text-ink-3 text-sm"
+                  >
                     No hay capacitaciones registradas
                   </td>
                 </tr>
@@ -287,7 +321,11 @@ export default function TrainingDetailPage() {
         title={editTarget ? "Editar capacitación" : "Nueva capacitación"}
         footer={
           <>
-            <Button variant="secondary" onClick={() => setModalOpen(false)} disabled={isPending}>
+            <Button
+              variant="secondary"
+              onClick={() => setModalOpen(false)}
+              disabled={isPending}
+            >
               Cancelar
             </Button>
             <Button loading={isPending} onClick={handleSubmit(onSubmit)}>
@@ -300,13 +338,16 @@ export default function TrainingDetailPage() {
           {/* Servicio — oculto si viene del contexto de servicio */}
           {!serviceId && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Servicio <span className="text-red-500">*</span>
+              <label
+                htmlFor="trainingdetail-id_service"
+                className="block text-sm font-medium text-ink mb-1"
+              >
+                Servicio <span className="text-danger-fg">*</span>
               </label>
               <select
-                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none ${
-                  errors.id_service ? "border-red-400 bg-red-50" : "border-slate-200"
-                }`}
+                id="trainingdetail-id_service"
+                className="field"
+                aria-invalid={!!errors.id_service}
                 {...register("id_service")}
               >
                 <option value="">Seleccionar servicio</option>
@@ -317,116 +358,160 @@ export default function TrainingDetailPage() {
                 ))}
               </select>
               {errors.id_service && (
-                <p className="text-red-500 text-xs mt-1">{errors.id_service.message}</p>
+                <p className="text-danger-fg text-xs mt-1">
+                  {errors.id_service.message}
+                </p>
               )}
             </div>
           )}
 
           {/* Tema */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Tema <span className="text-red-500">*</span>
+            <label
+              htmlFor="trainingdetail-topic"
+              className="block text-sm font-medium text-ink mb-1"
+            >
+              Tema <span className="text-danger-fg">*</span>
             </label>
             <input
-              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none ${
-                errors.topic ? "border-red-400 bg-red-50" : "border-slate-200"
-              }`}
+              id="trainingdetail-topic"
+              className="field"
+              aria-invalid={!!errors.topic}
               placeholder="Manejo de tecnología"
               {...register("topic")}
             />
-            {errors.topic && <p className="text-red-500 text-xs mt-1">{errors.topic.message}</p>}
+            {errors.topic && (
+              <p className="text-danger-fg text-xs mt-1">
+                {errors.topic.message}
+              </p>
+            )}
           </div>
 
           {/* Descripción */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Descripción <span className="text-red-500">*</span>
+            <label
+              htmlFor="trainingdetail-description"
+              className="block text-sm font-medium text-ink mb-1"
+            >
+              Descripción <span className="text-danger-fg">*</span>
             </label>
             <textarea
+              id="trainingdetail-description"
               rows={2}
-              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none resize-none ${
-                errors.description ? "border-red-400 bg-red-50" : "border-slate-200"
-              }`}
+              className="field resize-none"
+              aria-invalid={!!errors.description}
               placeholder="Descripción del tema"
               {...register("description")}
             />
             {errors.description && (
-              <p className="text-red-500 text-xs mt-1">{errors.description.message}</p>
+              <p className="text-danger-fg text-xs mt-1">
+                {errors.description.message}
+              </p>
             )}
           </div>
 
           {/* Fecha + Duración */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Fecha y hora <span className="text-red-500">*</span>
+              <label
+                htmlFor="trainingdetail-date_time"
+                className="block text-sm font-medium text-ink mb-1"
+              >
+                Fecha y hora <span className="text-danger-fg">*</span>
               </label>
               <input
+                id="trainingdetail-date_time"
                 type="datetime-local"
-                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none ${
-                  errors.date_time ? "border-red-400 bg-red-50" : "border-slate-200"
-                }`}
+                className="field"
+                aria-invalid={!!errors.date_time}
                 {...register("date_time")}
               />
               {errors.date_time && (
-                <p className="text-red-500 text-xs mt-1">{errors.date_time.message}</p>
+                <p className="text-danger-fg text-xs mt-1">
+                  {errors.date_time.message}
+                </p>
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Duración (min) <span className="text-red-500">*</span>
+              <label
+                htmlFor="trainingdetail-duration"
+                className="block text-sm font-medium text-ink mb-1"
+              >
+                Duración (min) <span className="text-danger-fg">*</span>
               </label>
               <input
+                id="trainingdetail-duration"
                 type="number"
                 min={1}
-                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none ${
-                  errors.duration ? "border-red-400 bg-red-50" : "border-slate-200"
-                }`}
+                className="field"
+                aria-invalid={!!errors.duration}
                 {...register("duration", { valueAsNumber: true })}
               />
               {errors.duration && (
-                <p className="text-red-500 text-xs mt-1">{errors.duration.message}</p>
+                <p className="text-danger-fg text-xs mt-1">
+                  {errors.duration.message}
+                </p>
               )}
             </div>
           </div>
 
           {/* Precio */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Precio</label>
+            <label
+              htmlFor="trainingdetail-price"
+              className="block text-sm font-medium text-ink mb-1"
+            >
+              Precio
+            </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-ink-3">
                 $
               </span>
               <input
+                id="trainingdetail-price"
                 type="number"
                 min={0}
                 step="0.01"
                 placeholder="0.00"
-                className={`w-full border rounded-lg pl-6 pr-3 py-2 text-sm focus:outline-none ${
-                  errors.price ? "border-red-400 bg-red-50" : "border-slate-200"
-                }`}
+                className="field pl-6 pr-3"
+                aria-invalid={!!errors.price}
                 {...register("price", {
                   setValueAs: (v) =>
-                    v === "" || v === null || Number.isNaN(Number(v)) ? undefined : Number(v),
+                    v === "" || v === null || Number.isNaN(Number(v))
+                      ? undefined
+                      : Number(v),
                 })}
               />
             </div>
-            {errors.price && <p className="text-red-500 text-xs mt-1">{errors.price.message}</p>}
-            <p className="text-xs text-slate-400 mt-1">Deja vacío si el taller es gratuito</p>
+            {errors.price && (
+              <p className="text-danger-fg text-xs mt-1">
+                {errors.price.message}
+              </p>
+            )}
+            <p className="text-xs text-ink-3 mt-1">
+              Deja vacío si el taller es gratuito
+            </p>
           </div>
 
           {/* Enlace Meet */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Enlace Meet</label>
+            <label
+              htmlFor="trainingdetail-link_meet"
+              className="block text-sm font-medium text-ink mb-1"
+            >
+              Enlace Meet
+            </label>
             <input
-              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none ${
-                errors.link_meet ? "border-red-400 bg-red-50" : "border-slate-200"
-              }`}
+              id="trainingdetail-link_meet"
+              className="field"
+              aria-invalid={!!errors.link_meet}
               placeholder="https://meet.google.com/..."
               {...register("link_meet")}
             />
             {errors.link_meet && (
-              <p className="text-red-500 text-xs mt-1">{errors.link_meet.message}</p>
+              <p className="text-danger-fg text-xs mt-1">
+                {errors.link_meet.message}
+              </p>
             )}
           </div>
         </form>

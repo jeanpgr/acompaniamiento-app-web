@@ -1,33 +1,18 @@
-import { Search } from "lucide-react";
-
 interface Props {
   title: string;
-  subtitle?: string;
+  subtitle?: React.ReactNode;
   action?: React.ReactNode;
 }
 
+// Cabecera de página compartida: título, contexto y acción principal.
 export default function Header({ title, subtitle, action }: Props) {
   return (
-    <div className="flex items-center justify-between mb-6">
-      <div>
-        <h1 className="text-xl font-semibold text-slate-800">{title}</h1>
-        {subtitle && (
-          <p className="text-sm text-slate-500 mt-0.5">{subtitle}</p>
-        )}
+    <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 mb-6">
+      <div className="min-w-0">
+        <h1 className="text-xl font-semibold text-ink text-balance">{title}</h1>
+        {subtitle && <p className="text-sm text-ink-3 mt-1">{subtitle}</p>}
       </div>
-      <div className="flex items-center gap-3">
-        <div className="relative">
-          <Search
-            size={14}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-          />
-          <input
-            placeholder="Buscar..."
-            className="pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 w-48"
-          />
-        </div>
-        {action}
-      </div>
+      {action && <div className="flex items-center gap-3">{action}</div>}
     </div>
   );
 }

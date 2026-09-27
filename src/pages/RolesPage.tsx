@@ -13,6 +13,7 @@ import {
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
+import TableSkeleton from "@/components/ui/TableSkeleton";
 
 const ALL_PERMISSIONS = [
   "users",
@@ -127,12 +128,12 @@ export default function RolesPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-slate-800">
+          <h1 className="text-xl font-semibold text-ink">
             Roles y permisos
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-sm text-ink-3 mt-0.5">
             Configura los roles del sistema y sus permisos de acceso
           </p>
         </div>
@@ -143,7 +144,7 @@ export default function RolesPage() {
 
       {/* Filters */}
       <div className="flex items-center gap-2 mb-4">
-        <span className="text-xs text-slate-500 bg-slate-100 rounded-full px-3 py-1">
+        <span className="text-xs text-ink-3 bg-line rounded-full px-3 py-1">
           {roles.length} roles
         </span>
         {(["all", "active", "inactive"] as const).map((f) => (
@@ -152,10 +153,10 @@ export default function RolesPage() {
             onClick={() => setFilter(f)}
             className={`px-4 py-1.5 rounded-full text-sm transition-colors ${
               filter === f
-                ? "text-white"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                ? "bg-primary text-white"
+                : "bg-surface text-ink-2 ring-1 ring-inset ring-line hover:bg-surface-2"
             }`}
-            style={filter === f ? { backgroundColor: "#1D3461" } : {}}
+            aria-pressed={filter === f}
           >
             {f === "all" ? "Todos" : f === "active" ? "Activos" : "Inactivos"}
           </button>
@@ -164,28 +165,26 @@ export default function RolesPage() {
 
       <div className="flex gap-5">
         {/* Table */}
-        <div className="flex-1 bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+        <div className="flex-1 bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
           {isLoading ? (
-            <div className="p-8 text-center text-slate-400 text-sm">
-              Cargando roles...
-            </div>
+            <TableSkeleton label="Cargando roles…" />
           ) : (
-            <table className="w-full">
+            <table className="w-full min-w-160">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/60">
-                  <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                <tr className="border-b border-line bg-surface-2">
+                  <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                     Rol
                   </th>
-                  <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                  <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                     Descripción
                   </th>
-                  <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                  <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                     Usuarios
                   </th>
-                  <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                  <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                     Estado
                   </th>
-                  <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                  <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                     Acciones
                   </th>
                 </tr>
@@ -194,17 +193,17 @@ export default function RolesPage() {
                 {filtered.map((role) => (
                   <tr
                     key={role.id}
-                    className="border-b border-slate-50 hover:bg-slate-50/50 cursor-pointer"
+                    className="border-b border-line/70 hover:bg-surface-2 cursor-pointer"
                     onClick={() => setSelected(role)}
                   >
-                    <td className="px-5 py-3.5 font-medium text-slate-800 text-sm">
+                    <td className="px-5 py-3.5 font-medium text-ink text-sm">
                       {role.name}
                     </td>
-                    <td className="px-5 py-3.5 text-sm text-slate-500">
+                    <td className="px-5 py-3.5 text-sm text-ink-3">
                       {role.description ?? "—"}
                     </td>
                     <td className="px-5 py-3.5">
-                      <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">
+                      <span className="text-xs bg-info-bg text-info-fg px-2 py-0.5 rounded-full">
                         {userCount()} personas
                       </span>
                     </td>
@@ -217,6 +216,7 @@ export default function RolesPage() {
                       <div className="flex gap-2">
                         <Button
                           size="sm"
+                          variant="secondary"
                           onClick={(e) => {
                             e.stopPropagation();
                             openEdit(role);
@@ -226,7 +226,7 @@ export default function RolesPage() {
                         </Button>
                         <Button
                           size="sm"
-                          variant="danger"
+                          variant="danger-soft"
                           onClick={(e) => {
                             e.stopPropagation();
                             deleteMut.mutate(role.id);
@@ -242,7 +242,7 @@ export default function RolesPage() {
                   <tr>
                     <td
                       colSpan={5}
-                      className="px-5 py-8 text-center text-slate-400 text-sm"
+                      className="px-5 py-8 text-center text-ink-3 text-sm"
                     >
                       No hay roles disponibles
                     </td>
@@ -255,10 +255,10 @@ export default function RolesPage() {
 
         {/* Permissions panel */}
         {displayRole && (
-          <div className="w-64 shrink-0 bg-white rounded-xl p-5 shadow-sm border border-slate-100 h-fit">
+          <div className="w-64 shrink-0 bg-surface rounded-xl p-5 shadow-sm border border-line h-fit">
             <div className="flex items-center gap-2 mb-4">
-              <Shield size={15} className="text-yellow-500" />
-              <h3 className="font-semibold text-slate-700 text-sm">
+              <Shield size={15} className="text-warning-fg" />
+              <h3 className="font-semibold text-ink text-sm">
                 Permisos · {displayRole.name}
               </h3>
             </div>
@@ -270,21 +270,21 @@ export default function RolesPage() {
                 return (
                   <div key={p} className="flex items-center gap-2 text-sm">
                     <span
-                      className={`text-xs ${has ? "text-green-500" : "text-slate-300"}`}
+                      className={`text-xs ${has ? "text-success-fg" : "text-ink-3"}`}
                     >
                       {has ? "✓" : "✗"}
                     </span>
-                    <span className={has ? "text-slate-700" : "text-slate-400"}>
+                    <span className={has ? "text-ink" : "text-ink-3"}>
                       {PERM_LABELS[p]}
                     </span>
                   </div>
                 );
               })}
             </div>
-            <div className="mt-4 pt-4 border-t border-slate-100">
-              <p className="text-xs text-slate-500 mb-2">Selector de rol</p>
+            <div className="mt-4 pt-4 border-t border-line">
+              <p className="text-xs text-ink-3 mb-2">Selector de rol</p>
               <select
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+                className="field"
                 value={displayRole.id}
                 onChange={(e) =>
                   setSelected(
@@ -324,28 +324,32 @@ export default function RolesPage() {
       >
         <form className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label htmlFor="roles-name" className="block text-sm font-medium text-ink mb-1">
               Nombre
             </label>
-            <input
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
+            <input id="roles-name"
+              className="field"
               {...register("name", { required: true })}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label htmlFor="roles-description" className="block text-sm font-medium text-ink mb-1">
               Descripción
             </label>
-            <input
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
+            <input id="roles-description"
+              className="field"
               {...register("description")}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <p id="roles-permisos" className="block text-sm font-medium text-ink mb-2">
               Permisos
-            </label>
-            <div className="space-y-1.5 max-h-48 overflow-y-auto">
+            </p>
+            <div
+              role="group"
+              aria-labelledby="roles-permisos"
+              className="space-y-1.5 max-h-48 overflow-y-auto"
+            >
               {ALL_PERMISSIONS.map((p) => (
                 <label
                   key={p}
@@ -360,9 +364,9 @@ export default function RolesPage() {
                         [p]: e.target.checked,
                       });
                     }}
-                    className="rounded"
+                    className="rounded accent-primary w-4 h-4"
                   />
-                  <span className="text-slate-700">{PERM_LABELS[p]}</span>
+                  <span className="text-ink">{PERM_LABELS[p]}</span>
                 </label>
               ))}
             </div>

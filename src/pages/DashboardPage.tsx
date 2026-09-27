@@ -16,6 +16,27 @@ function getISOWeek(date: Date): string {
   return `${d.getFullYear()}-W${String(week).padStart(2, "0")}`;
 }
 
+function Stars({ grade }: { grade: number }) {
+  return (
+    <span
+      className="flex items-center gap-0.5"
+      aria-label={`${grade} de 5 estrellas`}
+      role="img"
+    >
+      {[1, 2, 3, 4, 5].map((n) => (
+        <Star
+          key={n}
+          size={13}
+          aria-hidden="true"
+          className={
+            n <= grade ? "fill-warning text-warning" : "text-line-strong"
+          }
+        />
+      ))}
+    </span>
+  );
+}
+
 function ReviewsChart({
   reviews,
 }: {
@@ -38,7 +59,7 @@ function ReviewsChart({
 
   if (weekly.length === 0) {
     return (
-      <div className="h-44 flex items-center justify-center text-slate-400 text-sm">
+      <div className="h-44 flex items-center justify-center text-ink-3 text-sm">
         Sin datos de calificaciones aún
       </div>
     );
@@ -52,16 +73,12 @@ function ReviewsChart({
         const height = (value / MAX_VAL) * 100;
         return (
           <div key={label} className="flex flex-col items-center gap-1 flex-1">
-            <span className="text-xs text-slate-500">{value.toFixed(1)}</span>
+            <span className="text-xs text-ink-3">{value.toFixed(1)}</span>
             <div
-              className="w-full rounded-t-md transition-all"
-              style={{
-                height: `${height}%`,
-                backgroundColor: isLast ? "#1D3461" : "#BFCFE7",
-                minHeight: 8,
-              }}
+              className={`w-full rounded-t-md min-h-2 ${isLast ? "bg-primary" : "bg-primary/25"}`}
+              style={{ height: `${height}%` }}
             />
-            <span className="text-xs text-slate-400 whitespace-nowrap">
+            <span className="text-xs text-ink-3 whitespace-nowrap">
               {label}
             </span>
           </div>
@@ -106,61 +123,52 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-slate-800">
+          <h1 className="text-xl font-semibold text-ink">
             Métricas y satisfacción
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-sm text-ink-3 mt-0.5">
             Analiza resultados, tendencias y encuestas de satisfacción
           </p>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         <StatCard
           icon={Briefcase}
-          iconBg="#DBEAFE"
-          iconColor="#1D4ED8"
+          tone="info"
           value={services.filter((s) => s.active).length}
           label="Servicios activos"
         />
         <StatCard
           icon={Clock}
-          iconBg="#FEF3C7"
-          iconColor="#F59E0B"
+          tone="warning"
           value={pending}
           label="Pendientes"
         />
-        <StatCard
-          icon={Truck}
-          iconBg="#D1FAE5"
-          iconColor="#22C55E"
-          value={inRoute}
-          label="En ruta"
-        />
+        <StatCard icon={Truck} tone="success" value={inRoute} label="En ruta" />
         <StatCard
           icon={Star}
-          iconBg="#FEF9C3"
-          iconColor="#D97706"
+          tone="accent"
           value={avgGrade}
           label="Calificación promedio"
         />
       </div>
 
-      <div className="grid grid-cols-3 gap-5 mb-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 mb-6">
         {/* Calificación semanal */}
-        <div className="col-span-2 bg-white rounded-xl shadow-sm border border-slate-100 p-5">
-          <h2 className="text-sm font-semibold text-slate-700 mb-4">
+        <div className="xl:col-span-2 bg-surface rounded-xl shadow-[0_1px_2px_rgb(23_38_58/0.06)] border border-line p-5">
+          <h2 className="text-sm font-semibold text-ink mb-4">
             Calificación semanal promedio
           </h2>
           <ReviewsChart reviews={reviews} />
         </div>
 
         {/* Servicios por tipo */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
-          <h2 className="text-sm font-semibold text-slate-700 mb-4">
+        <div className="bg-surface rounded-xl shadow-[0_1px_2px_rgb(23_38_58/0.06)] border border-line p-5">
+          <h2 className="text-sm font-semibold text-ink mb-4">
             Servicios por tipo
           </h2>
           <div className="space-y-3">
@@ -168,22 +176,34 @@ export default function DashboardPage() {
               {
                 key: "ACOMPAÑAMIENTO",
                 label: "Acompañamiento",
-                color: "#3B82F6",
+                color: "var(--color-svc-acompanamiento)",
               },
-              { key: "TURISMO", label: "Turismo", color: "#22C55E" },
-              { key: "CAPACITACION", label: "Capacitación", color: "#F59E0B" },
-              { key: "GUARDERIA", label: "Guardería", color: "#EC4899" },
+              {
+                key: "TURISMO",
+                label: "Turismo",
+                color: "var(--color-svc-turismo)",
+              },
+              {
+                key: "CAPACITACION",
+                label: "Capacitación",
+                color: "var(--color-svc-capacitacion)",
+              },
+              {
+                key: "GUARDERIA",
+                label: "Guardería",
+                color: "var(--color-svc-guarderia)",
+              },
             ].map(({ key, label, color }) => {
               const count = typeCount(key);
               const pct =
                 services.length > 0 ? (count / services.length) * 100 : 0;
               return (
                 <div key={key}>
-                  <div className="flex justify-between text-xs text-slate-600 mb-1">
+                  <div className="flex justify-between text-xs text-ink-2 mb-1">
                     <span>{label}</span>
                     <span>{count}</span>
                   </div>
-                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-2 bg-line rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full"
                       style={{ width: `${pct}%`, backgroundColor: color }}
@@ -193,7 +213,7 @@ export default function DashboardPage() {
               );
             })}
             {services.length === 0 && (
-              <p className="text-xs text-slate-400 text-center py-4">
+              <p className="text-xs text-ink-3 text-center py-4">
                 Sin servicios registrados
               </p>
             )}
@@ -201,23 +221,30 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
         {/* Distribución de notas */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
-          <h2 className="text-sm font-semibold text-slate-700 mb-4">
+        <div className="bg-surface rounded-xl shadow-[0_1px_2px_rgb(23_38_58/0.06)] border border-line p-5">
+          <h2 className="text-sm font-semibold text-ink mb-4">
             Distribución de calificaciones
           </h2>
           <div className="space-y-2">
             {gradeDistribution.map(({ stars, count }) => (
               <div key={stars} className="flex items-center gap-2">
-                <span className="text-xs text-slate-500 w-4">{stars}★</span>
-                <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                <span className="flex items-center gap-0.5 text-xs text-ink-2 w-7 tabular-nums">
+                  {stars}
+                  <Star
+                    size={11}
+                    className="fill-warning text-warning"
+                    aria-hidden="true"
+                  />
+                </span>
+                <div className="flex-1 h-2 bg-line rounded-full overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-amber-400"
+                    className="h-full rounded-full bg-warning"
                     style={{ width: `${(count / maxCount) * 100}%` }}
                   />
                 </div>
-                <span className="text-xs text-slate-400 w-4 text-right">
+                <span className="text-xs text-ink-3 w-4 text-right">
                   {count}
                 </span>
               </div>
@@ -226,12 +253,12 @@ export default function DashboardPage() {
         </div>
 
         {/* Reseñas recientes */}
-        <div className="col-span-2 bg-white rounded-xl shadow-sm border border-slate-100 p-5">
-          <h2 className="text-sm font-semibold text-slate-700 mb-4">
+        <div className="xl:col-span-2 bg-surface rounded-xl shadow-[0_1px_2px_rgb(23_38_58/0.06)] border border-line p-5">
+          <h2 className="text-sm font-semibold text-ink mb-4">
             Reseñas recientes
           </h2>
           {recentReviews.length === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-6">
+            <p className="text-sm text-ink-3 text-center py-6">
               Sin reseñas registradas aún
             </p>
           ) : (
@@ -239,22 +266,16 @@ export default function DashboardPage() {
               {recentReviews.map((r) => (
                 <div
                   key={r.id}
-                  className="flex items-start gap-3 p-3 rounded-lg bg-slate-50"
+                  className="flex items-start gap-3 p-3 rounded-lg bg-surface-2"
                 >
-                  <div className="shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                    <Star size={14} className="text-blue-600" />
-                  </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-xs font-semibold text-slate-700">
-                        {"★".repeat(r.grade)}
-                        {"☆".repeat(5 - r.grade)}
-                      </span>
-                      <span className="text-xs text-slate-400">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Stars grade={r.grade} />
+                      <span className="text-xs text-ink-3">
                         {new Date(r.created_at).toLocaleDateString("es-CO")}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-600 truncate">
+                    <p className="text-sm text-ink-2 line-clamp-2">
                       {r.comment}
                     </p>
                   </div>
@@ -267,25 +288,31 @@ export default function DashboardPage() {
 
       {/* Resumen de agendamientos */}
       {schedules.length > 0 && (
-        <div className="mt-5 bg-white rounded-xl shadow-sm border border-slate-100 p-5">
-          <h2 className="text-sm font-semibold text-slate-700 mb-4">
+        <div className="mt-5 bg-surface rounded-xl shadow-[0_1px_2px_rgb(23_38_58/0.06)] border border-line p-5">
+          <h2 className="text-sm font-semibold text-ink mb-4">
             Resumen de agendamientos (Acompañamiento)
           </h2>
           <div className="grid grid-cols-3 gap-4 text-center">
             {[
-              { label: "Pendientes", value: pending, color: "#F59E0B" },
-              { label: "En ruta", value: inRoute, color: "#3B82F6" },
-              { label: "Completados", value: completed, color: "#22C55E" },
-            ].map(({ label, value, color }) => (
-              <div
-                key={label}
-                className="rounded-lg p-4"
-                style={{ backgroundColor: color + "18" }}
-              >
-                <p className="text-2xl font-bold" style={{ color }}>
-                  {value}
-                </p>
-                <p className="text-xs text-slate-500 mt-1">{label}</p>
+              {
+                label: "Pendientes",
+                value: pending,
+                tone: "bg-warning-bg text-warning-fg",
+              },
+              {
+                label: "En ruta",
+                value: inRoute,
+                tone: "bg-info-bg text-info-fg",
+              },
+              {
+                label: "Completados",
+                value: completed,
+                tone: "bg-success-bg text-success-fg",
+              },
+            ].map(({ label, value, tone }) => (
+              <div key={label} className={`rounded-lg p-4 ${tone}`}>
+                <p className="text-2xl font-bold tabular-nums">{value}</p>
+                <p className="text-xs font-medium mt-1">{label}</p>
               </div>
             ))}
           </div>

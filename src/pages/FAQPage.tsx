@@ -15,6 +15,8 @@ import {
 } from "@/api/frequently-questions";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
+import TableSkeleton from "@/components/ui/TableSkeleton";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 const schema = z.object({
   question: z.string().min(5, "La pregunta debe tener al menos 5 caracteres"),
@@ -25,6 +27,7 @@ type FormData = z.infer<typeof schema>;
 
 export default function FAQPage() {
   const qc = useQueryClient();
+  const confirm = useConfirm();
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<FrequentlyQuestion | null>(null);
 
@@ -127,12 +130,12 @@ export default function FAQPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-slate-800">
+          <h1 className="text-xl font-semibold text-ink">
             Preguntas frecuentes
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-sm text-ink-3 mt-0.5">
             Gestiona las FAQ que se muestran en la app móvil
           </p>
         </div>
@@ -142,13 +145,13 @@ export default function FAQPage() {
       </div>
 
       {isLoading ? (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-8 text-center text-slate-400 text-sm">
-          Cargando preguntas...
+        <div className="bg-surface rounded-xl shadow-sm border border-line">
+          <TableSkeleton rows={4} label="Cargando preguntas…" />
         </div>
       ) : faqs.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-12 text-center">
-          <HelpCircle size={36} className="text-slate-200 mx-auto mb-3" />
-          <p className="text-slate-400 text-sm">
+        <div className="bg-surface rounded-xl shadow-sm border border-line p-12 text-center">
+          <HelpCircle size={36} className="text-line-strong mx-auto mb-3" />
+          <p className="text-ink-3 text-sm">
             No hay preguntas frecuentes registradas
           </p>
           <Button className="mt-4" onClick={openCreate}>
@@ -160,37 +163,38 @@ export default function FAQPage() {
           {faqs.map((faq, idx) => (
             <div
               key={faq.id}
-              className="bg-white rounded-xl shadow-sm border border-slate-100 p-5"
+              className="bg-surface rounded-xl shadow-sm border border-line p-5"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <span
-                    className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white mt-0.5"
-                    style={{ backgroundColor: "#2A5298" }}
-                  >
+                  <span className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white mt-0.5 bg-brand-mark">
                     {idx + 1}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-slate-800 text-sm mb-1">
+                    <p className="font-medium text-ink text-sm mb-1">
                       {faq.question}
                     </p>
-                    <p className="text-slate-500 text-sm leading-relaxed">
+                    <p className="text-ink-3 text-sm leading-relaxed">
                       {displayResponse(faq)}
                     </p>
                   </div>
                 </div>
                 <div className="flex gap-2 shrink-0">
-                  <Button size="sm" onClick={() => openEdit(faq)}>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => openEdit(faq)}
+                  >
                     <Pencil size={12} /> Editar
                   </Button>
                   <Button
                     size="sm"
-                    variant="danger"
+                    variant="danger-soft"
                     loading={
                       deleteMut.isPending && deleteMut.variables === faq.id
                     }
-                    onClick={() => {
-                      if (window.confirm("¿Eliminar esta pregunta?"))
+                    onClick={async () => {
+                      if (await confirm({ title: "¿Eliminar esta pregunta?" }))
                         deleteMut.mutate(faq.id);
                     }}
                   >
@@ -224,33 +228,43 @@ export default function FAQPage() {
       >
         <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Pregunta <span className="text-red-500">*</span>
+            <label
+              htmlFor="faq-question"
+              className="block text-sm font-medium text-ink mb-1"
+            >
+              Pregunta <span className="text-danger-fg">*</span>
             </label>
             <input
-              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none ${errors.question ? "border-red-400 bg-red-50" : "border-slate-200"}`}
+              id="faq-question"
+              className="field"
+              aria-invalid={!!errors.question}
               placeholder="¿Cómo agendo un servicio?"
               {...register("question")}
             />
             {errors.question && (
-              <p className="text-red-500 text-xs mt-1">
+              <p className="text-danger-fg text-xs mt-1">
                 {errors.question.message}
               </p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Respuesta <span className="text-red-500">*</span>
+            <label
+              htmlFor="faq-response"
+              className="block text-sm font-medium text-ink mb-1"
+            >
+              Respuesta <span className="text-danger-fg">*</span>
             </label>
             <textarea
+              id="faq-response"
               rows={4}
-              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none resize-none ${errors.response ? "border-red-400 bg-red-50" : "border-slate-200"}`}
+              className="field resize-none"
+              aria-invalid={!!errors.response}
               placeholder="Puede agendar el servicio desde la pantalla principal..."
               {...register("response")}
             />
             {errors.response && (
-              <p className="text-red-500 text-xs mt-1">
+              <p className="text-danger-fg text-xs mt-1">
                 {errors.response.message}
               </p>
             )}

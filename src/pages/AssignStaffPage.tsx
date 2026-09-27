@@ -12,6 +12,7 @@ import { getSchedulesAcompan, updateScheduleAcompan } from "@/api/schedules";
 import { getVehicles } from "@/api/vehicles";
 import Badge from "@/components/ui/Badge";
 import StatCard from "@/components/ui/StatCard";
+import TableSkeleton from "@/components/ui/TableSkeleton";
 
 const STATUS_LABEL: Record<string, string> = {
   PENDIENTE: "Pendiente",
@@ -80,44 +81,33 @@ export default function AssignStaffPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-slate-800">
-            Asignar vehículo
-          </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <h1 className="text-xl font-semibold text-ink">Asignar vehículo</h1>
+          <p className="text-sm text-ink-3 mt-0.5">
             Asigna vehículos a los servicios pendientes
           </p>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-5">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-5">
         <StatCard
           icon={Clock}
-          iconBg="#FEF3C7"
-          iconColor="#F59E0B"
+          tone="warning"
           value={pending}
           label="Pendientes"
         />
-        <StatCard
-          icon={Truck}
-          iconBg="#DBEAFE"
-          iconColor="#3B82F6"
-          value={inRoute}
-          label="En ruta"
-        />
+        <StatCard icon={Truck} tone="info" value={inRoute} label="En ruta" />
         <StatCard
           icon={CheckCircle}
-          iconBg="#D1FAE5"
-          iconColor="#22C55E"
+          tone="success"
           value={completed}
           label="Completados"
         />
         <StatCard
           icon={UserCheck}
-          iconBg="#F3E8FF"
-          iconColor="#8B5CF6"
+          tone="primary"
           value={vehicles.length}
           label="Vehículos activos"
         />
@@ -134,41 +124,39 @@ export default function AssignStaffPage() {
                 onClick={() => setFilterStatus(f)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                   filterStatus === f
-                    ? "text-white"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    ? "bg-primary text-white"
+                    : "bg-surface text-ink-2 ring-1 ring-inset ring-line hover:bg-surface-2"
                 }`}
-                style={filterStatus === f ? { backgroundColor: "#1D3461" } : {}}
+                aria-pressed={filterStatus === f}
               >
                 {f === "all" ? "Todos" : STATUS_LABEL[f]}
               </button>
             ))}
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+          <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
             {isLoading ? (
-              <div className="p-8 text-center text-slate-400 text-sm">
-                Cargando servicios...
-              </div>
+              <TableSkeleton label="Cargando servicios…" />
             ) : (
-              <table className="w-full">
+              <table className="w-full min-w-160">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/60">
-                    <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                  <tr className="border-b border-line bg-surface-2">
+                    <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                       Servicio
                     </th>
-                    <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                    <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                       Beneficiario
                     </th>
-                    <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                    <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                       Fecha
                     </th>
-                    <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                    <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                       Vehículo
                     </th>
-                    <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                    <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                       Estado
                     </th>
-                    <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                    <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                       Acción
                     </th>
                   </tr>
@@ -177,31 +165,31 @@ export default function AssignStaffPage() {
                   {filtered.map((item) => (
                     <tr
                       key={item.id}
-                      className={`border-b border-slate-50 hover:bg-slate-50/50 cursor-pointer transition-colors ${
-                        selectedId === item.id ? "bg-blue-50/40" : ""
+                      className={`border-b border-line/70 hover:bg-surface-2 cursor-pointer transition-colors ${
+                        selectedId === item.id ? "bg-info-bg/40" : ""
                       }`}
                       onClick={() =>
                         setSelectedId(item.id === selectedId ? null : item.id)
                       }
                     >
                       <td className="px-5 py-3.5">
-                        <p className="font-medium text-slate-800 text-sm">
+                        <p className="font-medium text-ink text-sm">
                           {item.title}
                         </p>
-                        <p className="text-xs text-slate-400">{item.type}</p>
+                        <p className="text-xs text-ink-3">{item.type}</p>
                       </td>
-                      <td className="px-5 py-3.5 text-sm text-slate-600">
+                      <td className="px-5 py-3.5 text-sm text-ink-2">
                         {item.person}
                       </td>
                       <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-1 text-sm text-slate-500">
+                        <div className="flex items-center gap-1 text-sm text-ink-3">
                           <Calendar size={12} />
                           {item.date}
                         </div>
                       </td>
-                      <td className="px-5 py-3.5 text-sm text-slate-600">
+                      <td className="px-5 py-3.5 text-sm text-ink-2">
                         {item.vehicle ?? (
-                          <span className="text-slate-300 italic text-xs">
+                          <span className="text-ink-3 italic text-xs">
                             Sin asignar
                           </span>
                         )}
@@ -216,8 +204,7 @@ export default function AssignStaffPage() {
                       <td className="px-5 py-3.5">
                         {item.status === "PENDIENTE" && (
                           <button
-                            className="text-xs text-white px-3 py-1.5 rounded-lg font-medium"
-                            style={{ backgroundColor: "#1D3461" }}
+                            className="text-xs px-3 py-1.5 rounded-lg font-medium bg-primary text-white hover:bg-primary-hover transition-colors"
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedId(item.id);
@@ -233,7 +220,7 @@ export default function AssignStaffPage() {
                     <tr>
                       <td
                         colSpan={6}
-                        className="px-5 py-8 text-center text-slate-400 text-sm"
+                        className="px-5 py-8 text-center text-ink-3 text-sm"
                       >
                         No hay servicios en este estado
                       </td>
@@ -248,51 +235,53 @@ export default function AssignStaffPage() {
         {/* Right: assignment panel */}
         {selected && selected.status === "PENDIENTE" && (
           <div className="w-72 shrink-0">
-            <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
-              <h3 className="font-semibold text-slate-700 mb-4">
-                Asignar vehículo
-              </h3>
+            <div className="bg-surface rounded-xl shadow-sm border border-line p-5">
+              <h3 className="font-semibold text-ink mb-4">Asignar vehículo</h3>
 
               <div className="space-y-2 mb-4 text-sm">
-                <div className="flex items-start gap-2 text-slate-600">
-                  <MapPin
-                    size={14}
-                    className="mt-0.5 text-slate-400 shrink-0"
-                  />
+                <div className="flex items-start gap-2 text-ink-2">
+                  <MapPin size={14} className="mt-0.5 text-ink-3 shrink-0" />
                   <div>
-                    <p className="text-xs text-slate-400">Origen</p>
+                    <p className="text-xs text-ink-3">Origen</p>
                     <p>{selected.origin}</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-2 text-slate-600">
+                <div className="flex items-start gap-2 text-ink-2">
                   <MapPin
                     size={14}
-                    className="mt-0.5 text-green-500 shrink-0"
+                    className="mt-0.5 text-success-fg shrink-0"
                   />
                   <div>
-                    <p className="text-xs text-slate-400">Destino</p>
+                    <p className="text-xs text-ink-3">Destino</p>
                     <p>{selected.destination}</p>
                   </div>
                 </div>
               </div>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <p
+                  id="assign-vehiculo"
+                  className="block text-sm font-medium text-ink mb-2"
+                >
                   Seleccionar vehículo
-                </label>
+                </p>
                 {vehicles.length === 0 ? (
-                  <p className="text-xs text-slate-400 italic">
+                  <p className="text-xs text-ink-3 italic">
                     No hay vehículos registrados
                   </p>
                 ) : (
-                  <div className="space-y-2">
+                  <div
+                    role="radiogroup"
+                    aria-labelledby="assign-vehiculo"
+                    className="space-y-2"
+                  >
                     {vehicles.map((v) => (
                       <label
                         key={v.id}
                         className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
                           vehicleAssign[selected.id] === v.id
-                            ? "border-blue-300 bg-blue-50"
-                            : "border-slate-200 hover:border-slate-300"
+                            ? "border-info bg-info-bg"
+                            : "border-line hover:border-line-strong"
                         }`}
                       >
                         <input
@@ -306,13 +295,13 @@ export default function AssignStaffPage() {
                               [selected.id]: v.id,
                             }))
                           }
-                          className="accent-blue-600"
+                          className="accent-primary"
                         />
                         <div className="flex-1">
-                          <p className="font-medium text-slate-800 text-sm">
+                          <p className="font-medium text-ink text-sm">
                             {v.name}
                           </p>
-                          <p className="text-xs text-slate-400">
+                          <p className="text-xs text-ink-3">
                             {v.license_plate} · {v.capacity ?? "—"} pasajeros
                           </p>
                         </div>
@@ -323,8 +312,7 @@ export default function AssignStaffPage() {
               </div>
 
               <button
-                className="w-full py-2 rounded-lg text-sm text-white font-medium disabled:opacity-40"
-                style={{ backgroundColor: "#1D3461" }}
+                className="w-full py-2 rounded-lg text-sm font-medium disabled:opacity-40 bg-primary text-white hover:bg-primary-hover transition-colors"
                 disabled={!vehicleAssign[selected.id] || assignMut.isPending}
                 onClick={() => {
                   if (vehicleAssign[selected.id])
@@ -338,7 +326,7 @@ export default function AssignStaffPage() {
               </button>
 
               <button
-                className="w-full mt-2 py-2 rounded-lg text-sm text-slate-500 hover:text-slate-700"
+                className="w-full mt-2 py-2 rounded-lg text-sm text-ink-3 hover:text-ink"
                 onClick={() => setSelectedId(null)}
               >
                 Cancelar

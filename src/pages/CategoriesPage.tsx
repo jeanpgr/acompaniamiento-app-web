@@ -16,6 +16,10 @@ import {
 } from "@/api/categories";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
+import Switch from "@/components/ui/Switch";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import TableSkeleton from "@/components/ui/TableSkeleton";
+import Badge from "@/components/ui/Badge";
 
 const schema = z.object({
   name: z.string().min(1, "Nombre requerido").max(30),
@@ -27,6 +31,7 @@ type FormData = z.infer<typeof schema>;
 
 export default function CategoriesPage() {
   const qc = useQueryClient();
+  const confirm = useConfirm();
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Category | null>(null);
 
@@ -119,12 +124,12 @@ export default function CategoriesPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-slate-800">
+          <h1 className="text-xl font-semibold text-ink">
             Categorías de productos
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-sm text-ink-3 mt-0.5">
             {activeList.length} activas · {inactive.length} inactivas
           </p>
         </div>
@@ -133,28 +138,26 @@ export default function CategoriesPage() {
         </Button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
         {isLoading ? (
-          <div className="p-8 text-center text-slate-400 text-sm">
-            Cargando categorías...
-          </div>
+          <TableSkeleton label="Cargando categorías…" />
         ) : (
-          <table className="w-full">
+          <table className="w-full min-w-160">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/60">
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+              <tr className="border-b border-line bg-surface-2">
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                   Nombre
                 </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                   Descripción
                 </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                   Estado
                 </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                   Creación
                 </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                   Acciones
                 </th>
               </tr>
@@ -163,44 +166,43 @@ export default function CategoriesPage() {
               {categories.map((c) => (
                 <tr
                   key={c.id}
-                  className="border-b border-slate-50 hover:bg-slate-50/50"
+                  className="border-b border-line/70 hover:bg-surface-2"
                 >
-                  <td className="px-5 py-3.5 font-medium text-slate-800 text-sm">
+                  <td className="px-5 py-3.5 font-medium text-ink text-sm">
                     {c.name}
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-slate-500 max-w-50 truncate">
+                  <td className="px-5 py-3.5 text-sm text-ink-3 max-w-50 truncate">
                     {c.description ?? (
-                      <span className="text-slate-300 italic text-xs">—</span>
+                      <span className="text-ink-3 italic text-xs">—</span>
                     )}
                   </td>
                   <td className="px-5 py-3.5">
-                    <span
-                      className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
-                      style={
-                        c.active
-                          ? { backgroundColor: "#D1FAE5", color: "#065F46" }
-                          : { backgroundColor: "#FEE2E2", color: "#991B1B" }
-                      }
-                    >
+                    <Badge variant={c.active ? "success" : "danger"}>
                       {c.active ? "Activa" : "Inactiva"}
-                    </span>
+                    </Badge>
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-slate-500">
+                  <td className="px-5 py-3.5 text-sm text-ink-3">
                     {new Date(c.created_at).toLocaleDateString("es-CO")}
                   </td>
                   <td className="px-5 py-3.5">
                     <div className="flex gap-2">
-                      <Button size="sm" onClick={() => openEdit(c)}>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => openEdit(c)}
+                      >
                         <Pencil size={12} /> Editar
                       </Button>
                       <Button
                         size="sm"
-                        variant="danger"
+                        variant="danger-soft"
                         loading={
                           deleteMut.isPending && deleteMut.variables === c.id
                         }
-                        onClick={() => {
-                          if (window.confirm(`¿Eliminar "${c.name}"?`))
+                        onClick={async () => {
+                          if (
+                            await confirm({ title: `¿Eliminar "${c.name}"?` })
+                          )
                             deleteMut.mutate(c.id);
                         }}
                       >
@@ -214,7 +216,7 @@ export default function CategoriesPage() {
                 <tr>
                   <td
                     colSpan={5}
-                    className="px-5 py-8 text-center text-slate-400 text-sm"
+                    className="px-5 py-8 text-center text-ink-3 text-sm"
                   >
                     No hay categorías registradas
                   </td>
@@ -246,58 +248,57 @@ export default function CategoriesPage() {
       >
         <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Nombre <span className="text-red-500">*</span>
+            <label
+              htmlFor="categories-name"
+              className="block text-sm font-medium text-ink mb-1"
+            >
+              Nombre <span className="text-danger-fg">*</span>
             </label>
             <input
-              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 ${
-                errors.name ? "border-red-400 bg-red-50" : "border-slate-200"
-              }`}
+              id="categories-name"
+              className="field"
+              aria-invalid={!!errors.name}
               placeholder="Ropa deportiva"
               {...register("name")}
             />
             {errors.name && (
-              <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>
+              <p className="text-danger-fg text-xs mt-1">
+                {errors.name.message}
+              </p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label
+              htmlFor="categories-description"
+              className="block text-sm font-medium text-ink mb-1"
+            >
               Descripción
             </label>
             <textarea
+              id="categories-description"
               rows={3}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 resize-none"
+              className="field resize-none"
               placeholder="Descripción opcional"
               {...register("description")}
             />
           </div>
 
           {editTarget && (
-            <div className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+            <div className="flex items-center justify-between rounded-lg border border-line px-4 py-3">
               <div>
-                <p className="text-sm font-medium text-slate-700">
-                  Estado activo
-                </p>
-                <p className="text-xs text-slate-400">
+                <p className="text-sm font-medium text-ink">Estado activo</p>
+                <p className="text-xs text-ink-3">
                   La categoría aparece disponible en la app
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() =>
-                  setValue("active", !activeField, { shouldValidate: true })
+              <Switch
+                checked={activeField}
+                label="Estado activo"
+                onChange={(v) =>
+                  setValue("active", v, { shouldValidate: true })
                 }
-                className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
-                  activeField ? "bg-emerald-500" : "bg-slate-300"
-                }`}
-              >
-                <span
-                  className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
-                    activeField ? "translate-x-4" : "translate-x-1"
-                  }`}
-                />
-              </button>
+              />
             </div>
           )}
         </form>

@@ -1,36 +1,205 @@
 @import "tailwindcss";
 
 @theme {
+  /* Marca (Penpot) */
   --color-sidebar: #17263A;
   --color-sidebar-hover: #1F3451;
   --color-sidebar-active: #253F62;
+  --color-brand-mark: #2A5298;
   --color-primary: #1D3461;
   --color-primary-hover: #162A52;
+  --color-primary-soft: #E8EEF8;
   --color-accent: #F07340;
+  --color-accent-fg: #B2461A;
+
+  /* Superficies y líneas */
   --color-app-bg: #EEF1F8;
-  --color-success: #22C55E;
+  --color-surface: #FFFFFF;
+  --color-surface-2: #F6F8FB;
+  --color-line: #E1E7F0;
+  --color-line-strong: #CBD5E3;
+
+  /* Texto (tintado hacia el navy de la marca; todos ≥ 4.5:1 sobre blanco) */
+  --color-ink: #17263A;
+  --color-ink-2: #3F4F66;
+  --color-ink-3: #5B6B82;
+
+  /* Foco */
+  --color-focus: #2F5DB5;
+
+  /* Estados: `*-fg` es el tono para texto (AA sobre blanco y sobre su `*-bg`) */
+  --color-success: #16A34A;
+  --color-success-fg: #166534;
   --color-success-bg: #DCFCE7;
   --color-warning: #F59E0B;
+  --color-warning-fg: #92400E;
   --color-warning-bg: #FEF3C7;
-  --color-danger: #EF4444;
+  --color-danger: #DC2626;
+  --color-danger-hover: #B91C1C;
+  --color-danger-fg: #B91C1C;
   --color-danger-bg: #FEE2E2;
   --color-info: #3B82F6;
+  --color-info-fg: #1D4ED8;
   --color-info-bg: #DBEAFE;
+
+  /* Tipos de servicio (usados en gráficos y etiquetas) */
+  --color-svc-acompanamiento: #3B82F6;
+  --color-svc-turismo: #16A34A;
+  --color-svc-capacitacion: #F59E0B;
+  --color-svc-guarderia: #DB2777;
+  --color-svc-acompanamiento-bg: #DBEAFE;
+  --color-svc-acompanamiento-fg: #1E40AF;
+  --color-svc-turismo-bg: #DCFCE7;
+  --color-svc-turismo-fg: #166534;
+  --color-svc-capacitacion-bg: #FEF3C7;
+  --color-svc-capacitacion-fg: #92400E;
+  --color-svc-guarderia-bg: #FCE7F3;
+  --color-svc-guarderia-fg: #9D174D;
+
   --font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
+
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-* {
-  box-sizing: border-box;
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    scrollbar-color: var(--color-line-strong) transparent;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01";
+    background-color: var(--color-app-bg);
+    color: var(--color-ink);
+  }
+
+  #root {
+    width: 100%;
+    min-height: 100vh;
+  }
+
+  ::selection {
+    background-color: color-mix(in oklab, var(--color-primary) 18%, transparent);
+    color: var(--color-ink);
+  }
+
+  input,
+  textarea,
+  select {
+    caret-color: var(--color-primary);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-ink-3);
+    opacity: 0.75;
+  }
+
+  /* Foco visible y consistente para teclado en todo el panel */
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline-offset: 0;
+    border-color: var(--color-focus);
+  }
+
+  table {
+    font-variant-numeric: tabular-nums;
+  }
+
+  a {
+    text-underline-offset: 3px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--color-line-strong);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 1ms !important;
+      transition-duration: 1ms !important;
+    }
+  }
 }
 
-body {
-  margin: 0;
-  font-family: var(--font-sans);
-  background-color: #EEF1F8;
-  color: #1e293b;
-}
-
-#root {
+/* Campo de formulario compartido: el mismo aspecto en todos los módulos */
+@utility field {
   width: 100%;
-  min-height: 100vh;
+  border: 1px solid var(--color-line);
+  border-radius: 0.5rem;
+  background-color: var(--color-surface);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: var(--color-ink);
+  transition: border-color 150ms var(--ease-out-quart),
+    box-shadow 150ms var(--ease-out-quart);
+
+  &:hover {
+    border-color: var(--color-line-strong);
+  }
+  &:focus-visible {
+    outline: none;
+    border-color: var(--color-focus);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-focus) 22%, transparent);
+  }
+  &:disabled {
+    background-color: var(--color-surface-2);
+    color: var(--color-ink-3);
+    cursor: not-allowed;
+  }
+  &[aria-invalid="true"] {
+    border-color: var(--color-danger);
+    background-color: color-mix(in oklab, var(--color-danger-bg) 45%, white);
+  }
+}
+
+/* Esqueleto de carga */
+@utility skeleton {
+  border-radius: 0.375rem;
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-2) 0%,
+    var(--color-line) 50%,
+    var(--color-surface-2) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s var(--ease-out-quart) infinite;
+}
+
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+dialog::backdrop {
+  background-color: rgb(11 35 59 / 0.45);
 }

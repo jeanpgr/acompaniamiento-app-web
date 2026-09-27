@@ -33,31 +33,31 @@ const STATUS_CONFIG: Record<
     label: "Pendiente",
     variant: "warning",
     icon: Clock,
-    dot: "#F59E0B",
+    dot: "bg-warning",
   },
   "EN CURSO": {
     label: "En ruta",
     variant: "info",
     icon: Truck,
-    dot: "#3B82F6",
+    dot: "bg-info",
   },
   COMPLETADO: {
     label: "Completado",
     variant: "success",
     icon: CheckCircle,
-    dot: "#22C55E",
+    dot: "bg-success",
   },
   OLVIDADA: {
     label: "No asistió",
     variant: "default",
     icon: CalendarX,
-    dot: "#94A3B8",
+    dot: "bg-line-strong",
   },
   CANCELADA: {
     label: "Cancelada",
     variant: "danger",
     icon: XCircle,
-    dot: "#EF4444",
+    dot: "bg-danger",
   },
 };
 
@@ -129,51 +129,46 @@ export default function ServiceStatusPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-slate-800">
+          <h1 className="text-xl font-semibold text-ink">
             Estado del servicio
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-sm text-ink-3 mt-0.5">
             Monitorea el estado en tiempo real de los servicios activos
           </p>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-5 gap-4 mb-5">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-5">
         <StatCard
           icon={Clock}
-          iconBg="#FEF3C7"
-          iconColor="#F59E0B"
+          tone="warning"
           value={counts["PENDIENTE"]}
           label="Pendientes"
         />
         <StatCard
           icon={Truck}
-          iconBg="#DBEAFE"
-          iconColor="#3B82F6"
+          tone="info"
           value={counts["EN CURSO"]}
           label="En ruta"
         />
         <StatCard
           icon={CheckCircle}
-          iconBg="#D1FAE5"
-          iconColor="#22C55E"
+          tone="success"
           value={counts["COMPLETADO"]}
           label="Completados"
         />
         <StatCard
           icon={CalendarX}
-          iconBg="#F1F5F9"
-          iconColor="#94A3B8"
+          tone="neutral"
           value={counts["OLVIDADA"]}
           label="No asistió"
         />
         <StatCard
           icon={XCircle}
-          iconBg="#FEE2E2"
-          iconColor="#EF4444"
+          tone="danger"
           value={counts["CANCELADA"]}
           label="Canceladas"
         />
@@ -189,13 +184,17 @@ export default function ServiceStatusPage() {
               onClick={() => setFilter(f)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                 filter === f
-                  ? "text-white"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  ? "bg-primary text-white"
+                  : "bg-surface text-ink-2 ring-1 ring-inset ring-line hover:bg-surface-2"
               }`}
-              style={
-                filter === f ? { backgroundColor: cfg?.dot ?? "#1D3461" } : {}
-              }
+              aria-pressed={filter === f}
             >
+              {cfg && (
+                <span
+                  aria-hidden="true"
+                  className={`w-2 h-2 rounded-full ${cfg.dot} ${filter === f ? "ring-2 ring-white/80" : ""}`}
+                />
+              )}
               {f === "all" ? "Todos los servicios" : cfg?.label}
             </button>
           );
@@ -203,27 +202,37 @@ export default function ServiceStatusPage() {
       </div>
 
       {isLoading ? (
-        <div className="py-12 text-center text-slate-400 text-sm">
-          Cargando servicios...
+        <div
+          role="status"
+          className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
+        >
+          <span className="sr-only">Cargando servicios…</span>
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="skeleton h-44 rounded-xl"
+              aria-hidden="true"
+            />
+          ))}
         </div>
       ) : (
         /* Cards grid */
-        <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((item) => {
             const cfg = STATUS_CONFIG[item.status];
             const Icon = cfg.icon;
             return (
               <div
                 key={item.id}
-                className="bg-white rounded-xl shadow-sm border border-slate-100 p-4"
+                className="bg-surface rounded-xl shadow-sm border border-line p-4"
               >
                 {/* Card header */}
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-slate-800 text-sm truncate">
+                    <p className="font-semibold text-ink text-sm truncate">
                       {item.title}
                     </p>
-                    <span className="inline-block text-xs text-slate-400 mt-0.5">
+                    <span className="inline-block text-xs text-ink-3 mt-0.5">
                       {item.type}
                     </span>
                   </div>
@@ -234,7 +243,7 @@ export default function ServiceStatusPage() {
                 </div>
 
                 {/* Beneficiary */}
-                <div className="flex items-center gap-4 mb-3 text-xs text-slate-500">
+                <div className="flex items-center gap-4 mb-3 text-xs text-ink-3">
                   <span className="flex items-center gap-1">
                     <User size={11} /> {item.person}
                   </span>
@@ -245,75 +254,76 @@ export default function ServiceStatusPage() {
 
                 {/* Route */}
                 <div className="space-y-1 mb-3">
-                  <div className="flex items-start gap-2 text-xs text-slate-600">
+                  <div className="flex items-start gap-2 text-xs text-ink-2">
                     <div className="w-2 h-2 rounded-full bg-blue-400 mt-0.5 shrink-0" />
                     <span className="truncate">{item.origin}</span>
                   </div>
-                  <div className="flex items-start gap-2 text-xs text-slate-600">
-                    <div className="w-2 h-2 rounded-full bg-green-400 mt-0.5 shrink-0" />
+                  <div className="flex items-start gap-2 text-xs text-ink-2">
+                    <div className="w-2 h-2 rounded-full bg-success mt-0.5 shrink-0" />
                     <span className="truncate">{item.destination}</span>
                   </div>
                 </div>
 
                 {/* Vehicle & date */}
-                <div className="flex items-center justify-between pt-3 border-t border-slate-50">
-                  <div className="text-xs text-slate-400">
+                <div className="flex items-center justify-between pt-3 border-t border-line/70">
+                  <div className="text-xs text-ink-3">
                     {item.vehicle ? (
                       <span className="flex items-center gap-1">
                         <Truck size={10} /> {item.vehicle}
                       </span>
                     ) : (
-                      <span className="text-amber-500">Sin vehículo</span>
+                      <span className="text-warning-fg">Sin vehículo</span>
                     )}
                   </div>
-                  <span className="text-xs text-slate-400">{item.date}</span>
+                  <span className="text-xs text-ink-3">{item.date}</span>
                 </div>
 
                 {/* Status update — solo para estados que aún pueden avanzar */}
-                {item.status !== "COMPLETADO" && item.status !== "CANCELADA" && (
-                  <div className="mt-3">
-                    {updatingId === item.id ? (
-                      <div className="flex gap-2">
-                        {(["EN CURSO", "COMPLETADO"] as ScheduleStatus[])
-                          .filter((s) => s !== item.status)
-                          .map((s) => (
-                            <button
-                              key={s}
-                              onClick={() =>
-                                updateMut.mutate({ id: item.id, status: s })
-                              }
-                              className="flex-1 py-1 rounded text-xs font-medium border border-slate-200 hover:bg-slate-50 text-slate-600"
-                            >
-                              {STATUS_CONFIG[s].label}
-                            </button>
-                          ))}
+                {item.status !== "COMPLETADO" &&
+                  item.status !== "CANCELADA" && (
+                    <div className="mt-3">
+                      {updatingId === item.id ? (
+                        <div className="flex gap-2">
+                          {(["EN CURSO", "COMPLETADO"] as ScheduleStatus[])
+                            .filter((s) => s !== item.status)
+                            .map((s) => (
+                              <button
+                                key={s}
+                                onClick={() =>
+                                  updateMut.mutate({ id: item.id, status: s })
+                                }
+                                className="flex-1 py-1 rounded text-xs font-medium border border-line hover:bg-surface-2 text-ink-2"
+                              >
+                                {STATUS_CONFIG[s].label}
+                              </button>
+                            ))}
+                          <button
+                            onClick={() => setUpdatingId(null)}
+                            className="px-2 py-1 text-xs text-ink-3"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ) : (
                         <button
-                          onClick={() => setUpdatingId(null)}
-                          className="px-2 py-1 text-xs text-slate-400"
+                          onClick={() => setUpdatingId(item.id)}
+                          className="w-full flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs text-ink-2 border border-line hover:bg-surface-2"
                         >
-                          ✕
+                          Cambiar estado <ChevronDown size={11} />
                         </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => setUpdatingId(item.id)}
-                        className="w-full flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs text-slate-600 border border-slate-200 hover:bg-slate-50"
-                      >
-                        Cambiar estado <ChevronDown size={11} />
-                      </button>
-                    )}
-                  </div>
-                )}
+                      )}
+                    </div>
+                  )}
 
                 {/* Reembolso — solo para citas canceladas */}
                 {item.status === "CANCELADA" && (
-                  <div className="mt-3 pt-3 border-t border-slate-50">
+                  <div className="mt-3 pt-3 border-t border-line/70">
                     {(item.refundBank || item.refundAccount) && (
-                      <div className="flex items-start gap-1.5 text-xs text-slate-500 mb-2">
+                      <div className="flex items-start gap-1.5 text-xs text-ink-3 mb-2">
                         <Landmark size={11} className="mt-0.5 shrink-0" />
                         <span>
-                          {item.refundAccountType ?? "Cuenta"} · {item.refundBank ?? "—"} ·{" "}
-                          {item.refundAccount ?? "—"}
+                          {item.refundAccountType ?? "Cuenta"} ·{" "}
+                          {item.refundBank ?? "—"} · {item.refundAccount ?? "—"}
                           {item.refundHolderCedula
                             ? ` · CC ${item.refundHolderCedula}`
                             : ""}
@@ -321,15 +331,14 @@ export default function ServiceStatusPage() {
                       </div>
                     )}
                     {item.refundStatus === "REALIZADO" ? (
-                      <div className="flex items-center gap-1.5 text-xs font-medium text-green-600 bg-green-50 rounded-lg py-1.5 px-2">
+                      <div className="flex items-center gap-1.5 text-xs font-medium text-success-fg bg-success-bg rounded-lg py-1.5 px-2">
                         <CheckCircle size={12} /> Reembolso realizado
                       </div>
                     ) : (
                       <button
                         onClick={() => refundMut.mutate(item.id)}
                         disabled={refundMut.isPending}
-                        className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium text-white disabled:opacity-50"
-                        style={{ backgroundColor: "#1D3461" }}
+                        className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium disabled:opacity-50 bg-primary text-white hover:bg-primary-hover transition-colors"
                       >
                         {refundMut.isPending && refundMut.variables === item.id
                           ? "Guardando…"
@@ -342,7 +351,7 @@ export default function ServiceStatusPage() {
             );
           })}
           {filtered.length === 0 && (
-            <div className="col-span-3 py-12 text-center text-slate-400 text-sm">
+            <div className="col-span-3 py-12 text-center text-ink-3 text-sm">
               No hay servicios en este estado
             </div>
           )}

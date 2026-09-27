@@ -16,6 +16,10 @@ import { getCategories } from "@/api/categories";
 import { getErrorMessage } from "@/api/client";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
+import TableSkeleton from "@/components/ui/TableSkeleton";
+import Switch from "@/components/ui/Switch";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import Badge from "@/components/ui/Badge";
 
 // ── Schema Zod (sin photo — llega como archivo) ───────────────
 
@@ -74,34 +78,34 @@ function ImageZone({
 }: ImageZoneProps) {
   return (
     <div>
-      <label className="block text-sm font-medium text-slate-700 mb-1.5">
+      <p className="block text-sm font-medium text-ink mb-1.5">
         Imagen del producto
-        {!isEditing && <span className="text-red-500"> *</span>}
-      </label>
+        {!isEditing && <span className="text-danger-fg"> *</span>}
+      </p>
 
       {displayUrl ? (
-        <div className="relative group rounded-xl overflow-hidden border border-slate-200 bg-slate-50 h-44">
+        <div className="relative group rounded-xl overflow-hidden border border-line bg-surface-2 h-44">
           <img
             src={displayUrl}
-            alt="Preview"
+            alt="Vista previa del producto"
             className="w-full h-full object-cover"
             onError={(e) => {
               (e.target as HTMLImageElement).src = "";
             }}
           />
-          <label className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+          <label className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-sidebar/60 opacity-0 group-hover:opacity-100 focus-within:opacity-100 focus-within:outline-2 focus-within:outline-focus transition-opacity cursor-pointer">
             <ImagePlus size={22} className="text-white" />
             <span className="text-white text-xs font-medium">
               Cambiar imagen
             </span>
-            <span className="text-white/60 text-[11px]">
+            <span className="text-white/80 text-[11px]">
               JPEG o PNG · máx. 5 MB
             </span>
             <input
               ref={fileInputRef}
               type="file"
               accept="image/jpeg,image/jpg,image/png"
-              className="hidden"
+              className="sr-only"
               onChange={onFileChange}
             />
           </label>
@@ -110,6 +114,7 @@ function ImageZone({
               type="button"
               onClick={onResetFile}
               title="Quitar imagen seleccionada"
+              aria-label="Quitar imagen seleccionada"
               className="absolute top-2 right-2 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-colors"
             >
               <X size={12} className="text-white" />
@@ -118,39 +123,37 @@ function ImageZone({
         </div>
       ) : (
         <label
-          className={`flex flex-col items-center justify-center w-full h-44 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
+          className={`flex flex-col items-center justify-center w-full h-44 border-2 border-dashed rounded-xl cursor-pointer transition-colors focus-within:border-focus ${
             fileError
-              ? "border-red-300 bg-red-50 hover:border-red-400"
-              : "border-slate-200 bg-slate-50/60 hover:border-blue-400 hover:bg-blue-50/40"
+              ? "border-danger bg-danger-bg hover:border-danger"
+              : "border-line bg-surface-2 hover:border-info hover:bg-info-bg/40"
           }`}
         >
           <ImagePlus
             size={28}
-            className={fileError ? "text-red-300" : "text-slate-300"}
+            className={fileError ? "text-danger-fg" : "text-ink-3"}
           />
-          <p className="mt-2 text-sm font-medium text-slate-400">
+          <p className="mt-2 text-sm font-medium text-ink-3">
             Haz clic para subir imagen
           </p>
-          <p className="text-xs text-slate-300 mt-0.5">
-            JPEG o PNG · máx. 5 MB
-          </p>
+          <p className="text-xs text-ink-3 mt-0.5">JPEG o PNG · máx. 5 MB</p>
           <input
             ref={fileInputRef}
             type="file"
             accept="image/jpeg,image/jpg,image/png"
-            className="hidden"
+            className="sr-only"
             onChange={onFileChange}
           />
         </label>
       )}
 
       {fileError && (
-        <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+        <p className="text-danger-fg text-xs mt-1.5 flex items-center gap-1">
           {fileError}
         </p>
       )}
       {previewUrl && selectedFile && (
-        <p className="text-slate-400 text-xs mt-1.5 truncate">
+        <p className="text-ink-3 text-xs mt-1.5 truncate">
           {selectedFile.name} · {(selectedFile.size / 1024).toFixed(0)} KB
         </p>
       )}
@@ -161,7 +164,7 @@ function ImageZone({
 function ProductThumbnail({ photo, name }: { photo: string; name: string }) {
   const [imgError, setImgError] = useState(false);
   return (
-    <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-slate-100 bg-slate-50 flex items-center justify-center">
+    <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-line bg-surface-2 flex items-center justify-center">
       {photo && !imgError ? (
         <img
           src={photo}
@@ -172,7 +175,7 @@ function ProductThumbnail({ photo, name }: { photo: string; name: string }) {
           onError={() => setImgError(true)}
         />
       ) : (
-        <Package size={16} className="text-slate-300" />
+        <Package size={16} className="text-ink-3" />
       )}
     </div>
   );
@@ -180,6 +183,7 @@ function ProductThumbnail({ photo, name }: { photo: string; name: string }) {
 
 export default function ProductsPage() {
   const qc = useQueryClient();
+  const confirm = useConfirm();
 
   // tabla
   const [filterCat, setFilterCat] = useState("");
@@ -222,9 +226,7 @@ export default function ProductsPage() {
       toast.success("Producto creado exitosamente");
     },
     onError: (err: unknown) =>
-      toast.error(
-        getErrorMessage(err, "Error al crear el producto"),
-      ),
+      toast.error(getErrorMessage(err, "Error al crear el producto")),
   });
 
   const updateMut = useMutation({
@@ -236,9 +238,7 @@ export default function ProductsPage() {
       toast.success("Producto actualizado");
     },
     onError: (err: unknown) =>
-      toast.error(
-        getErrorMessage(err, "Error al actualizar"),
-      ),
+      toast.error(getErrorMessage(err, "Error al actualizar")),
   });
 
   const deleteMut = useMutation({
@@ -248,9 +248,7 @@ export default function ProductsPage() {
       toast.success("Producto eliminado");
     },
     onError: (err: unknown) =>
-      toast.error(
-        getErrorMessage(err, "Error al eliminar"),
-      ),
+      toast.error(getErrorMessage(err, "Error al eliminar")),
   });
 
   // ── Form ──────────────────────────────────────────────────────
@@ -360,7 +358,7 @@ export default function ProductsPage() {
     categories.find((c) => c.id === id)?.name ?? "—";
 
   const stockColor = (n: number) =>
-    n === 0 ? "text-red-500" : n < 5 ? "text-amber-500" : "text-slate-700";
+    n === 0 ? "text-danger-fg" : n < 5 ? "text-warning-fg" : "text-ink";
 
   // ── Zona de imagen ───────────────────────────────────────────
 
@@ -372,12 +370,12 @@ export default function ProductsPage() {
   return (
     <div>
       {/* Encabezado */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-slate-800">
+          <h1 className="text-xl font-semibold text-ink">
             Catálogo de productos
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-sm text-ink-3 mt-0.5">
             {displayedProducts.length} de {products.length} productos
           </p>
         </div>
@@ -391,10 +389,11 @@ export default function ProductsPage() {
         <div className="flex gap-2 mb-4 flex-wrap">
           <button
             onClick={() => setFilterCat("")}
+            aria-pressed={filterCat === ""}
             className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
               filterCat === ""
                 ? "bg-primary text-white border-primary"
-                : "bg-white text-slate-500 border-slate-200 hover:border-slate-400"
+                : "bg-surface text-ink-2 border-line hover:border-line-strong hover:text-ink"
             }`}
           >
             Todos
@@ -403,10 +402,11 @@ export default function ProductsPage() {
             <button
               key={c.id}
               onClick={() => setFilterCat(filterCat === c.id ? "" : c.id)}
+              aria-pressed={filterCat === c.id}
               className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
                 filterCat === c.id
                   ? "bg-primary text-white border-primary"
-                  : "bg-white text-slate-500 border-slate-200 hover:border-slate-400"
+                  : "bg-surface text-ink-2 border-line hover:border-line-strong hover:text-ink"
               }`}
             >
               {c.name}
@@ -416,17 +416,15 @@ export default function ProductsPage() {
       )}
 
       {/* Tabla */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
         {isLoading ? (
-          <div className="p-10 text-center text-slate-400 text-sm">
-            Cargando productos...
-          </div>
+          <TableSkeleton label="Cargando productos…" />
         ) : isError ? (
           <div className="p-10 text-center">
-            <p className="text-red-500 text-sm font-medium">
+            <p className="text-danger-fg text-sm font-medium">
               Error al cargar los productos
             </p>
-            <p className="text-slate-400 text-xs mt-1">
+            <p className="text-ink-3 text-xs mt-1">
               {(
                 productsError as {
                   response?: { data?: { message?: string } };
@@ -438,25 +436,25 @@ export default function ProductsPage() {
             </p>
           </div>
         ) : (
-          <table className="w-full">
+          <table className="w-full min-w-160">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/60">
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3 w-[40%]">
+              <tr className="border-b border-line bg-surface-2">
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3 w-[40%]">
                   Producto
                 </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                   Categoría
                 </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                   Precio
                 </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                   Stock
                 </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                   Estado
                 </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                   Acciones
                 </th>
               </tr>
@@ -465,18 +463,18 @@ export default function ProductsPage() {
               {displayedProducts.map((p) => (
                 <tr
                   key={p.id}
-                  className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors"
+                  className="border-b border-line/70 hover:bg-surface-2 transition-colors"
                 >
                   {/* Imagen + nombre */}
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-3">
                       <ProductThumbnail photo={p.photo} name={p.name} />
                       <div className="min-w-0">
-                        <p className="font-medium text-slate-800 text-sm truncate">
+                        <p className="font-medium text-ink text-sm truncate">
                           {p.name}
                         </p>
                         {p.description && (
-                          <p className="text-xs text-slate-400 truncate max-w-40">
+                          <p className="text-xs text-ink-3 truncate max-w-40">
                             {p.description}
                           </p>
                         )}
@@ -484,11 +482,11 @@ export default function ProductsPage() {
                     </div>
                   </td>
 
-                  <td className="px-5 py-3 text-sm text-slate-500">
+                  <td className="px-5 py-3 text-sm text-ink-3">
                     {catName(p.id_category)}
                   </td>
 
-                  <td className="px-5 py-3 text-sm font-medium text-slate-700">
+                  <td className="px-5 py-3 text-sm font-medium text-ink">
                     {formatPrice(p.price)}
                   </td>
 
@@ -506,34 +504,29 @@ export default function ProductsPage() {
                   </td>
 
                   <td className="px-5 py-3">
-                    <span
-                      className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
-                      style={
-                        p.active
-                          ? { backgroundColor: "#D1FAE5", color: "#065F46" }
-                          : { backgroundColor: "#FEE2E2", color: "#991B1B" }
-                      }
-                    >
+                    <Badge variant={p.active ? "success" : "danger"}>
                       {p.active ? "Activo" : "Inactivo"}
-                    </span>
+                    </Badge>
                   </td>
 
                   <td className="px-5 py-3">
                     <div className="flex gap-2">
-                      <Button size="sm" onClick={() => openEdit(p)}>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => openEdit(p)}
+                      >
                         <Pencil size={12} /> Editar
                       </Button>
                       <Button
                         size="sm"
-                        variant="danger"
+                        variant="danger-soft"
                         loading={
                           deleteMut.isPending && deleteMut.variables === p.id
                         }
-                        onClick={() => {
+                        onClick={async () => {
                           if (
-                            window.confirm(
-                              `¿Eliminar "${p.name}"? Esta acción no se puede deshacer.`,
-                            )
+                            await confirm({ title: `¿Eliminar "${p.name}"?` })
                           ) {
                             deleteMut.mutate(p.id);
                           }
@@ -550,7 +543,7 @@ export default function ProductsPage() {
                 <tr>
                   <td
                     colSpan={6}
-                    className="px-5 py-12 text-center text-slate-400 text-sm"
+                    className="px-5 py-12 text-center text-ink-3 text-sm"
                   >
                     {filterCat
                       ? "No hay productos en esta categoría."
@@ -600,15 +593,16 @@ export default function ProductsPage() {
 
           {/* Categoría */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Categoría <span className="text-red-500">*</span>
+            <label
+              htmlFor="products-id_category"
+              className="block text-sm font-medium text-ink mb-1"
+            >
+              Categoría <span className="text-danger-fg">*</span>
             </label>
             <select
-              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 bg-white ${
-                errors.id_category
-                  ? "border-red-400 bg-red-50"
-                  : "border-slate-200"
-              }`}
+              id="products-id_category"
+              className="field"
+              aria-invalid={!!errors.id_category}
               {...register("id_category")}
             >
               <option value="">Seleccionar categoría</option>
@@ -619,7 +613,7 @@ export default function ProductsPage() {
               ))}
             </select>
             {errors.id_category && (
-              <p className="text-red-500 text-xs mt-1">
+              <p className="text-danger-fg text-xs mt-1">
                 {errors.id_category.message}
               </p>
             )}
@@ -627,34 +621,43 @@ export default function ProductsPage() {
 
           {/* Nombre */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Nombre <span className="text-red-500">*</span>
+            <label
+              htmlFor="products-name"
+              className="block text-sm font-medium text-ink mb-1"
+            >
+              Nombre <span className="text-danger-fg">*</span>
             </label>
             <input
-              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 ${
-                errors.name ? "border-red-400 bg-red-50" : "border-slate-200"
-              }`}
+              id="products-name"
+              className="field"
+              aria-invalid={!!errors.name}
               placeholder="Ej: Camiseta deportiva"
               {...register("name")}
             />
             {errors.name && (
-              <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>
+              <p className="text-danger-fg text-xs mt-1">
+                {errors.name.message}
+              </p>
             )}
           </div>
 
           {/* Descripción */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label
+              htmlFor="products-description"
+              className="block text-sm font-medium text-ink mb-1"
+            >
               Descripción
             </label>
             <textarea
+              id="products-description"
               rows={2}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 resize-none"
+              className="field resize-none"
               placeholder="Descripción opcional del producto"
               {...register("description")}
             />
             {errors.description && (
-              <p className="text-red-500 text-xs mt-1">
+              <p className="text-danger-fg text-xs mt-1">
                 {errors.description.message}
               </p>
             )}
@@ -663,43 +666,47 @@ export default function ProductsPage() {
           {/* Precio y Stock */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Precio <span className="text-red-500">*</span>
+              <label
+                htmlFor="products-price"
+                className="block text-sm font-medium text-ink mb-1"
+              >
+                Precio <span className="text-danger-fg">*</span>
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 text-sm">
                   $
                 </span>
                 <input
-                  className={`w-full border rounded-lg pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 ${
-                    errors.price
-                      ? "border-red-400 bg-red-50"
-                      : "border-slate-200"
-                  }`}
+                  id="products-price"
+                  className="field pl-7 pr-3"
+                  aria-invalid={!!errors.price}
                   placeholder="50000"
                   {...register("price")}
                 />
               </div>
               {errors.price && (
-                <p className="text-red-500 text-xs mt-1">
+                <p className="text-danger-fg text-xs mt-1">
                   {errors.price.message}
                 </p>
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Stock <span className="text-red-500">*</span>
+              <label
+                htmlFor="products-stock"
+                className="block text-sm font-medium text-ink mb-1"
+              >
+                Stock <span className="text-danger-fg">*</span>
               </label>
               <input
+                id="products-stock"
                 type="number"
                 min={0}
-                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 ${
-                  errors.stock ? "border-red-400 bg-red-50" : "border-slate-200"
-                }`}
+                className="field"
+                aria-invalid={!!errors.stock}
                 {...register("stock", { valueAsNumber: true })}
               />
               {errors.stock && (
-                <p className="text-red-500 text-xs mt-1">
+                <p className="text-danger-fg text-xs mt-1">
                   {errors.stock.message}
                 </p>
               )}
@@ -708,30 +715,20 @@ export default function ProductsPage() {
 
           {/* Toggle Activo (solo en edición) */}
           {editTarget && (
-            <div className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+            <div className="flex items-center justify-between rounded-lg border border-line px-4 py-3">
               <div>
-                <p className="text-sm font-medium text-slate-700">
-                  Producto activo
-                </p>
-                <p className="text-xs text-slate-400">
+                <p className="text-sm font-medium text-ink">Producto activo</p>
+                <p className="text-xs text-ink-3">
                   Visible y disponible para compra en la app
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() =>
-                  setValue("active", !activeField, { shouldValidate: true })
+              <Switch
+                checked={activeField}
+                label="Producto activo"
+                onChange={(v) =>
+                  setValue("active", v, { shouldValidate: true })
                 }
-                className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
-                  activeField ? "bg-emerald-500" : "bg-slate-300"
-                }`}
-              >
-                <span
-                  className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
-                    activeField ? "translate-x-4" : "translate-x-1"
-                  }`}
-                />
-              </button>
+              />
             </div>
           )}
         </form>

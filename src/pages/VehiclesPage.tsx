@@ -15,6 +15,7 @@ import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import StatCard from "@/components/ui/StatCard";
 import { useForm } from "react-hook-form";
+import TableSkeleton from "@/components/ui/TableSkeleton";
 
 const REVIEW_THRESHOLD = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
@@ -91,12 +92,12 @@ export default function VehiclesPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-slate-800">
+          <h1 className="text-xl font-semibold text-ink">
             Gestión de vehículos
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-sm text-ink-3 mt-0.5">
             Administra la flota de vehículos y sus revisiones
           </p>
         </div>
@@ -105,65 +106,59 @@ export default function VehiclesPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         <StatCard
           icon={Truck}
-          iconBg="#EFF6FF"
-          iconColor="#3B82F6"
+          tone="info"
           value={vehicles.length}
           label="Total vehículos"
         />
         <StatCard
           icon={Truck}
-          iconBg="#F0FDF4"
-          iconColor="#22C55E"
+          tone="success"
           value={vehicles.filter((v) => v.active).length}
           label="Activos"
         />
         <StatCard
           icon={AlertTriangle}
-          iconBg="#FEF3C7"
-          iconColor="#F59E0B"
+          tone="warning"
           value={reviewDue}
           label="Revisión próxima"
         />
         <StatCard
           icon={Truck}
-          iconBg="#F1F5F9"
-          iconColor="#64748B"
+          tone="neutral"
           value={vehicles.filter((v) => !v.active).length}
           label="Inactivos"
         />
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
         {isLoading ? (
-          <div className="p-8 text-center text-slate-400 text-sm">
-            Cargando vehículos...
-          </div>
+          <TableSkeleton label="Cargando vehículos…" />
         ) : (
-          <table className="w-full">
+          <table className="w-full min-w-160">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/60">
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+              <tr className="border-b border-line bg-surface-2">
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                   Vehículo
                 </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                   Placa
                 </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                   Capacidad
                 </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                   Conductor
                 </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                   Próx. revisión
                 </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                   Estado
                 </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                   Acciones
                 </th>
               </tr>
@@ -175,36 +170,36 @@ export default function VehiclesPage() {
                 return (
                   <tr
                     key={v.id}
-                    className="border-b border-slate-50 hover:bg-slate-50/50"
+                    className="border-b border-line/70 hover:bg-surface-2"
                   >
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                          <Truck size={15} className="text-blue-500" />
+                        <div className="w-8 h-8 rounded-lg bg-info-bg flex items-center justify-center">
+                          <Truck size={15} className="text-info-fg" />
                         </div>
                         <div>
-                          <p className="font-medium text-slate-800 text-sm">
+                          <p className="font-medium text-ink text-sm">
                             {v.name}
                           </p>
-                          <p className="text-xs text-slate-400">{v.model}</p>
+                          <p className="text-xs text-ink-3">{v.model}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-5 py-3.5">
-                      <span className="font-mono text-sm text-slate-700">
+                      <span className="font-mono text-sm text-ink">
                         {v.license_plate}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5 text-sm text-slate-600">
+                    <td className="px-5 py-3.5 text-sm text-ink-2">
                       {v.capacity ?? "—"} personas
                     </td>
-                    <td className="px-5 py-3.5 text-sm text-slate-600">
+                    <td className="px-5 py-3.5 text-sm text-ink-2">
                       {userMap[v.id_driver] ?? "Sin asignar"}
                     </td>
                     <td className="px-5 py-3.5">
                       {v.next_review ? (
                         <span
-                          className={`text-sm ${reviewSoon ? "text-amber-600 font-medium" : "text-slate-500"}`}
+                          className={`text-sm ${reviewSoon ? "text-warning-fg font-medium" : "text-ink-3"}`}
                         >
                           {reviewSoon && (
                             <AlertTriangle size={12} className="inline mr-1" />
@@ -212,7 +207,7 @@ export default function VehiclesPage() {
                           {new Date(v.next_review).toLocaleDateString("es-CO")}
                         </span>
                       ) : (
-                        <span className="text-slate-400 text-sm">—</span>
+                        <span className="text-ink-3 text-sm">—</span>
                       )}
                     </td>
                     <td className="px-5 py-3.5">
@@ -222,12 +217,16 @@ export default function VehiclesPage() {
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex gap-2">
-                        <Button size="sm" onClick={() => openEdit(v)}>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => openEdit(v)}
+                        >
                           <Pencil size={12} /> Editar
                         </Button>
                         <Button
                           size="sm"
-                          variant="danger"
+                          variant="danger-soft"
                           onClick={() => deleteMut.mutate(v.id)}
                         >
                           <Trash2 size={12} />
@@ -241,7 +240,7 @@ export default function VehiclesPage() {
                 <tr>
                   <td
                     colSpan={7}
-                    className="px-5 py-8 text-center text-slate-400 text-sm"
+                    className="px-5 py-8 text-center text-ink-3 text-sm"
                   >
                     No hay vehículos registrados
                   </td>
@@ -272,48 +271,68 @@ export default function VehiclesPage() {
       >
         <form className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label
+              htmlFor="vehicles-name"
+              className="block text-sm font-medium text-ink mb-1"
+            >
               Nombre
             </label>
             <input
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+              id="vehicles-name"
+              className="field"
               {...register("name", { required: true })}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label
+              htmlFor="vehicles-model"
+              className="block text-sm font-medium text-ink mb-1"
+            >
               Modelo
             </label>
             <input
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+              id="vehicles-model"
+              className="field"
               {...register("model", { required: true })}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label
+              htmlFor="vehicles-license_plate"
+              className="block text-sm font-medium text-ink mb-1"
+            >
               Placa
             </label>
             <input
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+              id="vehicles-license_plate"
+              className="field"
               {...register("license_plate", { required: true })}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label
+              htmlFor="vehicles-capacity"
+              className="block text-sm font-medium text-ink mb-1"
+            >
               Capacidad
             </label>
             <input
+              id="vehicles-capacity"
               type="number"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+              className="field"
               {...register("capacity", { valueAsNumber: true })}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label
+              htmlFor="vehicles-id_driver"
+              className="block text-sm font-medium text-ink mb-1"
+            >
               Conductor
             </label>
             <select
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+              id="vehicles-id_driver"
+              className="field"
               {...register("id_driver", { required: true })}
             >
               <option value="">Seleccionar conductor</option>
@@ -325,12 +344,16 @@ export default function VehiclesPage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label
+              htmlFor="vehicles-next_review"
+              className="block text-sm font-medium text-ink mb-1"
+            >
               Próxima revisión
             </label>
             <input
+              id="vehicles-next_review"
               type="date"
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+              className="field"
               {...register("next_review")}
             />
           </div>

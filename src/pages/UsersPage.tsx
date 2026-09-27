@@ -28,6 +28,8 @@ import StatCard from "@/components/ui/StatCard";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import TableSkeleton from "@/components/ui/TableSkeleton";
 
 // ── Validation ─────────────────────────────────────────────────
 const baseSchema = z.object({
@@ -50,15 +52,16 @@ type CreateFormData = z.infer<typeof createSchema>;
 type EditFormData = z.infer<typeof editSchema>;
 
 // ── Avatar ─────────────────────────────────────────────────────
+// Tonos oscuros: las iniciales en blanco mantienen contraste AA en todos.
 const COLORS = [
-  "#3B82F6",
-  "#22C55E",
-  "#F59E0B",
-  "#EF4444",
-  "#8B5CF6",
-  "#06B6D4",
-  "#F97316",
-  "#EC4899",
+  "#1D4ED8",
+  "#15803D",
+  "#B45309",
+  "#B91C1C",
+  "#6D28D9",
+  "#0E7490",
+  "#C2410C",
+  "#BE185D",
 ];
 
 function Avatar({
@@ -76,6 +79,7 @@ function Avatar({
     <div
       className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
       style={{ backgroundColor: bg }}
+      aria-hidden="true"
     >
       {initials}
     </div>
@@ -96,6 +100,7 @@ function sanitize(data: Record<string, unknown>): Record<string, unknown> {
 // ── Page ───────────────────────────────────────────────────────
 export default function UsersPage() {
   const qc = useQueryClient();
+  const confirm = useConfirm();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatus] = useState<"all" | "active" | "inactive">(
     "all",
@@ -218,12 +223,12 @@ export default function UsersPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-slate-800">
+          <h1 className="text-xl font-semibold text-ink">
             Usuarios · Talento humano
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-sm text-ink-3 mt-0.5">
             Gestiona el personal de la plataforma y los roles asignados
           </p>
         </div>
@@ -236,22 +241,19 @@ export default function UsersPage() {
       <div className="grid grid-cols-3 gap-4 mb-6">
         <StatCard
           icon={Users}
-          iconBg="#EFF6FF"
-          iconColor="#3B82F6"
+          tone="info"
           value={users.length}
           label="Total usuarios"
         />
         <StatCard
           icon={CheckCircle}
-          iconBg="#F0FDF4"
-          iconColor="#22C55E"
+          tone="success"
           value={activeCount}
           label="Activos"
         />
         <StatCard
           icon={UserX}
-          iconBg="#FEF2F2"
-          iconColor="#EF4444"
+          tone="danger"
           value={inactiveCount}
           label="Inactivos"
         />
@@ -262,13 +264,13 @@ export default function UsersPage() {
         <div className="relative">
           <Search
             size={13}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3"
           />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar personal..."
-            className="pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none w-48"
+            className="pl-8 pr-3 py-1.5 text-sm border border-line rounded-lg bg-surface focus:outline-none w-48"
           />
         </div>
         {(["all", "active", "inactive"] as const).map((f) => (
@@ -277,10 +279,10 @@ export default function UsersPage() {
             onClick={() => setStatus(f)}
             className={`px-4 py-1.5 rounded-full text-sm transition-colors ${
               f === statusFilter
-                ? "text-white"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                ? "bg-primary text-white"
+                : "bg-surface text-ink-2 ring-1 ring-inset ring-line hover:bg-surface-2"
             }`}
-            style={f === statusFilter ? { backgroundColor: "#1D3461" } : {}}
+            aria-pressed={f === statusFilter}
           >
             {f === "all" ? "Todos" : f === "active" ? "Activo" : "Inactivo"}
           </button>
@@ -288,31 +290,29 @@ export default function UsersPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
         {isLoading ? (
-          <div className="p-8 text-center text-slate-400 text-sm">
-            Cargando usuarios...
-          </div>
+          <TableSkeleton label="Cargando usuarios…" />
         ) : (
-          <table className="w-full">
+          <table className="w-full min-w-160">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/60">
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+              <tr className="border-b border-line bg-surface-2">
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                   Nombre
                 </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                   Rol
                 </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                   Cédula
                 </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                   Teléfono
                 </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                   Estado
                 </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
                   Acciones
                 </th>
               </tr>
@@ -321,36 +321,36 @@ export default function UsersPage() {
               {filtered.map((u, i) => (
                 <tr
                   key={u.id}
-                  className="border-b border-slate-50 hover:bg-slate-50/50"
+                  className="border-b border-line/70 hover:bg-surface-2"
                 >
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3">
                       <Avatar name={u.name} lastname={u.lastname} idx={i} />
                       <div>
-                        <p className="font-medium text-slate-800 text-sm">
+                        <p className="font-medium text-ink text-sm">
                           {u.name} {u.lastname}
                         </p>
-                        <p className="text-xs text-slate-400">{u.email}</p>
+                        <p className="text-xs text-ink-3">{u.email}</p>
                       </div>
                     </div>
                   </td>
                   <td className="px-5 py-3.5">
                     {u.id_role ? (
-                      <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">
+                      <span className="text-xs bg-info-bg text-info-fg px-2 py-0.5 rounded-full">
                         {roleMap[u.id_role] ?? "Sin rol"}
                       </span>
                     ) : (
-                      <span className="text-slate-300 text-xs italic">—</span>
+                      <span className="text-ink-3 text-xs italic">—</span>
                     )}
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-slate-500">
+                  <td className="px-5 py-3.5 text-sm text-ink-3">
                     {u.cedula ?? (
-                      <span className="text-slate-300 italic text-xs">—</span>
+                      <span className="text-ink-3 italic text-xs">—</span>
                     )}
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-slate-500">
+                  <td className="px-5 py-3.5 text-sm text-ink-3">
                     {u.phone ?? (
-                      <span className="text-slate-300 italic text-xs">—</span>
+                      <span className="text-ink-3 italic text-xs">—</span>
                     )}
                   </td>
                   <td className="px-5 py-3.5">
@@ -360,20 +360,27 @@ export default function UsersPage() {
                   </td>
                   <td className="px-5 py-3.5">
                     <div className="flex gap-2">
-                      <Button size="sm" onClick={() => openEdit(u)}>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => openEdit(u)}
+                      >
                         <Pencil size={12} /> Editar
                       </Button>
                       <Button
                         size="sm"
-                        variant="danger"
+                        variant="danger-soft"
                         loading={
                           deleteMut.isPending && deleteMut.variables === u.id
                         }
-                        onClick={() => {
+                        onClick={async () => {
                           if (
-                            window.confirm(
-                              `¿Desactivar al usuario "${u.name} ${u.lastname ?? ""}"?`,
-                            )
+                            await confirm({
+                              title: `¿Desactivar a ${u.name} ${u.lastname ?? ""}?`,
+                              message:
+                                "El usuario quedará inactivo y no podrá acceder.",
+                              confirmLabel: "Desactivar",
+                            })
                           ) {
                             deleteMut.mutate(u.id);
                           }
@@ -389,7 +396,7 @@ export default function UsersPage() {
                 <tr>
                   <td
                     colSpan={6}
-                    className="px-5 py-8 text-center text-slate-400 text-sm"
+                    className="px-5 py-8 text-center text-ink-3 text-sm"
                   >
                     No se encontraron usuarios
                   </td>
@@ -424,31 +431,41 @@ export default function UsersPage() {
           {/* Name + Lastname */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Nombre <span className="text-red-500">*</span>
+              <label
+                htmlFor="users-name"
+                className="block text-sm font-medium text-ink mb-1"
+              >
+                Nombre <span className="text-danger-fg">*</span>
               </label>
               <input
-                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 ${errors.name ? "border-red-400 bg-red-50" : "border-slate-200"}`}
+                id="users-name"
+                className="field"
+                aria-invalid={!!errors.name}
                 placeholder="Nombre"
                 {...register("name")}
               />
               {errors.name && (
-                <p className="text-red-500 text-xs mt-1">
+                <p className="text-danger-fg text-xs mt-1">
                   {errors.name.message}
                 </p>
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Apellido <span className="text-red-500">*</span>
+              <label
+                htmlFor="users-lastname"
+                className="block text-sm font-medium text-ink mb-1"
+              >
+                Apellido <span className="text-danger-fg">*</span>
               </label>
               <input
-                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 ${errors.lastname ? "border-red-400 bg-red-50" : "border-slate-200"}`}
+                id="users-lastname"
+                className="field"
+                aria-invalid={!!errors.lastname}
                 placeholder="Apellido"
                 {...register("lastname")}
               />
               {errors.lastname && (
-                <p className="text-red-500 text-xs mt-1">
+                <p className="text-danger-fg text-xs mt-1">
                   {errors.lastname.message}
                 </p>
               )}
@@ -457,17 +474,22 @@ export default function UsersPage() {
 
           {/* Email */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Correo electrónico <span className="text-red-500">*</span>
+            <label
+              htmlFor="users-email"
+              className="block text-sm font-medium text-ink mb-1"
+            >
+              Correo electrónico <span className="text-danger-fg">*</span>
             </label>
             <input
+              id="users-email"
               type="email"
-              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 ${errors.email ? "border-red-400 bg-red-50" : "border-slate-200"}`}
+              className="field"
+              aria-invalid={!!errors.email}
               placeholder="correo@ejemplo.com"
               {...register("email")}
             />
             {errors.email && (
-              <p className="text-red-500 text-xs mt-1">
+              <p className="text-danger-fg text-xs mt-1">
                 {errors.email.message}
               </p>
             )}
@@ -476,17 +498,22 @@ export default function UsersPage() {
           {/* Password — solo en creación */}
           {!editTarget && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Contraseña <span className="text-red-500">*</span>
+              <label
+                htmlFor="users-password"
+                className="block text-sm font-medium text-ink mb-1"
+              >
+                Contraseña <span className="text-danger-fg">*</span>
               </label>
               <input
+                id="users-password"
                 type="password"
-                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 ${errors.password ? "border-red-400 bg-red-50" : "border-slate-200"}`}
+                className="field"
+                aria-invalid={!!errors.password}
                 placeholder="Mínimo 8 caracteres"
                 {...register("password")}
               />
               {errors.password && (
-                <p className="text-red-500 text-xs mt-1">
+                <p className="text-danger-fg text-xs mt-1">
                   {errors.password.message}
                 </p>
               )}
@@ -496,11 +523,15 @@ export default function UsersPage() {
           {/* Role + Cedula */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label
+                htmlFor="users-id_role"
+                className="block text-sm font-medium text-ink mb-1"
+              >
                 Rol
               </label>
               <select
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+                id="users-id_role"
+                className="field"
                 {...register("id_role")}
               >
                 <option value="">Sin rol</option>
@@ -514,11 +545,15 @@ export default function UsersPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label
+                htmlFor="users-cedula"
+                className="block text-sm font-medium text-ink mb-1"
+              >
                 Cédula
               </label>
               <input
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+                id="users-cedula"
+                className="field"
                 placeholder="Cédula"
                 {...register("cedula")}
               />
@@ -528,21 +563,29 @@ export default function UsersPage() {
           {/* Phone + Address */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label
+                htmlFor="users-phone"
+                className="block text-sm font-medium text-ink mb-1"
+              >
                 Teléfono
               </label>
               <input
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+                id="users-phone"
+                className="field"
                 placeholder="Teléfono"
                 {...register("phone")}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
+              <label
+                htmlFor="users-address"
+                className="block text-sm font-medium text-ink mb-1"
+              >
                 Dirección
               </label>
               <input
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+                id="users-address"
+                className="field"
                 placeholder="Dirección"
                 {...register("address")}
               />
