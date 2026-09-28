@@ -54,8 +54,7 @@ const createSchema = baseSchema.extend({
   cedula: z
     .string()
     .trim()
-    .min(1, "La cédula es obligatoria")
-    .max(10, "Máximo 10 caracteres"),
+    .regex(/^\d{6,10}$/, "Entre 6 y 10 dígitos"),
   phone: z
     .string()
     .trim()
