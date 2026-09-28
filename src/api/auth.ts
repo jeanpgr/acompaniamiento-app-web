@@ -9,8 +9,9 @@ export interface AuthUser {
   phone: string;
   address: string;
   active: boolean;
-  role: string;
-  permissions: string[];
+  role: string | null;
+  // JSONB del rol: { "<módulo>": true | false }
+  permissions: Record<string, boolean>;
 }
 
 export interface SignInResponse {

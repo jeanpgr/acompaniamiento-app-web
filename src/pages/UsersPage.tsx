@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Users,
@@ -8,6 +8,8 @@ import {
   Pencil,
   Trash2,
   UserPlus,
+  ImagePlus,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useForm, type Resolver } from "react-hook-form";
@@ -37,13 +39,28 @@ const baseSchema = z.object({
   lastname: z.string().min(2, "Mínimo 2 caracteres").max(50),
   email: z.string().email("Email inválido").max(100),
   id_role: z.string().uuid().optional().or(z.literal("")),
-  cedula: z.string().max(15).optional().or(z.literal("")),
+  cedula: z
+    .string()
+    .max(10, "Máximo 10 caracteres")
+    .optional()
+    .or(z.literal("")),
   phone: z.string().max(10).optional().or(z.literal("")),
   address: z.string().max(250).optional().or(z.literal("")),
 });
 
+// Al crear, la BD exige cédula, teléfono y dirección (columnas NOT NULL).
 const createSchema = baseSchema.extend({
   password: z.string().min(8, "Mínimo 8 caracteres").max(128),
+  cedula: z
+    .string()
+    .trim()
+    .min(1, "La cédula es obligatoria")
+    .max(10, "Máximo 10 caracteres"),
+  phone: z
+    .string()
+    .trim()
+    .regex(/^\d{7,10}$/, "Entre 7 y 10 dígitos"),
+  address: z.string().trim().min(5, "La dirección es obligatoria").max(250),
 });
 
 const editSchema = baseSchema;
@@ -68,13 +85,26 @@ function Avatar({
   name,
   lastname,
   idx,
+  image,
 }: {
   name: string;
   lastname: string | null;
   idx: number;
+  image?: string | null;
 }) {
+  const [imgError, setImgError] = useState(false);
   const bg = COLORS[idx % COLORS.length];
   const initials = `${name[0] ?? ""}${(lastname ?? "")[0] ?? ""}`.toUpperCase();
+  if (image && !imgError) {
+    return (
+      <img
+        src={image}
+        alt=""
+        className="w-8 h-8 rounded-full object-cover shrink-0 bg-line"
+        onError={() => setImgError(true)}
+      />
+    );
+  }
   return (
     <div
       className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
@@ -82,6 +112,116 @@ function Avatar({
       aria-hidden="true"
     >
       {initials}
+    </div>
+  );
+}
+
+// ── Foto de perfil ─────────────────────────────────────────────
+// Mismos límites que el backend (upload.middleware): JPG/PNG, máx 5 MB.
+const PHOTO_TYPES = ["image/jpeg", "image/png"];
+const MAX_PHOTO_MB = 5;
+
+function validatePhoto(file: File): string | null {
+  if (!PHOTO_TYPES.includes(file.type))
+    return "Solo se permiten imágenes JPG o PNG.";
+  if (file.size > MAX_PHOTO_MB * 1024 * 1024)
+    return `La imagen supera los ${MAX_PHOTO_MB} MB.`;
+  return null;
+}
+
+function PhotoPicker({
+  file,
+  currentUrl,
+  initials,
+  error,
+  disabled,
+  onPick,
+  onClear,
+}: {
+  file: File | null;
+  currentUrl: string | null;
+  initials: string;
+  error: string | null;
+  disabled: boolean;
+  onPick: (file: File) => void;
+  onClear: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const preview = useMemo(
+    () => (file ? URL.createObjectURL(file) : null),
+    [file],
+  );
+
+  // La URL temporal del archivo se libera al cambiarlo o al cerrar.
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview);
+    };
+  }, [preview]);
+
+  const shown = preview ?? currentUrl;
+
+  return (
+    <div className="flex items-center gap-4">
+      <div className="w-16 h-16 rounded-full overflow-hidden bg-line flex items-center justify-center shrink-0 ring-1 ring-line">
+        {shown ? (
+          <img
+            src={shown}
+            alt="Vista previa de la foto"
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <span className="text-lg font-semibold text-ink-3" aria-hidden="true">
+            {initials || "?"}
+          </span>
+        )}
+      </div>
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-ink mb-1">Foto de perfil</p>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={disabled}
+            onClick={() => inputRef.current?.click()}
+          >
+            <ImagePlus size={12} /> {shown ? "Cambiar foto" : "Subir foto"}
+          </Button>
+          {file && (
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={disabled}
+              onClick={onClear}
+            >
+              <X size={12} /> Descartar
+            </Button>
+          )}
+        </div>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/jpeg,image/png"
+          className="sr-only"
+          tabIndex={-1}
+          aria-label="Seleccionar foto de perfil"
+          onChange={(e) => {
+            const picked = e.target.files?.[0];
+            if (picked) onPick(picked);
+            // Permite volver a elegir el mismo archivo tras descartarlo.
+            e.target.value = "";
+          }}
+        />
+        {error ? (
+          <p className="text-danger-fg text-xs mt-1" role="alert">
+            {error}
+          </p>
+        ) : (
+          <p className="text-xs text-ink-3 mt-1">
+            Opcional · JPG o PNG, máx. {MAX_PHOTO_MB} MB
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -107,6 +247,8 @@ export default function UsersPage() {
   );
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<User | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["users"],
@@ -123,9 +265,17 @@ export default function UsersPage() {
 
   // ── Mutations ────────────────────────────────────────────────
   const createMut = useMutation({
-    mutationFn: createUser,
+    mutationFn: ({
+      data,
+      photo,
+    }: {
+      data: CreateUserInput;
+      photo: File | null;
+    }) => createUser(data, photo),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["users"] });
+      // El conteo de usuarios por rol (página de roles) depende de esto.
+      qc.invalidateQueries({ queryKey: ["roles"] });
       setModalOpen(false);
       toast.success("Usuario creado correctamente");
     },
@@ -134,10 +284,19 @@ export default function UsersPage() {
   });
 
   const updateMut = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: EditFormData }) =>
-      updateUser(id, sanitize(data) as UpdateUserInput),
+    mutationFn: ({
+      id,
+      data,
+      photo,
+    }: {
+      id: string;
+      data: EditFormData;
+      photo: File | null;
+    }) => updateUser(id, sanitize(data) as UpdateUserInput, photo),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["users"] });
+      // El conteo de usuarios por rol (página de roles) depende de esto.
+      qc.invalidateQueries({ queryKey: ["roles"] });
       setModalOpen(false);
       toast.success("Usuario actualizado correctamente");
     },
@@ -167,8 +326,20 @@ export default function UsersPage() {
     ) as unknown as Resolver<CreateFormData>,
   });
 
+  const resetPhoto = () => {
+    setPhotoFile(null);
+    setPhotoError(null);
+  };
+
+  const pickPhoto = (file: File) => {
+    const err = validatePhoto(file);
+    setPhotoError(err);
+    setPhotoFile(err ? null : file);
+  };
+
   const openCreate = () => {
     setEditTarget(null);
+    resetPhoto();
     reset({
       name: "",
       lastname: "",
@@ -184,6 +355,7 @@ export default function UsersPage() {
 
   const openEdit = (u: User) => {
     setEditTarget(u);
+    resetPhoto();
     reset({
       name: u.name ?? "",
       lastname: u.lastname ?? "",
@@ -198,9 +370,12 @@ export default function UsersPage() {
 
   const onSubmit = (data: CreateFormData) => {
     if (editTarget) {
-      updateMut.mutate({ id: editTarget.id, data });
+      updateMut.mutate({ id: editTarget.id, data, photo: photoFile });
     } else {
-      createMut.mutate(sanitize(data) as unknown as CreateUserInput);
+      createMut.mutate({
+        data: sanitize(data) as unknown as CreateUserInput,
+        photo: photoFile,
+      });
     }
   };
 
@@ -325,7 +500,12 @@ export default function UsersPage() {
                 >
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3">
-                      <Avatar name={u.name} lastname={u.lastname} idx={i} />
+                      <Avatar
+                        name={u.name}
+                        lastname={u.lastname}
+                        idx={i}
+                        image={u.image}
+                      />
                       <div>
                         <p className="font-medium text-ink text-sm">
                           {u.name} {u.lastname}
@@ -337,10 +517,10 @@ export default function UsersPage() {
                   <td className="px-5 py-3.5">
                     {u.id_role ? (
                       <span className="text-xs bg-info-bg text-info-fg px-2 py-0.5 rounded-full">
-                        {roleMap[u.id_role] ?? "Sin rol"}
+                        {u.role_name ?? roleMap[u.id_role] ?? "Rol desconocido"}
                       </span>
                     ) : (
-                      <span className="text-ink-3 text-xs italic">—</span>
+                      <span className="text-ink-3 text-xs italic">Sin rol</span>
                     )}
                   </td>
                   <td className="px-5 py-3.5 text-sm text-ink-3">
@@ -428,6 +608,20 @@ export default function UsersPage() {
         }
       >
         <form className="space-y-3" onSubmit={(e) => e.preventDefault()}>
+          <PhotoPicker
+            file={photoFile}
+            currentUrl={editTarget?.image ?? null}
+            initials={
+              editTarget
+                ? `${editTarget.name[0] ?? ""}${editTarget.lastname?.[0] ?? ""}`.toUpperCase()
+                : ""
+            }
+            error={photoError}
+            disabled={isPending}
+            onPick={pickPhoto}
+            onClear={resetPhoto}
+          />
+
           {/* Name + Lastname */}
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -550,13 +744,20 @@ export default function UsersPage() {
                 className="block text-sm font-medium text-ink mb-1"
               >
                 Cédula
+                {!editTarget && <span className="text-danger-fg"> *</span>}
               </label>
               <input
                 id="users-cedula"
                 className="field"
+                aria-invalid={!!errors.cedula}
                 placeholder="Cédula"
                 {...register("cedula")}
               />
+              {errors.cedula && (
+                <p className="text-danger-fg text-xs mt-1">
+                  {errors.cedula.message}
+                </p>
+              )}
             </div>
           </div>
 
@@ -568,13 +769,21 @@ export default function UsersPage() {
                 className="block text-sm font-medium text-ink mb-1"
               >
                 Teléfono
+                {!editTarget && <span className="text-danger-fg"> *</span>}
               </label>
               <input
                 id="users-phone"
                 className="field"
+                aria-invalid={!!errors.phone}
                 placeholder="Teléfono"
+                inputMode="numeric"
                 {...register("phone")}
               />
+              {errors.phone && (
+                <p className="text-danger-fg text-xs mt-1">
+                  {errors.phone.message}
+                </p>
+              )}
             </div>
             <div>
               <label
@@ -582,13 +791,20 @@ export default function UsersPage() {
                 className="block text-sm font-medium text-ink mb-1"
               >
                 Dirección
+                {!editTarget && <span className="text-danger-fg"> *</span>}
               </label>
               <input
                 id="users-address"
                 className="field"
+                aria-invalid={!!errors.address}
                 placeholder="Dirección"
                 {...register("address")}
               />
+              {errors.address && (
+                <p className="text-danger-fg text-xs mt-1">
+                  {errors.address.message}
+                </p>
+              )}
             </div>
           </div>
         </form>

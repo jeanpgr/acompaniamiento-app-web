@@ -26,21 +26,21 @@ export interface CreateVehicleInput {
 const BASE = "/vehicles";
 
 export const getVehicles = () =>
-  apiClient.get<{ data: Vehicle[] }>(BASE).then((r) => r.data.data ?? r.data);
+  apiClient.get<Vehicle[]>(BASE).then((r) => r.data);
 export const getVehicleById = (id: string) =>
   apiClient
-    .get<{ data: Vehicle }>(`${BASE}/${id}`)
-    .then((r) => r.data.data ?? r.data);
+    .get<Vehicle>(`${BASE}/${id}`)
+    .then((r) => r.data);
 export const getVehiclesByDriver = (driverId: string) =>
   apiClient
-    .get<{ data: Vehicle[] }>(`${BASE}/driver/${driverId}`)
-    .then((r) => r.data.data ?? r.data);
+    .get<Vehicle[]>(`${BASE}/driver/${driverId}`)
+    .then((r) => r.data);
 export const createVehicle = (body: CreateVehicleInput) =>
   apiClient
-    .post<{ data: Vehicle }>(BASE, body)
-    .then((r) => r.data.data ?? r.data);
+    .post<Vehicle>(BASE, body)
+    .then((r) => r.data);
 export const updateVehicle = (id: string, body: Partial<CreateVehicleInput>) =>
   apiClient
-    .put<{ data: Vehicle }>(`${BASE}/${id}`, body)
-    .then((r) => r.data.data ?? r.data);
+    .put<Vehicle>(`${BASE}/${id}`, body)
+    .then((r) => r.data);
 export const deleteVehicle = (id: string) => apiClient.delete(`${BASE}/${id}`);

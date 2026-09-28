@@ -6,6 +6,8 @@ export interface Role {
   description: string | null;
   permissions: Record<string, boolean> | null;
   active: boolean;
+  /** Número de usuarios con este rol (solo en GET /roles). */
+  users_count?: number;
   created_at: string;
   updated_at: string;
 }
@@ -18,16 +20,12 @@ export interface CreateRoleInput {
 
 const BASE = "/roles";
 
-export const getRoles = () =>
-  apiClient.get<{ data: Role[] }>(BASE).then((r) => r.data.data ?? r.data);
+// El interceptor de apiClient ya desenvuelve el envelope: r.data es el payload.
+export const getRoles = () => apiClient.get<Role[]>(BASE).then((r) => r.data);
 export const getRoleById = (id: string) =>
-  apiClient
-    .get<{ data: Role }>(`${BASE}/${id}`)
-    .then((r) => r.data.data ?? r.data);
+  apiClient.get<Role>(`${BASE}/${id}`).then((r) => r.data);
 export const createRole = (body: CreateRoleInput) =>
-  apiClient.post<{ data: Role }>(BASE, body).then((r) => r.data.data ?? r.data);
+  apiClient.post<Role>(BASE, body).then((r) => r.data);
 export const updateRole = (id: string, body: Partial<CreateRoleInput>) =>
-  apiClient
-    .put<{ data: Role }>(`${BASE}/${id}`, body)
-    .then((r) => r.data.data ?? r.data);
+  apiClient.put<Role>(`${BASE}/${id}`, body).then((r) => r.data);
 export const deleteRole = (id: string) => apiClient.delete(`${BASE}/${id}`);

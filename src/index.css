@@ -59,6 +59,11 @@
   --font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
 
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-quart: cubic-bezier(0.5, 0, 0.75, 0);
+  --duration-feedback: 120ms;
+  --duration-state: 200ms;
+  --duration-overlay: 260ms;
 }
 
 @layer base {
@@ -136,14 +141,6 @@
     background: transparent;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 1ms !important;
-      transition-duration: 1ms !important;
-    }
-  }
 }
 
 /* Campo de formulario compartido: el mismo aspecto en todos los módulos */
@@ -200,6 +197,143 @@
   }
 }
 
+/* ── Movimiento ────────────────────────────────────────────────
+   Operate: el movimiento confirma acciones y explica cambios de
+   estado; nada de coreografías de carga. */
+
+/* Diálogos: entran con escala sutil, salen más rápido de lo que entran */
+dialog {
+  opacity: 0;
+  transform: translateY(8px) scale(0.97);
+  transition:
+    opacity 160ms var(--ease-in-quart),
+    transform 160ms var(--ease-in-quart),
+    overlay 160ms allow-discrete,
+    display 160ms allow-discrete;
+}
+dialog[open] {
+  opacity: 1;
+  transform: none;
+  transition-duration: var(--duration-overlay);
+  transition-timing-function: var(--ease-out-expo);
+}
+@starting-style {
+  dialog[open] {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
 dialog::backdrop {
+  background-color: rgb(11 35 59 / 0);
+  transition:
+    background-color var(--duration-overlay) var(--ease-out-expo),
+    overlay var(--duration-overlay) allow-discrete,
+    display var(--duration-overlay) allow-discrete;
+}
+dialog[open]::backdrop {
   background-color: rgb(11 35 59 / 0.45);
+}
+@starting-style {
+  dialog[open]::backdrop {
+    background-color: rgb(11 35 59 / 0);
+  }
+}
+
+/* Cambio de módulo: el contenido cambia con un fundido corto; la
+   barra lateral queda fija porque no forma parte de la transición. */
+@view-transition {
+  navigation: none;
+}
+main#contenido {
+  view-transition-name: contenido;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+::view-transition-old(contenido) {
+  animation: vt-fade-out 120ms var(--ease-in-quart) both;
+}
+::view-transition-new(contenido) {
+  animation: vt-fade-in 220ms var(--ease-out-expo) both;
+}
+@keyframes vt-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes vt-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* Momento focal — Distribución: una cita asignada sale de la cola
+   "Sin asignar" deslizándose hacia el calendario y la cola se cierra. */
+@utility leaving-to-calendar {
+  display: grid;
+  animation: leave-to-calendar 420ms var(--ease-out-expo) forwards;
+  pointer-events: none;
+}
+@keyframes leave-to-calendar {
+  0% {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    transform: none;
+  }
+  45% {
+    grid-template-rows: 1fr;
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  100% {
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transform: translateX(-24px);
+    margin-block: 0;
+    padding-block: 0;
+    border-width: 0;
+  }
+}
+
+/* Movimiento reducido: sin desplazamientos ni escalas; los fundidos
+   que confirman una acción se conservan, más cortos. */
+@media (prefers-reduced-motion: reduce) {
+  dialog,
+  dialog[open] {
+    transform: none;
+  }
+  @starting-style {
+    dialog[open] {
+      transform: none;
+    }
+  }
+  ::view-transition-new(contenido) {
+    animation: vt-fade-in-flat 120ms linear both;
+  }
+  @keyframes vt-fade-in-flat {
+    from {
+      opacity: 0;
+    }
+  }
+  .leaving-to-calendar {
+    animation: leave-flat 200ms linear forwards;
+  }
+  @keyframes leave-flat {
+    to {
+      opacity: 0;
+      grid-template-rows: 0fr;
+    }
+  }
+  .skeleton {
+    animation: none;
+  }
+  /* El cajón de navegación aparece sin deslizarse */
+  #panel-navegacion {
+    transition: opacity 120ms linear;
+  }
+  * {
+    scroll-behavior: auto !important;
+  }
 }

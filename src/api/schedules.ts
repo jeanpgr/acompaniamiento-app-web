@@ -53,23 +53,23 @@ export interface CreateScheduleAcompanInput {
 
 export const getSchedulesAcompan = () =>
   apiClient
-    .get<{ data: ScheduleAcompan[] }>("/schedule-acompan")
-    .then((r) => r.data.data ?? r.data);
+    .get<ScheduleAcompan[]>("/schedule-acompan")
+    .then((r) => r.data);
 export const createScheduleAcompan = (body: CreateScheduleAcompanInput) =>
   apiClient
-    .post<{ data: ScheduleAcompan }>("/schedule-acompan", body)
-    .then((r) => r.data.data ?? r.data);
+    .post<ScheduleAcompan>("/schedule-acompan", body)
+    .then((r) => r.data);
 export const updateScheduleAcompan = (
   id: string,
   body: Partial<ScheduleAcompan>,
 ) =>
   apiClient
-    .put<{ data: ScheduleAcompan }>(`/schedule-acompan/${id}`, body)
-    .then((r) => r.data.data ?? r.data);
+    .put<ScheduleAcompan>(`/schedule-acompan/${id}`, body)
+    .then((r) => r.data);
 export const markRefundCompleteAcompan = (id: string) =>
   apiClient
-    .put<{ data: ScheduleAcompan }>(`/schedule-acompan/${id}/refund-complete`)
-    .then((r) => r.data.data ?? r.data);
+    .put<ScheduleAcompan>(`/schedule-acompan/${id}/refund-complete`)
+    .then((r) => r.data);
 export const deleteScheduleAcompan = (id: string) =>
   apiClient.delete(`/schedule-acompan/${id}`);
 
@@ -92,19 +92,19 @@ export interface ScheduleTourism extends RefundFields {
 
 export const getSchedulesTourism = () =>
   apiClient
-    .get<{ data: ScheduleTourism[] }>("/schedule-tourism")
-    .then((r) => r.data.data ?? r.data);
+    .get<ScheduleTourism[]>("/schedule-tourism")
+    .then((r) => r.data);
 export const updateScheduleTourism = (
   id: string,
   body: Partial<ScheduleTourism>,
 ) =>
   apiClient
-    .put<{ data: ScheduleTourism }>(`/schedule-tourism/${id}`, body)
-    .then((r) => r.data.data ?? r.data);
+    .put<ScheduleTourism>(`/schedule-tourism/${id}`, body)
+    .then((r) => r.data);
 export const markRefundCompleteTourism = (id: string) =>
   apiClient
-    .put<{ data: ScheduleTourism }>(`/schedule-tourism/${id}/refund-complete`)
-    .then((r) => r.data.data ?? r.data);
+    .put<ScheduleTourism>(`/schedule-tourism/${id}/refund-complete`)
+    .then((r) => r.data);
 
 // ─── Capacitación ────────────────────────────────────────────────────────────
 export interface ScheduleTraining extends RefundFields {
@@ -122,19 +122,19 @@ export interface ScheduleTraining extends RefundFields {
 
 export const getSchedulesTraining = () =>
   apiClient
-    .get<{ data: ScheduleTraining[] }>("/schedule-training")
-    .then((r) => r.data.data ?? r.data);
+    .get<ScheduleTraining[]>("/schedule-training")
+    .then((r) => r.data);
 export const updateScheduleTraining = (
   id: string,
   body: Partial<ScheduleTraining>,
 ) =>
   apiClient
-    .put<{ data: ScheduleTraining }>(`/schedule-training/${id}`, body)
-    .then((r) => r.data.data ?? r.data);
+    .put<ScheduleTraining>(`/schedule-training/${id}`, body)
+    .then((r) => r.data);
 export const markRefundCompleteTraining = (id: string) =>
   apiClient
-    .put<{ data: ScheduleTraining }>(`/schedule-training/${id}/refund-complete`)
-    .then((r) => r.data.data ?? r.data);
+    .put<ScheduleTraining>(`/schedule-training/${id}/refund-complete`)
+    .then((r) => r.data);
 
 // ─── Guardería ───────────────────────────────────────────────────────────────
 export interface ScheduleDaycare extends RefundFields {
@@ -155,16 +155,16 @@ export interface ScheduleDaycare extends RefundFields {
 
 export const getSchedulesDaycare = () =>
   apiClient
-    .get<{ data: ScheduleDaycare[] }>("/schedule-daycare")
-    .then((r) => r.data.data ?? r.data);
+    .get<ScheduleDaycare[]>("/schedule-daycare")
+    .then((r) => r.data);
 export const updateScheduleDaycare = (
   id: string,
   body: Partial<ScheduleDaycare>,
 ) =>
   apiClient
-    .put<{ data: ScheduleDaycare }>(`/schedule-daycare/${id}`, body)
-    .then((r) => r.data.data ?? r.data);
+    .put<ScheduleDaycare>(`/schedule-daycare/${id}`, body)
+    .then((r) => r.data);
 export const markRefundCompleteDaycare = (id: string) =>
   apiClient
-    .put<{ data: ScheduleDaycare }>(`/schedule-daycare/${id}/refund-complete`)
-    .then((r) => r.data.data ?? r.data);
+    .put<ScheduleDaycare>(`/schedule-daycare/${id}/refund-complete`)
+    .then((r) => r.data);

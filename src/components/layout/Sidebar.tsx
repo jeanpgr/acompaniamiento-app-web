@@ -16,6 +16,7 @@ import {
   Package,
   Ticket,
   ShoppingCart,
+  Settings,
   X,
 } from "lucide-react";
 import { clearAuth } from "@/store/authStore";
@@ -46,7 +47,11 @@ const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
       { to: "/discount-coupons", icon: Ticket, label: "Cupones" },
       { to: "/sales", icon: ShoppingCart, label: "Ventas" },
     ],
-  }
+  },
+  {
+    title: "Sistema",
+    items: [{ to: "/settings", icon: Settings, label: "Configuración" }],
+  },
 ];
 
 interface Props {
@@ -88,7 +93,10 @@ export default function Sidebar({ user, open, onClose }: Props) {
       >
         {/* Marca */}
         <div className="flex items-center gap-3 px-4 h-16 border-b border-white/10 shrink-0">
-          <div className="w-9 h-9 rounded-lg bg-brand-mark flex items-center justify-center" aria-hidden="true">
+          <div
+            className="w-9 h-9 rounded-lg bg-brand-mark flex items-center justify-center"
+            aria-hidden="true"
+          >
             <Heart size={18} className="text-white" fill="white" />
           </div>
           <div className="flex-1 min-w-0">
@@ -118,6 +126,7 @@ export default function Sidebar({ user, open, onClose }: Props) {
                   <li key={to}>
                     <NavLink
                       to={to}
+                      viewTransition
                       className={({ isActive }) =>
                         `group flex items-center gap-3 px-3 h-9 rounded-md text-sm mb-0.5 transition-colors duration-150 relative focus-visible:outline-white ${
                           isActive

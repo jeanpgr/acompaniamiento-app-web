@@ -18,26 +18,26 @@ const BASE = "/frequently-questions";
 
 export const getFrequentlyQuestions = () =>
   apiClient
-    .get<{ data: FrequentlyQuestion[] }>(BASE)
-    .then((r) => r.data.data ?? r.data);
+    .get<FrequentlyQuestion[]>(BASE)
+    .then((r) => r.data);
 
 export const getFrequentlyQuestion = (id: string) =>
   apiClient
-    .get<{ data: FrequentlyQuestion }>(`${BASE}/${id}`)
-    .then((r) => r.data.data ?? r.data);
+    .get<FrequentlyQuestion>(`${BASE}/${id}`)
+    .then((r) => r.data);
 
 export const createFrequentlyQuestion = (data: CreateFrequentlyQuestionInput) =>
   apiClient
-    .post<{ data: FrequentlyQuestion }>(BASE, data)
-    .then((r) => r.data.data ?? r.data);
+    .post<FrequentlyQuestion>(BASE, data)
+    .then((r) => r.data);
 
 export const updateFrequentlyQuestion = (
   id: string,
   data: Partial<CreateFrequentlyQuestionInput>,
 ) =>
   apiClient
-    .put<{ data: FrequentlyQuestion }>(`${BASE}/${id}`, data)
-    .then((r) => r.data.data ?? r.data);
+    .put<FrequentlyQuestion>(`${BASE}/${id}`, data)
+    .then((r) => r.data);
 
 export const deleteFrequentlyQuestion = (id: string) =>
   apiClient.delete(`${BASE}/${id}`);

@@ -40,31 +40,31 @@ const BASE = "/detail-tourism";
 
 export const getDetailsTourism = () =>
   apiClient
-    .get<{ data: DetailTourism[] }>(BASE)
-    .then((r) => r.data.data ?? r.data);
+    .get<DetailTourism[]>(BASE)
+    .then((r) => r.data);
 
 export const getDetailTourism = (id: string) =>
   apiClient
-    .get<{ data: DetailTourism }>(`${BASE}/${id}`)
-    .then((r) => r.data.data ?? r.data);
+    .get<DetailTourism>(`${BASE}/${id}`)
+    .then((r) => r.data);
 
 export const getDetailsTourismByService = (id_service: string) =>
   apiClient
-    .get<{ data: DetailTourism[] }>(`${BASE}/service/${id_service}`)
-    .then((r) => r.data.data ?? r.data);
+    .get<DetailTourism[]>(`${BASE}/service/${id_service}`)
+    .then((r) => r.data);
 
 export const createDetailTourism = (data: CreateDetailTourismInput) =>
   apiClient
-    .post<{ data: DetailTourism }>(BASE, data)
-    .then((r) => r.data.data ?? r.data);
+    .post<DetailTourism>(BASE, data)
+    .then((r) => r.data);
 
 export const updateDetailTourism = (
   id: string,
   data: Partial<CreateDetailTourismInput>,
 ) =>
   apiClient
-    .put<{ data: DetailTourism }>(`${BASE}/${id}`, data)
-    .then((r) => r.data.data ?? r.data);
+    .put<DetailTourism>(`${BASE}/${id}`, data)
+    .then((r) => r.data);
 
 export const deleteDetailTourism = (id: string) =>
   apiClient.delete(`${BASE}/${id}`);

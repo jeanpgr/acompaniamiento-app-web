@@ -65,6 +65,7 @@ export const router = createBrowserRouter([
         lazy: page(() => import("@/pages/DiscountCouponsPage")),
       },
       { path: "sales", lazy: page(() => import("@/pages/SalesPage")) },
+      { path: "settings", lazy: page(() => import("@/pages/SettingsPage")) },
     ],
   },
   { path: "*", element: <Navigate to="/" replace /> },

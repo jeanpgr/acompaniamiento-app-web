@@ -1,5 +1,5 @@
 import { X } from "lucide-react";
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 interface Props {
   open: boolean;
@@ -24,6 +24,14 @@ export default function Modal({
 }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
+  // Al cerrar, el contenido sigue montado mientras dura la transición de
+  // salida (index.css) para que no se desvanezca una caja vacía.
+  const [wasOpen, setWasOpen] = useState(open);
+  const [lingering, setLingering] = useState(false);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    setLingering(!open);
+  }
 
   useEffect(() => {
     const dialog = ref.current;
@@ -44,9 +52,12 @@ export default function Modal({
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
+      onTransitionEnd={(e) => {
+        if (!open && e.target === e.currentTarget) setLingering(false);
+      }}
       className={`m-auto p-0 bg-surface rounded-xl shadow-[0_24px_48px_-12px_rgb(11_35_59/0.35)] w-[calc(100%-2rem)] ${size === "lg" ? "max-w-2xl" : "max-w-md"} max-h-[calc(100dvh-2rem)] text-ink open:flex flex-col`}
     >
-      {open && (
+      {(open || lingering) && (
         <>
           <div className="flex items-center justify-between px-6 py-4 border-b border-line shrink-0">
             <h3 id={titleId} className="font-semibold text-ink truncate pr-4">

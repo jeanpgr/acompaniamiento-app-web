@@ -29,31 +29,31 @@ const BASE = "/detail-training";
 
 export const getDetailsTraining = () =>
   apiClient
-    .get<{ data: DetailTraining[] }>(BASE)
-    .then((r) => r.data.data ?? r.data);
+    .get<DetailTraining[]>(BASE)
+    .then((r) => r.data);
 
 export const getDetailTraining = (id: string) =>
   apiClient
-    .get<{ data: DetailTraining }>(`${BASE}/${id}`)
-    .then((r) => r.data.data ?? r.data);
+    .get<DetailTraining>(`${BASE}/${id}`)
+    .then((r) => r.data);
 
 export const getDetailsTrainingByService = (id_service: string) =>
   apiClient
-    .get<{ data: DetailTraining[] }>(`${BASE}/service/${id_service}`)
-    .then((r) => r.data.data ?? r.data);
+    .get<DetailTraining[]>(`${BASE}/service/${id_service}`)
+    .then((r) => r.data);
 
 export const createDetailTraining = (data: CreateDetailTrainingInput) =>
   apiClient
-    .post<{ data: DetailTraining }>(BASE, data)
-    .then((r) => r.data.data ?? r.data);
+    .post<DetailTraining>(BASE, data)
+    .then((r) => r.data);
 
 export const updateDetailTraining = (
   id: string,
   data: Partial<CreateDetailTrainingInput>,
 ) =>
   apiClient
-    .put<{ data: DetailTraining }>(`${BASE}/${id}`, data)
-    .then((r) => r.data.data ?? r.data);
+    .put<DetailTraining>(`${BASE}/${id}`, data)
+    .then((r) => r.data);
 
 export const deleteDetailTraining = (id: string) =>
   apiClient.delete(`${BASE}/${id}`);

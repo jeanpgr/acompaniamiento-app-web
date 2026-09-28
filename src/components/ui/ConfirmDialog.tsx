@@ -26,9 +26,12 @@ const ConfirmContext = createContext<ConfirmFn | null>(null);
 export function ConfirmProvider({ children }: { children: ReactNode }) {
   const [options, setOptions] = useState<ConfirmOptions | null>(null);
   const resolver = useRef<((ok: boolean) => void) | null>(null);
+  // Últimas opciones mostradas: el diálogo conserva su texto mientras sale.
+  const [shown, setShown] = useState<ConfirmOptions | null>(null);
 
   const confirm = useCallback<ConfirmFn>((opts) => {
     setOptions(opts);
+    setShown(opts);
     return new Promise<boolean>((resolve) => {
       resolver.current = resolve;
     });
@@ -40,7 +43,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
     setOptions(null);
   };
 
-  const tone = options?.tone ?? "danger";
+  const tone = shown?.tone ?? "danger";
 
   return (
     <ConfirmContext.Provider value={confirm}>
@@ -48,20 +51,20 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
       <Modal
         open={options !== null}
         onClose={() => settle(false)}
-        title={options?.title ?? ""}
+        title={shown?.title ?? ""}
         footer={
           <>
             <Button variant="secondary" onClick={() => settle(false)}>
               Cancelar
             </Button>
             <Button variant={tone} onClick={() => settle(true)} autoFocus>
-              {options?.confirmLabel ?? "Eliminar"}
+              {shown?.confirmLabel ?? "Eliminar"}
             </Button>
           </>
         }
       >
         <p className="text-sm text-ink-2 leading-relaxed">
-          {options?.message ?? "Esta acción no se puede deshacer."}
+          {shown?.message ?? "Esta acción no se puede deshacer."}
         </p>
       </Modal>
     </ConfirmContext.Provider>

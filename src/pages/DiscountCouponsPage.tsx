@@ -198,14 +198,16 @@ export default function DiscountCouponsPage() {
                           {expired ? "Vencido" : "Agotado"}
                         </Badge>
                       ) : (
-                        <Badge variant="success">
-                          Activo
-                        </Badge>
+                        <Badge variant="success">Activo</Badge>
                       )}
                     </td>
                     <td className="px-5 py-3.5">
                       <div className="flex gap-2">
-                        <Button size="sm" variant="secondary" onClick={() => openEdit(c)}>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => openEdit(c)}
+                        >
                           <Pencil size={12} /> Editar
                         </Button>
                         <Button
@@ -216,7 +218,9 @@ export default function DiscountCouponsPage() {
                           }
                           onClick={async () => {
                             if (
-                              await confirm({ title: `¿Eliminar el cupón "${c.coupon}"?` })
+                              await confirm({
+                                title: `¿Eliminar el cupón "${c.coupon}"?`,
+                              })
                             )
                               deleteMut.mutate(c.id);
                           }}
@@ -264,12 +268,16 @@ export default function DiscountCouponsPage() {
       >
         <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
           <div>
-            <label htmlFor="discountcoupons-coupon" className="block text-sm font-medium text-ink mb-1">
+            <label
+              htmlFor="discountcoupons-coupon"
+              className="block text-sm font-medium text-ink mb-1"
+            >
               Código <span className="text-danger-fg">*</span>
             </label>
-            <input id="discountcoupons-coupon"
+            <input
+              id="discountcoupons-coupon"
               className="field font-mono uppercase"
-                aria-invalid={!!errors.coupon}
+              aria-invalid={!!errors.coupon}
               placeholder="VERANO20"
               {...register("coupon")}
             />
@@ -281,10 +289,14 @@ export default function DiscountCouponsPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="discountcoupons-discount_percentage" className="block text-sm font-medium text-ink mb-1">
+              <label
+                htmlFor="discountcoupons-discount_percentage"
+                className="block text-sm font-medium text-ink mb-1"
+              >
                 Descuento (%) <span className="text-danger-fg">*</span>
               </label>
-              <input id="discountcoupons-discount_percentage"
+              <input
+                id="discountcoupons-discount_percentage"
                 type="number"
                 min={1}
                 max={100}
@@ -299,10 +311,14 @@ export default function DiscountCouponsPage() {
               )}
             </div>
             <div>
-              <label htmlFor="discountcoupons-times_allowed" className="block text-sm font-medium text-ink mb-1">
+              <label
+                htmlFor="discountcoupons-times_allowed"
+                className="block text-sm font-medium text-ink mb-1"
+              >
                 Usos permitidos <span className="text-danger-fg">*</span>
               </label>
-              <input id="discountcoupons-times_allowed"
+              <input
+                id="discountcoupons-times_allowed"
                 type="number"
                 min={1}
                 className="field"
@@ -317,13 +333,17 @@ export default function DiscountCouponsPage() {
             </div>
           </div>
           <div>
-            <label htmlFor="discountcoupons-expired_at" className="block text-sm font-medium text-ink mb-1">
+            <label
+              htmlFor="discountcoupons-expired_at"
+              className="block text-sm font-medium text-ink mb-1"
+            >
               Fecha de vencimiento <span className="text-danger-fg">*</span>
             </label>
-            <input id="discountcoupons-expired_at"
+            <input
+              id="discountcoupons-expired_at"
               type="datetime-local"
               className="field"
-                aria-invalid={!!errors.expired_at}
+              aria-invalid={!!errors.expired_at}
               {...register("expired_at")}
             />
             {errors.expired_at && (

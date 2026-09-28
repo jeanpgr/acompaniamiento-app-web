@@ -1,6 +1,16 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Clock, User, MapPin, Car, Landmark, CheckCircle } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  User,
+  MapPin,
+  Car,
+  Landmark,
+  CheckCircle,
+} from "lucide-react";
 import {
   getSchedulesAcompan,
   getSchedulesTourism,
@@ -31,13 +41,13 @@ type OriginalType = "acompan" | "tourism" | "training" | "daycare";
 interface Unified {
   id: string;
   originalType: OriginalType;
-  serviceType: string;           // para badge de color
-  title: string;                 // nombre del servicio / viaje / tema
-  personName: string;            // persona que agenda
-  dateTime: string;              // fecha de referencia
+  serviceType: string; // para badge de color
+  title: string; // nombre del servicio / viaje / tema
+  personName: string; // persona que agenda
+  dateTime: string; // fecha de referencia
   status: ScheduleStatus | null;
   address?: string;
-  needsVehicle: boolean;         // CAPACITACION no necesita vehículo
+  needsVehicle: boolean; // CAPACITACION no necesita vehículo
   vehicleId?: string;
   refundStatus: RefundStatus | null;
   refundBank: string | null;
@@ -46,10 +56,10 @@ interface Unified {
   refundHolderCedula: string | null;
 }
 
-
 function normalizeAcompan(s: ScheduleAcompan): Unified {
   return {
-    id: s.id, originalType: "acompan",
+    id: s.id,
+    originalType: "acompan",
     serviceType: s.service?.type ?? "ACOMPAÑAMIENTO",
     title: s.service?.name ?? "Acompañamiento",
     personName: s.reference,
@@ -70,7 +80,8 @@ function normalizeTourism(s: ScheduleTourism): Unified {
     ? s.names_persons.join(", ")
     : s.phone_responsible;
   return {
-    id: s.id, originalType: "tourism",
+    id: s.id,
+    originalType: "tourism",
     serviceType: "TURISMO",
     title: s.detail?.name ?? "Turismo",
     personName: names,
@@ -87,7 +98,8 @@ function normalizeTourism(s: ScheduleTourism): Unified {
 }
 function normalizeTraining(s: ScheduleTraining): Unified {
   return {
-    id: s.id, originalType: "training",
+    id: s.id,
+    originalType: "training",
     serviceType: "CAPACITACION",
     title: s.detail?.topic ?? "Capacitación",
     personName: [s.name, s.lastname].filter(Boolean).join(" "),
@@ -103,7 +115,8 @@ function normalizeTraining(s: ScheduleTraining): Unified {
 }
 function normalizeDaycare(s: ScheduleDaycare): Unified {
   return {
-    id: s.id, originalType: "daycare",
+    id: s.id,
+    originalType: "daycare",
     serviceType: "GUARDERIA",
     title: "Guardería Adulto Mayor",
     personName: [s.name, s.lastname].filter(Boolean).join(" ") || "—",
@@ -120,6 +133,19 @@ function normalizeDaycare(s: ScheduleDaycare): Unified {
   };
 }
 
+/** Cita que todavía espera asignación (vehículo / confirmación). */
+function isPending(s: Unified) {
+  return !s.status || s.status === "PENDIENTE";
+}
+
+const STATUS_LABEL: Record<ScheduleStatus, string> = {
+  PENDIENTE: "Pendiente",
+  "EN CURSO": "En ruta",
+  COMPLETADO: "Completado",
+  OLVIDADA: "Olvidada",
+  CANCELADA: "Cancelada",
+};
+
 // ── Calendario ─────────────────────────────────────────────────────────────────
 
 const DAYS = ["Lun", "Mar", "Miérc", "Jue", "Vie", "Sáb", "Dom"];
@@ -135,7 +161,11 @@ function getWeekRange(base: Date) {
 }
 
 function formatRange(mon: Date, sun: Date) {
-  const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" };
+  const opts: Intl.DateTimeFormatOptions = {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  };
   return `${mon.toLocaleDateString("es-CO", opts)} — ${sun.toLocaleDateString("es-CO", opts)}`;
 }
 
@@ -144,11 +174,11 @@ function formatRange(mon: Date, sun: Date) {
 type FilterTab = "todos" | OriginalType;
 
 const FILTER_TABS: { key: FilterTab; label: string }[] = [
-  { key: "todos",     label: "Todos" },
-  { key: "acompan",  label: "Acompañamiento" },
-  { key: "tourism",  label: "Turismo" },
+  { key: "todos", label: "Todos" },
+  { key: "acompan", label: "Acompañamiento" },
+  { key: "tourism", label: "Turismo" },
   { key: "training", label: "Capacitación" },
-  { key: "daycare",  label: "Guardería" },
+  { key: "daycare", label: "Guardería" },
 ];
 
 // ── Componente principal ───────────────────────────────────────────────────────
@@ -157,15 +187,32 @@ export default function DistributionPage() {
   const [baseDate, setBaseDate] = useState(new Date());
   const [activeTab, setActiveTab] = useState<FilterTab>("todos");
   const [assigningId, setAssigningId] = useState<string | null>(null);
+  // Citas recién asignadas: se animan fuera de la cola antes de refrescar.
+  const [leaving, setLeaving] = useState<Set<string>>(() => new Set());
 
   const qc = useQueryClient();
 
   // Cargar los 4 tipos de agendamiento
-  const { data: acompanRaw = [], isLoading: l1 } = useQuery({ queryKey: ["schedules-acompan"],  queryFn: getSchedulesAcompan });
-  const { data: tourismRaw  = [], isLoading: l2 } = useQuery({ queryKey: ["schedules-tourism"], queryFn: getSchedulesTourism });
-  const { data: trainingRaw = [], isLoading: l3 } = useQuery({ queryKey: ["schedules-training"],queryFn: getSchedulesTraining });
-  const { data: daycareRaw  = [], isLoading: l4 } = useQuery({ queryKey: ["schedules-daycare"], queryFn: getSchedulesDaycare });
-  const { data: vehicles    = [] }                 = useQuery({ queryKey: ["vehicles"],          queryFn: getVehicles });
+  const { data: acompanRaw = [], isLoading: l1 } = useQuery({
+    queryKey: ["schedules-acompan"],
+    queryFn: getSchedulesAcompan,
+  });
+  const { data: tourismRaw = [], isLoading: l2 } = useQuery({
+    queryKey: ["schedules-tourism"],
+    queryFn: getSchedulesTourism,
+  });
+  const { data: trainingRaw = [], isLoading: l3 } = useQuery({
+    queryKey: ["schedules-training"],
+    queryFn: getSchedulesTraining,
+  });
+  const { data: daycareRaw = [], isLoading: l4 } = useQuery({
+    queryKey: ["schedules-daycare"],
+    queryFn: getSchedulesDaycare,
+  });
+  const { data: vehicles = [] } = useQuery({
+    queryKey: ["vehicles"],
+    queryFn: getVehicles,
+  });
 
   const isLoading = l1 || l2 || l3 || l4;
 
@@ -175,19 +222,32 @@ export default function DistributionPage() {
     ...tourismRaw.map(normalizeTourism),
     ...trainingRaw.map(normalizeTraining),
     ...daycareRaw.map(normalizeDaycare),
-  ].sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
+  ].sort(
+    (a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime(),
+  );
 
   // Aplicar filtro de tab
-  const filtered = activeTab === "todos"
-    ? allSchedules
-    : allSchedules.filter((s) => s.originalType === activeTab);
+  const filtered =
+    activeTab === "todos"
+      ? allSchedules
+      : allSchedules.filter((s) => s.originalType === activeTab);
 
   // Semana actual
   const { mon, sun } = getWeekRange(baseDate);
-  const weekStart = new Date(mon); weekStart.setHours(0, 0, 0, 0);
-  const weekEnd   = new Date(sun); weekEnd.setHours(23, 59, 59, 999);
+  const weekStart = new Date(mon);
+  weekStart.setHours(0, 0, 0, 0);
+  const weekEnd = new Date(sun);
+  weekEnd.setHours(23, 59, 59, 999);
 
-  const byDay: Record<number, Unified[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
+  const byDay: Record<number, Unified[]> = {
+    0: [],
+    1: [],
+    2: [],
+    3: [],
+    4: [],
+    5: [],
+    6: [],
+  };
   filtered.forEach((s) => {
     const d = new Date(s.dateTime);
     if (d >= weekStart && d <= weekEnd) {
@@ -197,46 +257,112 @@ export default function DistributionPage() {
     }
   });
 
-  const pending = filtered.filter((s) => !s.status || s.status === "PENDIENTE");
+  const pending = filtered.filter(isPending);
   const cancelled = filtered.filter((s) => s.status === "CANCELADA");
+
+  // Los contadores de pestañas usan el mismo criterio que "Sin asignar";
+  // antes contaban todas las citas (incluidas OLVIDADA/COMPLETADO) y no cuadraban.
+  const pendingByTab = (key: FilterTab) =>
+    allSchedules.filter(
+      (s) => isPending(s) && (key === "todos" || s.originalType === key),
+    ).length;
 
   // ── Mutaciones de asignación ────────────────────────────────────────────────
 
   function invalidateAll() {
-    qc.invalidateQueries({ queryKey: ["schedules-acompan"] });
-    qc.invalidateQueries({ queryKey: ["schedules-tourism"] });
-    qc.invalidateQueries({ queryKey: ["schedules-training"] });
-    qc.invalidateQueries({ queryKey: ["schedules-daycare"] });
     setAssigningId(null);
+    return Promise.all([
+      qc.invalidateQueries({ queryKey: ["schedules-acompan"] }),
+      qc.invalidateQueries({ queryKey: ["schedules-tourism"] }),
+      qc.invalidateQueries({ queryKey: ["schedules-training"] }),
+      qc.invalidateQueries({ queryKey: ["schedules-daycare"] }),
+    ]);
   }
 
-  const acompanMut  = useMutation({ mutationFn: ({ id, vid }: { id: string; vid: string }) => updateScheduleAcompan(id,  { id_vehicle: vid, status: "EN CURSO" }), onSuccess: invalidateAll });
-  const tourismMut  = useMutation({ mutationFn: ({ id, vid }: { id: string; vid: string }) => updateScheduleTourism(id,  { id_vehicle: vid, status: "EN CURSO" }), onSuccess: invalidateAll });
-  const daycareMut  = useMutation({ mutationFn: ({ id, vid }: { id: string; vid: string }) => updateScheduleDaycare(id,  { id_vehicle: vid, status: "EN CURSO" }), onSuccess: invalidateAll });
-  const trainingMut = useMutation({ mutationFn: ({ id }: { id: string })                   => updateScheduleTraining(id, { status: "EN CURSO" }),                   onSuccess: invalidateAll });
+  // La tarjeta sale de "Sin asignar" (animación leaving-to-calendar) y
+  // después se refrescan los datos; así la cola se cierra en lugar de saltar.
+  function finishAssign({ id }: { id: string }) {
+    setLeaving((prev) => new Set(prev).add(id));
+    toast.success("Asignado · la cita pasa a En ruta");
+    const reduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    window.setTimeout(
+      () => {
+        invalidateAll().finally(() => setLeaving(new Set()));
+      },
+      reduced ? 200 : 420,
+    );
+  }
+
+  function onAssignError() {
+    toast.error("No se pudo asignar. Intenta de nuevo.");
+  }
+
+  const acompanMut = useMutation({
+    mutationFn: ({ id, vid }: { id: string; vid: string }) =>
+      updateScheduleAcompan(id, { id_vehicle: vid, status: "EN CURSO" }),
+    onSuccess: (_d, vars) => finishAssign(vars),
+    onError: onAssignError,
+  });
+  const tourismMut = useMutation({
+    mutationFn: ({ id, vid }: { id: string; vid: string }) =>
+      updateScheduleTourism(id, { id_vehicle: vid, status: "EN CURSO" }),
+    onSuccess: (_d, vars) => finishAssign(vars),
+    onError: onAssignError,
+  });
+  const daycareMut = useMutation({
+    mutationFn: ({ id, vid }: { id: string; vid: string }) =>
+      updateScheduleDaycare(id, { id_vehicle: vid, status: "EN CURSO" }),
+    onSuccess: (_d, vars) => finishAssign(vars),
+    onError: onAssignError,
+  });
+  const trainingMut = useMutation({
+    mutationFn: ({ id }: { id: string }) =>
+      updateScheduleTraining(id, { status: "EN CURSO" }),
+    onSuccess: (_d, vars) => finishAssign(vars),
+    onError: onAssignError,
+  });
 
   function handleAssign(s: Unified, vehicleId: string) {
-    if (!vehicleId) return;
+    // Capacitación no usa vehículo: se confirma sin él.
+    if (s.needsVehicle && !vehicleId) return;
     switch (s.originalType) {
-      case "acompan":  acompanMut.mutate({ id: s.id, vid: vehicleId }); break;
-      case "tourism":  tourismMut.mutate({ id: s.id, vid: vehicleId }); break;
-      case "daycare":  daycareMut.mutate({ id: s.id, vid: vehicleId }); break;
-      case "training": trainingMut.mutate({ id: s.id }); break;
+      case "acompan":
+        acompanMut.mutate({ id: s.id, vid: vehicleId });
+        break;
+      case "tourism":
+        tourismMut.mutate({ id: s.id, vid: vehicleId });
+        break;
+      case "daycare":
+        daycareMut.mutate({ id: s.id, vid: vehicleId });
+        break;
+      case "training":
+        trainingMut.mutate({ id: s.id });
+        break;
     }
   }
 
-  const anyMutating = acompanMut.isPending || tourismMut.isPending || daycareMut.isPending || trainingMut.isPending;
+  const anyMutating =
+    acompanMut.isPending ||
+    tourismMut.isPending ||
+    daycareMut.isPending ||
+    trainingMut.isPending;
 
   // ── Reembolsos de citas canceladas ──────────────────────────────────────────
 
-  const refundMutByType: Record<OriginalType, (id: string) => Promise<unknown>> = {
+  const refundMutByType: Record<
+    OriginalType,
+    (id: string) => Promise<unknown>
+  > = {
     acompan: markRefundCompleteAcompan,
     tourism: markRefundCompleteTourism,
     training: markRefundCompleteTraining,
     daycare: markRefundCompleteDaycare,
   };
   const refundMut = useMutation({
-    mutationFn: ({ s }: { s: Unified }) => refundMutByType[s.originalType](s.id),
+    mutationFn: ({ s }: { s: Unified }) =>
+      refundMutByType[s.originalType](s.id),
     onSuccess: invalidateAll,
   });
 
@@ -247,19 +373,28 @@ export default function DistributionPage() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
         <div>
-          <h1 className="text-xl font-semibold text-ink">Panel de distribución</h1>
+          <h1 className="text-xl font-semibold text-ink">
+            Panel de distribución
+          </h1>
           <p className="text-sm text-ink-3 mt-0.5">
             Agendamientos de todos los servicios · Asigna vehículo y confirma
           </p>
         </div>
         {/* Contador global */}
         <div className="flex gap-2 text-xs">
-          {(["ACOMPAÑAMIENTO","TURISMO","CAPACITACION","GUARDERIA"] as const).map((t) => {
-            const count = allSchedules.filter((s) => s.serviceType === t && (!s.status || s.status === "PENDIENTE")).length;
+          {(
+            ["ACOMPAÑAMIENTO", "TURISMO", "CAPACITACION", "GUARDERIA"] as const
+          ).map((t) => {
+            const count = allSchedules.filter(
+              (s) => s.serviceType === t && isPending(s),
+            ).length;
             if (!count) return null;
             const st = serviceTypeStyle(t);
             return (
-              <span key={t} className={`px-2 py-1 rounded-full font-medium ${st.badge}`}>
+              <span
+                key={t}
+                className={`px-2 py-1 rounded-full font-medium ${st.badge}`}
+              >
                 {st.label} · {count}
               </span>
             );
@@ -281,13 +416,12 @@ export default function DistributionPage() {
             }`}
           >
             {tab.label}
-            {tab.key !== "todos" && (
-              <span className="ml-1.5 text-xs opacity-70">
-                ({allSchedules.filter((s) =>
-                  tab.key === "todos" ? true : s.originalType === tab.key
-                ).length})
-              </span>
-            )}
+            <span
+              className="ml-1.5 text-xs opacity-70"
+              title="Pendientes por asignar"
+            >
+              ({pendingByTab(tab.key)})
+            </span>
           </button>
         ))}
       </div>
@@ -297,14 +431,33 @@ export default function DistributionPage() {
         <div className="flex-1 min-w-0 bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
           {/* Controles */}
           <div className="flex items-center gap-3 px-5 py-3 border-b border-line">
-            <button onClick={() => { const d = new Date(baseDate); d.setDate(d.getDate() - 7); setBaseDate(d); }} className="p-1.5 rounded-lg hover:bg-line text-ink-3">
+            <button
+              onClick={() => {
+                const d = new Date(baseDate);
+                d.setDate(d.getDate() - 7);
+                setBaseDate(d);
+              }}
+              className="p-1.5 rounded-lg hover:bg-line text-ink-3"
+            >
               <ChevronLeft size={16} />
             </button>
-            <span className="font-semibold text-ink text-sm">{formatRange(mon, sun)}</span>
-            <button onClick={() => { const d = new Date(baseDate); d.setDate(d.getDate() + 7); setBaseDate(d); }} className="p-1.5 rounded-lg hover:bg-line text-ink-3">
+            <span className="font-semibold text-ink text-sm">
+              {formatRange(mon, sun)}
+            </span>
+            <button
+              onClick={() => {
+                const d = new Date(baseDate);
+                d.setDate(d.getDate() + 7);
+                setBaseDate(d);
+              }}
+              className="p-1.5 rounded-lg hover:bg-line text-ink-3"
+            >
               <ChevronRight size={16} />
             </button>
-            <button onClick={() => setBaseDate(new Date())} className="px-3 py-1 rounded-lg text-sm font-medium ml-1 bg-primary text-white hover:bg-primary-hover transition-colors">
+            <button
+              onClick={() => setBaseDate(new Date())}
+              className="px-3 py-1 rounded-lg text-sm font-medium ml-1 bg-primary text-white hover:bg-primary-hover transition-colors"
+            >
               Hoy
             </button>
           </div>
@@ -316,7 +469,10 @@ export default function DistributionPage() {
               date.setDate(mon.getDate() + i);
               const isToday = date.toDateString() === new Date().toDateString();
               return (
-                <div key={day} className={`px-2 py-2 text-center text-xs font-medium border-r last:border-r-0 border-line ${isToday ? "text-info-fg bg-info-bg font-semibold" : "text-ink-3"}`}>
+                <div
+                  key={day}
+                  className={`px-2 py-2 text-center text-xs font-medium border-r last:border-r-0 border-line ${isToday ? "text-info-fg bg-info-bg font-semibold" : "text-ink-3"}`}
+                >
                   {day} {date.getDate()}
                 </div>
               );
@@ -329,7 +485,11 @@ export default function DistributionPage() {
               <div role="status" className="col-span-7 grid grid-cols-7">
                 <span className="sr-only">Cargando agendamientos…</span>
                 {DAYS.map((_, i) => (
-                  <div key={i} className="border-r last:border-r-0 border-line p-1.5 space-y-1.5" aria-hidden="true">
+                  <div
+                    key={i}
+                    className="border-r last:border-r-0 border-line p-1.5 space-y-1.5"
+                    aria-hidden="true"
+                  >
                     <div className="skeleton h-14" />
                     {i % 2 === 0 && <div className="skeleton h-14" />}
                   </div>
@@ -337,19 +497,36 @@ export default function DistributionPage() {
               </div>
             ) : (
               DAYS.map((_, i) => (
-                <div key={i} className="border-r last:border-r-0 border-line p-1.5 space-y-1.5">
+                <div
+                  key={i}
+                  className="border-r last:border-r-0 border-line p-1.5 space-y-1.5"
+                >
                   {byDay[i].map((item) => {
                     const st = serviceTypeStyle(item.serviceType);
                     return (
-                      <div key={item.id} className={`rounded-lg p-1.5 text-xs ${st.tint}`}>
+                      <div
+                        key={item.id}
+                        className={`rounded-lg p-1.5 text-xs ${st.tint}`}
+                      >
                         <p className="flex items-center gap-1.5 font-semibold">
-                          <span aria-hidden="true" className={`w-1.5 h-1.5 rounded-full shrink-0 ${st.dot}`} />
+                          <span
+                            aria-hidden="true"
+                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${st.dot}`}
+                          />
                           <span className="truncate">{item.title}</span>
                         </p>
                         <p className="truncate mt-0.5">{item.personName}</p>
                         <p className="mt-0.5 font-medium tabular-nums">
-                          {new Date(item.dateTime).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
+                          {new Date(item.dateTime).toLocaleTimeString("es-CO", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
                         </p>
+                        {item.status && item.status !== "PENDIENTE" && (
+                          <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide opacity-80">
+                            {STATUS_LABEL[item.status]}
+                          </p>
+                        )}
                       </div>
                     );
                   })}
@@ -371,7 +548,9 @@ export default function DistributionPage() {
 
             <div className="p-3 space-y-3 max-h-[70vh] overflow-y-auto">
               {pending.length === 0 && !isLoading && (
-                <p className="text-xs text-ink-3 text-center py-6">Sin agendamientos pendientes</p>
+                <p className="text-xs text-ink-3 text-center py-6">
+                  Sin agendamientos pendientes
+                </p>
               )}
 
               {pending.map((s) => {
@@ -380,95 +559,128 @@ export default function DistributionPage() {
                 const isMutating = anyMutating && isAssigning;
 
                 return (
-                  <div key={`${s.originalType}-${s.id}`} className="bg-surface-2 rounded-lg p-3 border border-line">
-                    {/* Badge tipo */}
-                    <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium mb-1.5 ${st.badge}`}>
-                      {st.label}
-                    </span>
-
-                    {/* Título */}
-                    <p className="font-semibold text-ink text-sm leading-tight">{s.title}</p>
-
-                    {/* Meta */}
-                    <div className="mt-1.5 space-y-0.5">
-                      <div className="flex items-center gap-1.5 text-xs text-ink-3">
-                        <User size={10} />
-                        <span className="truncate">{s.personName}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs text-ink-3">
-                        <Clock size={10} />
-                        <span>
-                          {new Date(s.dateTime).toLocaleDateString("es-CO", { weekday: "short", day: "numeric", month: "short" })}
-                          {" · "}
-                          {new Date(s.dateTime).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" })}
+                  <div
+                    key={`${s.originalType}-${s.id}`}
+                    className={`grid ${leaving.has(s.id) ? "leaving-to-calendar" : ""}`}
+                    aria-hidden={leaving.has(s.id) || undefined}
+                  >
+                    <div className="min-h-0 overflow-hidden">
+                      <div className="bg-surface-2 rounded-lg p-3 border border-line">
+                        {/* Badge tipo */}
+                        <span
+                          className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium mb-1.5 ${st.badge}`}
+                        >
+                          {st.label}
                         </span>
-                      </div>
-                      {s.address && (
-                        <div className="flex items-center gap-1.5 text-xs text-ink-3">
-                          <MapPin size={10} />
-                          <span className="truncate">{s.address}</span>
-                        </div>
-                      )}
-                    </div>
 
-                    {/* Acción */}
-                    {isAssigning ? (
-                      <div className="mt-2.5 space-y-2">
-                        {s.needsVehicle ? (
-                          <>
-                            <div className="flex items-center gap-1.5 text-xs text-ink-3 mb-1">
-                              <Car size={11} />
-                              <span className="font-medium">Asignar vehículo</span>
+                        {/* Título */}
+                        <p className="font-semibold text-ink text-sm leading-tight">
+                          {s.title}
+                        </p>
+
+                        {/* Meta */}
+                        <div className="mt-1.5 space-y-0.5">
+                          <div className="flex items-center gap-1.5 text-xs text-ink-3">
+                            <User size={10} />
+                            <span className="truncate">{s.personName}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs text-ink-3">
+                            <Clock size={10} />
+                            <span>
+                              {new Date(s.dateTime).toLocaleDateString(
+                                "es-CO",
+                                {
+                                  weekday: "short",
+                                  day: "numeric",
+                                  month: "short",
+                                },
+                              )}
+                              {" · "}
+                              {new Date(s.dateTime).toLocaleTimeString(
+                                "es-CO",
+                                { hour: "2-digit", minute: "2-digit" },
+                              )}
+                            </span>
+                          </div>
+                          {s.address && (
+                            <div className="flex items-center gap-1.5 text-xs text-ink-3">
+                              <MapPin size={10} />
+                              <span className="truncate">{s.address}</span>
                             </div>
-                            <select
-                              className="field text-xs px-2 py-1.5"
-                              defaultValue=""
-                              disabled={isMutating}
-                              onChange={(e) => {
-                                if (e.target.value) handleAssign(s, e.target.value);
-                              }}
-                            >
-                              <option value="" disabled>Seleccionar vehículo…</option>
-                              {vehicles.filter((v) => v.active).map((v) => (
-                                <option key={v.id} value={v.id}>
-                                  {v.name} — {v.license_plate}
-                                  {v.capacity ? ` (${v.capacity} pax)` : ""}
-                                </option>
-                              ))}
-                            </select>
-                          </>
-                        ) : (
-                          <p className="text-xs text-ink-3 italic">
-                            Capacitación en línea — no requiere vehículo
-                          </p>
-                        )}
-
-                        <div className="flex gap-2">
-                          {!s.needsVehicle && (
-                            <button
-                              onClick={() => handleAssign(s, "")}
-                              disabled={isMutating}
-                              className="flex-1 py-1.5 rounded-lg text-xs font-medium disabled:opacity-50 bg-primary text-white hover:bg-primary-hover transition-colors"
-                            >
-                              {isMutating ? "Confirmando…" : "Confirmar inscripción"}
-                            </button>
                           )}
-                          <button
-                            onClick={() => setAssigningId(null)}
-                            className="px-3 py-1.5 rounded-lg text-xs text-ink-3 hover:bg-line-strong border border-line"
-                          >
-                            Cancelar
-                          </button>
                         </div>
+
+                        {/* Acción */}
+                        {isAssigning ? (
+                          <div className="mt-2.5 space-y-2">
+                            {s.needsVehicle ? (
+                              <>
+                                <div className="flex items-center gap-1.5 text-xs text-ink-3 mb-1">
+                                  <Car size={11} />
+                                  <span className="font-medium">
+                                    Asignar vehículo
+                                  </span>
+                                </div>
+                                <select
+                                  className="field text-xs px-2 py-1.5"
+                                  defaultValue=""
+                                  disabled={isMutating}
+                                  onChange={(e) => {
+                                    if (e.target.value)
+                                      handleAssign(s, e.target.value);
+                                  }}
+                                >
+                                  <option value="" disabled>
+                                    Seleccionar vehículo…
+                                  </option>
+                                  {vehicles
+                                    .filter((v) => v.active)
+                                    .map((v) => (
+                                      <option key={v.id} value={v.id}>
+                                        {v.name} — {v.license_plate}
+                                        {v.capacity
+                                          ? ` (${v.capacity} pax)`
+                                          : ""}
+                                      </option>
+                                    ))}
+                                </select>
+                              </>
+                            ) : (
+                              <p className="text-xs text-ink-3 italic">
+                                Capacitación en línea — no requiere vehículo
+                              </p>
+                            )}
+
+                            <div className="flex gap-2">
+                              {!s.needsVehicle && (
+                                <button
+                                  onClick={() => handleAssign(s, "")}
+                                  disabled={isMutating}
+                                  className="flex-1 py-1.5 rounded-lg text-xs font-medium disabled:opacity-50 bg-primary text-white hover:bg-primary-hover transition-colors"
+                                >
+                                  {isMutating
+                                    ? "Confirmando…"
+                                    : "Confirmar inscripción"}
+                                </button>
+                              )}
+                              <button
+                                onClick={() => setAssigningId(null)}
+                                className="px-3 py-1.5 rounded-lg text-xs text-ink-3 hover:bg-line-strong border border-line"
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setAssigningId(s.id)}
+                            className="mt-2.5 w-full py-1.5 rounded-lg text-xs font-medium bg-primary text-white hover:bg-primary-hover transition-colors"
+                          >
+                            Asignar
+                          </button>
+                        )}
                       </div>
-                    ) : (
-                      <button
-                        onClick={() => setAssigningId(s.id)}
-                        className="mt-2.5 w-full py-1.5 rounded-lg text-xs font-medium bg-primary text-white hover:bg-primary-hover transition-colors"
-                      >
-                        Asignar
-                      </button>
-                    )}
+                    </div>
                   </div>
                 );
               })}
@@ -488,18 +700,29 @@ export default function DistributionPage() {
                 {cancelled.map((s) => {
                   const st = serviceTypeStyle(s.serviceType);
                   const isPendingRefund = s.refundStatus !== "REALIZADO";
-                  const isSaving = refundMut.isPending && refundMut.variables?.s.id === s.id;
+                  const isSaving =
+                    refundMut.isPending && refundMut.variables?.s.id === s.id;
                   return (
-                    <div key={`refund-${s.originalType}-${s.id}`} className="bg-surface-2 rounded-lg p-3 border border-line">
-                      <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium mb-1.5 ${st.badge}`}>
+                    <div
+                      key={`refund-${s.originalType}-${s.id}`}
+                      className="bg-surface-2 rounded-lg p-3 border border-line"
+                    >
+                      <span
+                        className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium mb-1.5 ${st.badge}`}
+                      >
                         {st.label}
                       </span>
-                      <p className="font-semibold text-ink text-sm leading-tight">{s.title}</p>
+                      <p className="font-semibold text-ink text-sm leading-tight">
+                        {s.title}
+                      </p>
                       <p className="text-xs text-ink-3 mt-1">{s.personName}</p>
                       {(s.refundBank || s.refundAccount) && (
                         <p className="text-xs text-ink-3 mt-1">
-                          {s.refundAccountType ?? "Cuenta"} · {s.refundBank ?? "—"} · {s.refundAccount ?? "—"}
-                          {s.refundHolderCedula ? ` · CC ${s.refundHolderCedula}` : ""}
+                          {s.refundAccountType ?? "Cuenta"} ·{" "}
+                          {s.refundBank ?? "—"} · {s.refundAccount ?? "—"}
+                          {s.refundHolderCedula
+                            ? ` · CC ${s.refundHolderCedula}`
+                            : ""}
                         </p>
                       )}
                       {isPendingRefund ? (
@@ -508,7 +731,9 @@ export default function DistributionPage() {
                           disabled={isSaving}
                           className="mt-2.5 w-full py-1.5 rounded-lg text-xs font-medium disabled:opacity-50 bg-primary text-white hover:bg-primary-hover transition-colors"
                         >
-                          {isSaving ? "Guardando…" : "Marcar reembolso realizado"}
+                          {isSaving
+                            ? "Guardando…"
+                            : "Marcar reembolso realizado"}
                         </button>
                       ) : (
                         <div className="mt-2.5 flex items-center gap-1.5 text-xs font-medium text-success-fg bg-success-bg rounded-lg py-1.5 px-2">
@@ -524,11 +749,16 @@ export default function DistributionPage() {
 
           {/* Leyenda */}
           <div className="mt-3 bg-surface rounded-xl shadow-sm border border-line p-3">
-            <p className="text-xs font-medium text-ink-3 mb-2">Tipos de servicio</p>
+            <p className="text-xs font-medium text-ink-3 mb-2">
+              Tipos de servicio
+            </p>
             <div className="space-y-1.5">
               {Object.entries(SERVICE_TYPE_STYLE).map(([key, st]) => (
                 <div key={key} className="flex items-center gap-2">
-                  <span aria-hidden="true" className={`w-2.5 h-2.5 rounded-sm shrink-0 ${st.dot}`} />
+                  <span
+                    aria-hidden="true"
+                    className={`w-2.5 h-2.5 rounded-sm shrink-0 ${st.dot}`}
+                  />
                   <span className="text-xs text-ink-2">{st.label}</span>
                 </div>
               ))}

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, useWatch } from "react-hook-form";
 import { Pencil, Trash2, Plus, Shield } from "lucide-react";
+import { toast } from "sonner";
 import {
   getRoles,
   createRole,
@@ -10,11 +11,14 @@ import {
   type Role,
   type CreateRoleInput,
 } from "@/api/roles";
+import { getErrorMessage } from "@/api/client";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import TableSkeleton from "@/components/ui/TableSkeleton";
 
+// Deben coincidir con los módulos de `authorizePermission("<módulo>")` en el backend.
 const ALL_PERMISSIONS = [
   "users",
   "roles",
@@ -27,8 +31,14 @@ const ALL_PERMISSIONS = [
   "schedule-training",
   "detail-daycare",
   "schedule-daycare",
+  "products",
+  "categories",
+  "coupons",
+  "sales",
+  "sales-detail",
   "customer-reviews",
   "frequently-questions",
+  "settings",
 ];
 
 const PERM_LABELS: Record<string, string> = {
@@ -43,17 +53,26 @@ const PERM_LABELS: Record<string, string> = {
   "schedule-training": "Capacitación (agendas)",
   "detail-daycare": "Guardería (detalles)",
   "schedule-daycare": "Guardería (agendas)",
-  "customer-reviews": "Ver métricas",
+  products: "Productos",
+  categories: "Categorías",
+  coupons: "Cupones de descuento",
+  sales: "Ventas",
+  "sales-detail": "Detalle de ventas",
+  "customer-reviews": "Reseñas de clientes",
   "frequently-questions": "Preguntas frecuentes",
+  settings: "Configuración del sistema",
 };
 
-function userCount() {
-  return Math.floor(Math.random() * 14) + 1;
+function usersLabel(n: number) {
+  return n === 1 ? "1 persona" : `${n} personas`;
 }
 
 export default function RolesPage() {
   const qc = useQueryClient();
-  const [selected, setSelected] = useState<Role | null>(null);
+  const confirm = useConfirm();
+  // Se guarda el id (no el objeto) para que el panel refleje los datos
+  // actualizados después de cada refetch.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Role | null>(null);
   const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");
@@ -68,7 +87,10 @@ export default function RolesPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["roles"] });
       setModalOpen(false);
+      toast.success("Rol creado correctamente");
     },
+    onError: (err: unknown) =>
+      toast.error(getErrorMessage(err, "Error al crear el rol")),
   });
   const updateMut = useMutation({
     mutationFn: ({
@@ -81,18 +103,44 @@ export default function RolesPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["roles"] });
       setModalOpen(false);
+      toast.success("Rol actualizado correctamente");
     },
+    onError: (err: unknown) =>
+      toast.error(getErrorMessage(err, "Error al actualizar el rol")),
   });
   const deleteMut = useMutation({
     mutationFn: deleteRole,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["roles"] });
+      toast.success("Rol eliminado");
     },
+    onError: (err: unknown) =>
+      toast.error(getErrorMessage(err, "Error al eliminar el rol")),
   });
+
+  const onDelete = async (role: Role) => {
+    const count = role.users_count ?? 0;
+    if (count > 0) {
+      toast.error(
+        `No se puede eliminar "${role.name}": tiene ${usersLabel(count)} asignada(s). Reasígnalas primero.`,
+      );
+      return;
+    }
+    if (
+      await confirm({
+        title: `¿Eliminar el rol ${role.name}?`,
+        message: "Esta acción no se puede deshacer.",
+        confirmLabel: "Eliminar",
+      })
+    ) {
+      deleteMut.mutate(role.id);
+    }
+  };
 
   const { register, handleSubmit, reset, setValue, control } =
     useForm<CreateRoleInput>();
-  const watchedPerms = useWatch({ control, name: "permissions", defaultValue: {} }) ?? {};
+  const watchedPerms =
+    useWatch({ control, name: "permissions", defaultValue: {} }) ?? {};
 
   const openCreate = () => {
     setEditTarget(null);
@@ -124,15 +172,15 @@ export default function RolesPage() {
     return true;
   });
 
-  const displayRole = selected ?? filtered[0];
+  // El panel lateral muestra los permisos del rol seleccionado (clic en la
+  // fila o en el selector); por defecto, el primero de la lista filtrada.
+  const displayRole = filtered.find((r) => r.id === selectedId) ?? filtered[0];
 
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-ink">
-            Roles y permisos
-          </h1>
+          <h1 className="text-xl font-semibold text-ink">Roles y permisos</h1>
           <p className="text-sm text-ink-3 mt-0.5">
             Configura los roles del sistema y sus permisos de acceso
           </p>
@@ -193,8 +241,14 @@ export default function RolesPage() {
                 {filtered.map((role) => (
                   <tr
                     key={role.id}
-                    className="border-b border-line/70 hover:bg-surface-2 cursor-pointer"
-                    onClick={() => setSelected(role)}
+                    className={`border-b border-line/70 cursor-pointer ${
+                      role.id === displayRole?.id
+                        ? "bg-info-bg"
+                        : "hover:bg-surface-2"
+                    }`}
+                    onClick={() => setSelectedId(role.id)}
+                    aria-selected={role.id === displayRole?.id}
+                    title="Ver permisos de este rol"
                   >
                     <td className="px-5 py-3.5 font-medium text-ink text-sm">
                       {role.name}
@@ -204,7 +258,7 @@ export default function RolesPage() {
                     </td>
                     <td className="px-5 py-3.5">
                       <span className="text-xs bg-info-bg text-info-fg px-2 py-0.5 rounded-full">
-                        {userCount()} personas
+                        {usersLabel(role.users_count ?? 0)}
                       </span>
                     </td>
                     <td className="px-5 py-3.5">
@@ -227,9 +281,14 @@ export default function RolesPage() {
                         <Button
                           size="sm"
                           variant="danger-soft"
+                          loading={
+                            deleteMut.isPending &&
+                            deleteMut.variables === role.id
+                          }
+                          aria-label={`Eliminar rol ${role.name}`}
                           onClick={(e) => {
                             e.stopPropagation();
-                            deleteMut.mutate(role.id);
+                            onDelete(role);
                           }}
                         >
                           <Trash2 size={12} />
@@ -262,6 +321,10 @@ export default function RolesPage() {
                 Permisos · {displayRole.name}
               </h3>
             </div>
+            <p className="text-xs text-ink-3 mb-3">
+              Módulos a los que puede acceder este rol. Haz clic en otra fila
+              para ver sus permisos.
+            </p>
             <div className="space-y-2">
               {ALL_PERMISSIONS.map((p) => {
                 const has = !!(
@@ -286,13 +349,9 @@ export default function RolesPage() {
               <select
                 className="field"
                 value={displayRole.id}
-                onChange={(e) =>
-                  setSelected(
-                    roles.find((r) => r.id === e.target.value) ?? null,
-                  )
-                }
+                onChange={(e) => setSelectedId(e.target.value)}
               >
-                {roles.map((r) => (
+                {filtered.map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.name}
                   </option>
@@ -324,25 +383,36 @@ export default function RolesPage() {
       >
         <form className="space-y-4">
           <div>
-            <label htmlFor="roles-name" className="block text-sm font-medium text-ink mb-1">
+            <label
+              htmlFor="roles-name"
+              className="block text-sm font-medium text-ink mb-1"
+            >
               Nombre
             </label>
-            <input id="roles-name"
+            <input
+              id="roles-name"
               className="field"
               {...register("name", { required: true })}
             />
           </div>
           <div>
-            <label htmlFor="roles-description" className="block text-sm font-medium text-ink mb-1">
+            <label
+              htmlFor="roles-description"
+              className="block text-sm font-medium text-ink mb-1"
+            >
               Descripción
             </label>
-            <input id="roles-description"
+            <input
+              id="roles-description"
               className="field"
               {...register("description")}
             />
           </div>
           <div>
-            <p id="roles-permisos" className="block text-sm font-medium text-ink mb-2">
+            <p
+              id="roles-permisos"
+              className="block text-sm font-medium text-ink mb-2"
+            >
               Permisos
             </p>
             <div
