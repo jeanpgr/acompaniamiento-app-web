@@ -25,7 +25,8 @@ export interface RefundFields {
 export interface ScheduleAcompan extends RefundFields {
   id: string;
   id_service: string;
-  id_vehicle: string;
+  /** null hasta que el administrador asigna un vehículo. */
+  id_vehicle: string | null;
   origin_address: string;
   destination_address: string;
   date_time: string;
@@ -42,7 +43,7 @@ export interface ScheduleAcompan extends RefundFields {
 
 export interface CreateScheduleAcompanInput {
   id_service: string;
-  id_vehicle: string;
+  id_vehicle?: string | null;
   origin_address: string;
   destination_address: string;
   date_time: string;

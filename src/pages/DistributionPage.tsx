@@ -67,7 +67,7 @@ function normalizeAcompan(s: ScheduleAcompan): Unified {
     status: s.status,
     address: s.origin_address,
     needsVehicle: true,
-    vehicleId: s.id_vehicle,
+    vehicleId: s.id_vehicle ?? undefined,
     refundStatus: s.refund_status,
     refundBank: s.refund_bank_name,
     refundAccount: s.refund_bank_account,
