@@ -22,6 +22,15 @@ import Badge from "@/components/ui/Badge";
 import { useCursorPagination } from "@/hooks/useCursorPagination";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import SearchInput from "@/components/ui/SearchInput";
+import ViewToggle from "@/components/ui/ViewToggle";
+import { useViewMode } from "@/hooks/useViewMode";
+import {
+  CardGrid,
+  GridCard,
+  CardFields,
+  CardField,
+  CardActions,
+} from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
 
 const schema = z.object({
@@ -130,6 +139,39 @@ export default function DiscountCouponsPage() {
   };
 
   const isPending = createMut.isPending || updateMut.isPending;
+  const [view, setView] = useViewMode();
+  const emptyText = debouncedSearch
+    ? `Sin resultados para "${debouncedSearch}"`
+    : "No hay cupones registrados";
+
+  const renderStatus = (c: DiscountCoupon) => {
+    const expired = isExpired(c.expired_at);
+    const exhausted = c.times_used >= c.times_allowed;
+    return expired || exhausted ? (
+      <Badge variant="danger">{expired ? "Vencido" : "Agotado"}</Badge>
+    ) : (
+      <Badge variant="success">Activo</Badge>
+    );
+  };
+
+  const renderActions = (c: DiscountCoupon) => (
+    <>
+      <Button size="sm" variant="secondary" onClick={() => openEdit(c)}>
+        <Pencil size={12} /> Editar
+      </Button>
+      <Button
+        size="sm"
+        variant="danger-soft"
+        loading={deleteMut.isPending && deleteMut.variables === c.id}
+        onClick={async () => {
+          if (await confirm({ title: `¿Eliminar el cupón "${c.coupon}"?` }))
+            deleteMut.mutate(c.id);
+        }}
+      >
+        <Trash2 size={12} /> Eliminar
+      </Button>
+    </>
+  );
 
   return (
     <div>
@@ -147,18 +189,44 @@ export default function DiscountCouponsPage() {
         </Button>
       </div>
 
-      <div className="mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <SearchInput
           value={search}
           onChange={setSearch}
           placeholder="Buscar por código"
           label="Buscar cupones"
         />
+        <ViewToggle view={view} onChange={setView} />
       </div>
 
       <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
         {isLoading ? (
           <TableSkeleton label="Cargando cupones…" />
+        ) : view === "grid" ? (
+          <CardGrid empty={coupons.length === 0 && emptyText}>
+            {coupons.map((c) => (
+              <GridCard key={c.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <span className="font-mono font-semibold text-ink text-sm bg-line px-2 py-0.5 rounded">
+                    {c.coupon}
+                  </span>
+                  {renderStatus(c)}
+                </div>
+                <p className="text-2xl font-bold text-success-fg tabular-nums">
+                  {c.discount_percentage}%
+                </p>
+                <CardFields>
+                  <CardField label="Usos">
+                    {c.times_used} / {c.times_allowed}
+                  </CardField>
+                  <CardField label="Vence">
+                    {new Date(c.expired_at).toLocaleDateString("es-CO")}
+                  </CardField>
+                </CardFields>
+                <CardActions>{renderActions(c)}</CardActions>
+              </GridCard>
+            ))}
+          </CardGrid>
         ) : (
           <table className="w-full min-w-160">
             <thead>
@@ -186,77 +254,38 @@ export default function DiscountCouponsPage() {
               </tr>
             </thead>
             <tbody>
-              {coupons.map((c) => {
-                const expired = isExpired(c.expired_at);
-                const exhausted = c.times_used >= c.times_allowed;
-                return (
-                  <tr
-                    key={c.id}
-                    className="border-b border-line/70 hover:bg-surface-2"
-                  >
-                    <td className="px-5 py-3.5">
-                      <span className="font-mono font-semibold text-ink text-sm bg-line px-2 py-0.5 rounded">
-                        {c.coupon}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5 text-sm font-medium text-success-fg">
-                      {c.discount_percentage}%
-                    </td>
-                    <td className="px-5 py-3.5 text-sm text-ink-2">
-                      {c.times_used} / {c.times_allowed}
-                    </td>
-                    <td className="px-5 py-3.5 text-sm text-ink-3">
-                      {new Date(c.expired_at).toLocaleDateString("es-CO")}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      {expired || exhausted ? (
-                        <Badge variant="danger">
-                          {expired ? "Vencido" : "Agotado"}
-                        </Badge>
-                      ) : (
-                        <Badge variant="success">Activo</Badge>
-                      )}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => openEdit(c)}
-                        >
-                          <Pencil size={12} /> Editar
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="danger-soft"
-                          loading={
-                            deleteMut.isPending && deleteMut.variables === c.id
-                          }
-                          onClick={async () => {
-                            if (
-                              await confirm({
-                                title: `¿Eliminar el cupón "${c.coupon}"?`,
-                              })
-                            )
-                              deleteMut.mutate(c.id);
-                          }}
-                        >
-                          <Trash2 size={12} /> Eliminar
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+              {coupons.map((c) => (
+                <tr
+                  key={c.id}
+                  className="border-b border-line/70 hover:bg-surface-2"
+                >
+                  <td className="px-5 py-3.5">
+                    <span className="font-mono font-semibold text-ink text-sm bg-line px-2 py-0.5 rounded">
+                      {c.coupon}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3.5 text-sm font-medium text-success-fg">
+                    {c.discount_percentage}%
+                  </td>
+                  <td className="px-5 py-3.5 text-sm text-ink-2">
+                    {c.times_used} / {c.times_allowed}
+                  </td>
+                  <td className="px-5 py-3.5 text-sm text-ink-3">
+                    {new Date(c.expired_at).toLocaleDateString("es-CO")}
+                  </td>
+                  <td className="px-5 py-3.5">{renderStatus(c)}</td>
+                  <td className="px-5 py-3.5">
+                    <div className="flex gap-2">{renderActions(c)}</div>
+                  </td>
+                </tr>
+              ))}
               {coupons.length === 0 && (
                 <tr>
                   <td
                     colSpan={6}
                     className="px-5 py-8 text-center text-ink-3 text-sm"
                   >
-                    {debouncedSearch
-                      ? `Sin resultados para "${debouncedSearch}"`
-                      : "No hay cupones registrados"}
+                    {emptyText}
                   </td>
                 </tr>
               )}

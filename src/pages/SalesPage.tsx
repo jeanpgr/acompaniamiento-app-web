@@ -26,6 +26,15 @@ import ZoomableImage from "@/components/ui/ZoomableImage";
 import { useCursorPagination } from "@/hooks/useCursorPagination";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import SearchInput from "@/components/ui/SearchInput";
+import ViewToggle from "@/components/ui/ViewToggle";
+import { useViewMode } from "@/hooks/useViewMode";
+import {
+  CardGrid,
+  GridCard,
+  CardFields,
+  CardField,
+  CardActions,
+} from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
 
 const STATUS_CFG: Record<
@@ -119,6 +128,51 @@ export default function SalesPage() {
   ) as Record<SalesStatus, number>;
   const totalOrders = STATUSES.reduce((sum, s) => sum + counts[s], 0);
 
+  const [view, setView] = useViewMode();
+  const emptyText =
+    filter === "all" && !debouncedSearch
+      ? "No hay ventas registradas"
+      : "Ningún pedido coincide con el filtro";
+
+  const units = (o: Order) => o.items.reduce((n, it) => n + it.quantity, 0);
+  const formatDate = (o: Order) =>
+    new Date(o.created_at).toLocaleString("es-EC", {
+      dateStyle: "short",
+      timeStyle: "short",
+    });
+
+  const renderTotal = (o: Order) => (
+    <>
+      {money(o.total)}
+      {o.discount > 0 && (
+        <span className="block text-xs font-normal text-success-fg">
+          − {money(o.discount)}
+          {o.coupon ? ` · ${o.coupon}` : ""}
+        </span>
+      )}
+    </>
+  );
+
+  const renderActions = (o: Order) => {
+    const final = SALE_STATUS_TRANSITIONS[o.status].length === 0;
+    return (
+      <>
+        <Button size="sm" variant="secondary" onClick={() => setDetail(o)}>
+          <Eye size={12} /> Detalle
+        </Button>
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={final}
+          title={final ? "Estado final: no se puede cambiar" : undefined}
+          onClick={() => openStatus(o)}
+        >
+          <Pencil size={12} /> Estado
+        </Button>
+      </>
+    );
+  };
+
   const allowed = statusTarget
     ? SALE_STATUS_TRANSITIONS[statusTarget.status]
     : [];
@@ -166,18 +220,55 @@ export default function SalesPage() {
         ))}
       </div>
 
-      <div className="mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <SearchInput
           value={search}
           onChange={setSearch}
           placeholder="Buscar por código, cliente o teléfono"
           label="Buscar pedidos"
         />
+        <ViewToggle view={view} onChange={setView} />
       </div>
 
       <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
         {isLoading ? (
           <TableSkeleton label="Cargando ventas…" />
+        ) : view === "grid" ? (
+          <CardGrid empty={filtered.length === 0 && emptyText}>
+            {filtered.map((o) => (
+              <GridCard key={o.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <span className="font-mono text-xs font-semibold text-ink">
+                    #{o.code}
+                  </span>
+                  <StatusBadge status={o.status} />
+                </div>
+                <div>
+                  <h2 className="text-sm font-medium text-ink">
+                    {customerName(o)}
+                  </h2>
+                  <p className="text-xs text-ink-3">
+                    {o.customer?.phone ?? o.customer?.email ?? ""}
+                  </p>
+                </div>
+                <CardFields>
+                  <CardField label="Artículos">
+                    {units(o)} {units(o) === 1 ? "unidad" : "unidades"}
+                    <span className="block text-xs text-ink-3 line-clamp-2">
+                      {o.items.map((it) => it.name).join(", ")}
+                    </span>
+                  </CardField>
+                  <CardField label="Total">
+                    <span className="font-semibold tabular-nums">
+                      {renderTotal(o)}
+                    </span>
+                  </CardField>
+                  <CardField label="Fecha">{formatDate(o)}</CardField>
+                </CardFields>
+                <CardActions>{renderActions(o)}</CardActions>
+              </GridCard>
+            ))}
+          </CardGrid>
         ) : (
           <table className="w-full min-w-180">
             <thead>
@@ -201,78 +292,44 @@ export default function SalesPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((o) => {
-                const units = o.items.reduce((n, it) => n + it.quantity, 0);
-                const final = SALE_STATUS_TRANSITIONS[o.status].length === 0;
-                return (
-                  <tr
-                    key={o.id}
-                    className="border-b border-line/70 hover:bg-surface-2"
-                  >
-                    <td className="px-5 py-3.5">
-                      <span className="font-mono text-xs font-semibold text-ink">
-                        #{o.code}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <p className="text-sm font-medium text-ink">
-                        {customerName(o)}
-                      </p>
-                      <p className="text-xs text-ink-3">
-                        {o.customer?.phone ?? o.customer?.email ?? ""}
-                      </p>
-                    </td>
-                    <td className="px-5 py-3.5 text-sm text-ink-2">
-                      {units} {units === 1 ? "unidad" : "unidades"}
-                      <span className="block text-xs text-ink-3 truncate max-w-48">
-                        {o.items.map((it) => it.name).join(", ")}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5 text-sm font-semibold text-ink tabular-nums">
-                      {money(o.total)}
-                      {o.discount > 0 && (
-                        <span className="block text-xs font-normal text-success-fg">
-                          − {money(o.discount)}
-                          {o.coupon ? ` · ${o.coupon}` : ""}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <StatusBadge status={o.status} />
-                    </td>
-                    <td className="px-5 py-3.5 text-sm text-ink-3">
-                      {new Date(o.created_at).toLocaleString("es-EC", {
-                        dateStyle: "short",
-                        timeStyle: "short",
-                      })}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => setDetail(o)}
-                        >
-                          <Eye size={12} /> Detalle
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          disabled={final}
-                          title={
-                            final
-                              ? "Estado final: no se puede cambiar"
-                              : undefined
-                          }
-                          onClick={() => openStatus(o)}
-                        >
-                          <Pencil size={12} /> Estado
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+              {filtered.map((o) => (
+                <tr
+                  key={o.id}
+                  className="border-b border-line/70 hover:bg-surface-2"
+                >
+                  <td className="px-5 py-3.5">
+                    <span className="font-mono text-xs font-semibold text-ink">
+                      #{o.code}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <p className="text-sm font-medium text-ink">
+                      {customerName(o)}
+                    </p>
+                    <p className="text-xs text-ink-3">
+                      {o.customer?.phone ?? o.customer?.email ?? ""}
+                    </p>
+                  </td>
+                  <td className="px-5 py-3.5 text-sm text-ink-2">
+                    {units(o)} {units(o) === 1 ? "unidad" : "unidades"}
+                    <span className="block text-xs text-ink-3 truncate max-w-48">
+                      {o.items.map((it) => it.name).join(", ")}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3.5 text-sm font-semibold text-ink tabular-nums">
+                    {renderTotal(o)}
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <StatusBadge status={o.status} />
+                  </td>
+                  <td className="px-5 py-3.5 text-sm text-ink-3">
+                    {formatDate(o)}
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <div className="flex gap-2">{renderActions(o)}</div>
+                  </td>
+                </tr>
+              ))}
               {filtered.length === 0 && (
                 <tr>
                   <td
@@ -283,9 +340,7 @@ export default function SalesPage() {
                       size={28}
                       className="mx-auto mb-2 text-line-strong"
                     />
-                    {filter === "all" && !debouncedSearch
-                      ? "No hay ventas registradas"
-                      : "Ningún pedido coincide con el filtro"}
+                    {emptyText}
                   </td>
                 </tr>
               )}

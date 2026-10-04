@@ -35,6 +35,15 @@ import ZoomableImage from "@/components/ui/ZoomableImage";
 import { useCursorPagination } from "@/hooks/useCursorPagination";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import SearchInput from "@/components/ui/SearchInput";
+import ViewToggle from "@/components/ui/ViewToggle";
+import { useViewMode } from "@/hooks/useViewMode";
+import {
+  CardGrid,
+  GridCard,
+  CardFields,
+  CardField,
+  CardActions,
+} from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
 
 // ── Validation ─────────────────────────────────────────────────
@@ -390,6 +399,45 @@ export default function UsersPage() {
   };
 
   const isPending = createMut.isPending || updateMut.isPending;
+  const [view, setView] = useViewMode();
+  const emptyText = debouncedSearch
+    ? `Sin resultados para "${debouncedSearch}"`
+    : "No hay usuarios registrados";
+
+  const renderRole = (u: User) =>
+    u.id_role ? (
+      <span className="text-xs bg-info-bg text-info-fg px-2 py-0.5 rounded-full">
+        {u.role_name ?? roleMap[u.id_role] ?? "Rol desconocido"}
+      </span>
+    ) : (
+      <span className="text-ink-3 text-xs italic">Sin rol</span>
+    );
+
+  const renderActions = (u: User) => (
+    <>
+      <Button size="sm" variant="secondary" onClick={() => openEdit(u)}>
+        <Pencil size={12} /> Editar
+      </Button>
+      <Button
+        size="sm"
+        variant="danger-soft"
+        loading={deleteMut.isPending && deleteMut.variables === u.id}
+        onClick={async () => {
+          if (
+            await confirm({
+              title: `¿Desactivar a ${u.name} ${u.lastname ?? ""}?`,
+              message: "El usuario quedará inactivo y no podrá acceder.",
+              confirmLabel: "Desactivar",
+            })
+          ) {
+            deleteMut.mutate(u.id);
+          }
+        }}
+      >
+        <Trash2 size={12} /> Eliminar
+      </Button>
+    </>
+  );
 
   return (
     <div>
@@ -436,7 +484,7 @@ export default function UsersPage() {
           onChange={setSearch}
           placeholder="Buscar por nombre, email, cédula o teléfono"
           label="Buscar usuarios"
-          className="w-80"
+          className="w-full sm:w-80"
         />
         {(["all", "active", "inactive"] as const).map((f) => (
           <button
@@ -452,12 +500,47 @@ export default function UsersPage() {
             {f === "all" ? "Todos" : f === "active" ? "Activo" : "Inactivo"}
           </button>
         ))}
+        <div className="ml-auto">
+          <ViewToggle view={view} onChange={setView} />
+        </div>
       </div>
 
       {/* Table */}
       <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
         {isLoading ? (
           <TableSkeleton label="Cargando usuarios…" />
+        ) : view === "grid" ? (
+          <CardGrid empty={filtered.length === 0 && emptyText}>
+            {filtered.map((u, i) => (
+              <GridCard key={u.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Avatar
+                      name={u.name}
+                      lastname={u.lastname}
+                      idx={i}
+                      image={u.image}
+                    />
+                    <div className="min-w-0">
+                      <h2 className="font-medium text-ink text-sm truncate">
+                        {u.name} {u.lastname}
+                      </h2>
+                      <p className="text-xs text-ink-3 truncate">{u.email}</p>
+                    </div>
+                  </div>
+                  <Badge variant={u.active ? "success" : "default"}>
+                    {u.active ? "Activo" : "Inactivo"}
+                  </Badge>
+                </div>
+                <CardFields>
+                  <CardField label="Rol">{renderRole(u)}</CardField>
+                  <CardField label="Cédula">{u.cedula ?? "—"}</CardField>
+                  <CardField label="Teléfono">{u.phone ?? "—"}</CardField>
+                </CardFields>
+                <CardActions>{renderActions(u)}</CardActions>
+              </GridCard>
+            ))}
+          </CardGrid>
         ) : (
           <table className="w-full min-w-160">
             <thead>
@@ -504,15 +587,7 @@ export default function UsersPage() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-5 py-3.5">
-                    {u.id_role ? (
-                      <span className="text-xs bg-info-bg text-info-fg px-2 py-0.5 rounded-full">
-                        {u.role_name ?? roleMap[u.id_role] ?? "Rol desconocido"}
-                      </span>
-                    ) : (
-                      <span className="text-ink-3 text-xs italic">Sin rol</span>
-                    )}
-                  </td>
+                  <td className="px-5 py-3.5">{renderRole(u)}</td>
                   <td className="px-5 py-3.5 text-sm text-ink-3">
                     {u.cedula ?? (
                       <span className="text-ink-3 italic text-xs">—</span>
@@ -529,36 +604,7 @@ export default function UsersPage() {
                     </Badge>
                   </td>
                   <td className="px-5 py-3.5">
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => openEdit(u)}
-                      >
-                        <Pencil size={12} /> Editar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="danger-soft"
-                        loading={
-                          deleteMut.isPending && deleteMut.variables === u.id
-                        }
-                        onClick={async () => {
-                          if (
-                            await confirm({
-                              title: `¿Desactivar a ${u.name} ${u.lastname ?? ""}?`,
-                              message:
-                                "El usuario quedará inactivo y no podrá acceder.",
-                              confirmLabel: "Desactivar",
-                            })
-                          ) {
-                            deleteMut.mutate(u.id);
-                          }
-                        }}
-                      >
-                        <Trash2 size={12} /> Eliminar
-                      </Button>
-                    </div>
+                    <div className="flex gap-2">{renderActions(u)}</div>
                   </td>
                 </tr>
               ))}
@@ -568,9 +614,7 @@ export default function UsersPage() {
                     colSpan={6}
                     className="px-5 py-8 text-center text-ink-3 text-sm"
                   >
-                    {debouncedSearch
-                      ? `Sin resultados para "${debouncedSearch}"`
-                      : "No hay usuarios registrados"}
+                    {emptyText}
                   </td>
                 </tr>
               )}

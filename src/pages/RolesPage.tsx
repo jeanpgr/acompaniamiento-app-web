@@ -20,6 +20,15 @@ import TableSkeleton from "@/components/ui/TableSkeleton";
 import { useCursorPagination } from "@/hooks/useCursorPagination";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import SearchInput from "@/components/ui/SearchInput";
+import ViewToggle from "@/components/ui/ViewToggle";
+import { useViewMode } from "@/hooks/useViewMode";
+import {
+  CardGrid,
+  GridCard,
+  CardFields,
+  CardField,
+  CardActions,
+} from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
 
 // Deben coincidir con los módulos de `authorizePermission("<módulo>")` en el backend.
@@ -178,6 +187,37 @@ export default function RolesPage() {
   // El panel lateral muestra los permisos del rol seleccionado (clic en la
   // fila o en el selector); por defecto, el primero de la lista filtrada.
   const displayRole = filtered.find((r) => r.id === selectedId) ?? filtered[0];
+  const [view, setView] = useViewMode();
+  const emptyText = debouncedSearch
+    ? `Sin resultados para "${debouncedSearch}"`
+    : "No hay roles disponibles";
+
+  const renderActions = (role: Role) => (
+    <>
+      <Button
+        size="sm"
+        variant="secondary"
+        onClick={(e) => {
+          e.stopPropagation();
+          openEdit(role);
+        }}
+      >
+        <Pencil size={12} /> Editar
+      </Button>
+      <Button
+        size="sm"
+        variant="danger-soft"
+        loading={deleteMut.isPending && deleteMut.variables === role.id}
+        aria-label={`Eliminar rol ${role.name}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete(role);
+        }}
+      >
+        <Trash2 size={12} />
+      </Button>
+    </>
+  );
 
   return (
     <div>
@@ -218,13 +258,60 @@ export default function RolesPage() {
             {f === "all" ? "Todos" : f === "active" ? "Activos" : "Inactivos"}
           </button>
         ))}
+        <div className="ml-auto">
+          <ViewToggle view={view} onChange={setView} />
+        </div>
       </div>
 
-      <div className="flex gap-5">
+      {/* En pantallas angostas el panel de permisos pasa debajo del listado */}
+      <div className="flex flex-col lg:flex-row gap-5">
         {/* Table */}
         <div className="flex-1 bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
           {isLoading ? (
             <TableSkeleton label="Cargando roles…" />
+          ) : view === "grid" ? (
+            <CardGrid empty={filtered.length === 0 && emptyText}>
+              {filtered.map((role) => (
+                <GridCard
+                  key={role.id}
+                  selected={role.id === displayRole?.id}
+                  onClick={() => setSelectedId(role.id)}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <h2 className="font-medium text-ink text-sm">
+                      {role.name}
+                    </h2>
+                    <Badge variant={role.active ? "success" : "default"}>
+                      {role.active ? "Activo" : "Inactivo"}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-ink-3 line-clamp-3">
+                    {role.description ?? "Sin descripción"}
+                  </p>
+                  <CardFields>
+                    <CardField label="Usuarios">
+                      <span className="text-xs bg-info-bg text-info-fg px-2 py-0.5 rounded-full">
+                        {usersLabel(role.users_count ?? 0)}
+                      </span>
+                    </CardField>
+                  </CardFields>
+                  <CardActions>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      aria-pressed={role.id === displayRole?.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedId(role.id);
+                      }}
+                    >
+                      <Shield size={12} /> Permisos
+                    </Button>
+                    {renderActions(role)}
+                  </CardActions>
+                </GridCard>
+              ))}
+            </CardGrid>
           ) : (
             <table className="w-full min-w-160">
               <thead>
@@ -276,33 +363,7 @@ export default function RolesPage() {
                       </Badge>
                     </td>
                     <td className="px-5 py-3.5">
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openEdit(role);
-                          }}
-                        >
-                          <Pencil size={12} /> Editar
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="danger-soft"
-                          loading={
-                            deleteMut.isPending &&
-                            deleteMut.variables === role.id
-                          }
-                          aria-label={`Eliminar rol ${role.name}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDelete(role);
-                          }}
-                        >
-                          <Trash2 size={12} />
-                        </Button>
-                      </div>
+                      <div className="flex gap-2">{renderActions(role)}</div>
                     </td>
                   </tr>
                 ))}
@@ -312,9 +373,7 @@ export default function RolesPage() {
                       colSpan={5}
                       className="px-5 py-8 text-center text-ink-3 text-sm"
                     >
-                      {debouncedSearch
-                        ? `Sin resultados para "${debouncedSearch}"`
-                        : "No hay roles disponibles"}
+                      {emptyText}
                     </td>
                   </tr>
                 )}
@@ -326,7 +385,7 @@ export default function RolesPage() {
 
         {/* Permissions panel */}
         {displayRole && (
-          <div className="w-64 shrink-0 bg-surface rounded-xl p-5 shadow-sm border border-line h-fit">
+          <div className="w-full lg:w-64 shrink-0 bg-surface rounded-xl p-5 shadow-sm border border-line h-fit">
             <div className="flex items-center gap-2 mb-4">
               <Shield size={15} className="text-warning-fg" />
               <h3 className="font-semibold text-ink text-sm">
@@ -334,7 +393,7 @@ export default function RolesPage() {
               </h3>
             </div>
             <p className="text-xs text-ink-3 mb-3">
-              Módulos a los que puede acceder este rol. Haz clic en otra fila
+              Módulos a los que puede acceder este rol. Haz clic en otro rol
               para ver sus permisos.
             </p>
             <div className="space-y-2">

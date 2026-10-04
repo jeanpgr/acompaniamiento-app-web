@@ -34,6 +34,15 @@ import TableSkeleton from "@/components/ui/TableSkeleton";
 import { useCursorPagination } from "@/hooks/useCursorPagination";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import SearchInput from "@/components/ui/SearchInput";
+import ViewToggle from "@/components/ui/ViewToggle";
+import { useViewMode } from "@/hooks/useViewMode";
+import {
+  CardGrid,
+  GridCard,
+  CardFields,
+  CardField,
+  CardActions,
+} from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
 
 const schema = z.object({
@@ -237,6 +246,109 @@ export default function TourismDetailPage() {
     });
 
   const isPending = createMut.isPending || updateMut.isPending;
+  const [view, setView] = useViewMode();
+  const emptyText = debouncedSearch
+    ? `Sin resultados para "${debouncedSearch}"`
+    : "No hay excursiones registradas";
+
+  const renderPrices = (item: DetailTourism) =>
+    item.prices &&
+    (item.prices.adult !== undefined ||
+      item.prices.child !== undefined ||
+      item.prices.senior !== undefined) ? (
+      <div className="space-y-0.5">
+        {item.prices.adult !== undefined && (
+          <div>
+            <span className="text-ink-3">Adulto:</span>{" "}
+            <span className="font-medium">${item.prices.adult.toFixed(2)}</span>
+          </div>
+        )}
+        {item.prices.child !== undefined && (
+          <div>
+            <span className="text-ink-3">Niño:</span>{" "}
+            <span className="font-medium">${item.prices.child.toFixed(2)}</span>
+          </div>
+        )}
+        {item.prices.senior !== undefined && (
+          <div>
+            <span className="text-ink-3">3ra edad:</span>{" "}
+            <span className="font-medium">
+              ${item.prices.senior.toFixed(2)}
+            </span>
+          </div>
+        )}
+      </div>
+    ) : (
+      <span className="text-ink-3 italic">—</span>
+    );
+
+  const renderItineraryToggle = (item: DetailTourism) => {
+    const stops = item.itinerary?.length ?? 0;
+    if (stops === 0)
+      return <span className="text-ink-3 italic text-xs">—</span>;
+    const isExpanded = expandedId === item.id;
+    return (
+      <button
+        onClick={() => toggleExpand(item.id)}
+        aria-expanded={isExpanded}
+        className="flex items-center gap-1 text-xs font-medium text-info-fg hover:text-info-fg transition-colors"
+      >
+        {isExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+        {stops} parada{stops !== 1 ? "s" : ""}
+      </button>
+    );
+  };
+
+  const renderItinerary = (item: DetailTourism) => (
+    <>
+      <p className="text-xs font-semibold text-ink-3 uppercase tracking-wide mb-3">
+        Itinerario
+      </p>
+      <div className="flex flex-col gap-0">
+        {(item.itinerary ?? []).map((stop, i, all) => (
+          <div key={i} className="flex items-start gap-3">
+            {/* línea de tiempo */}
+            <div className="flex flex-col items-center">
+              <div className="w-2 h-2 rounded-full mt-1 shrink-0 bg-primary" />
+              {i < all.length - 1 && (
+                <div
+                  className="w-px flex-1 bg-line-strong my-1"
+                  style={{ minHeight: 16 }}
+                />
+              )}
+            </div>
+            <div className="pb-3">
+              {stop.hour && (
+                <span className="text-xs font-semibold text-ink-2 mr-2">
+                  {stop.hour}
+                </span>
+              )}
+              <span className="text-xs text-ink">{stop.place}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+
+  const renderActions = (item: DetailTourism) => (
+    <>
+      <Button size="sm" variant="secondary" onClick={() => openEdit(item)}>
+        <Pencil size={12} /> Editar
+      </Button>
+      <Button
+        size="sm"
+        variant="danger-soft"
+        loading={deleteMut.isPending && deleteMut.variables === item.id}
+        onClick={async () => {
+          if (await confirm({ title: `¿Eliminar "${item.name}"?` }))
+            deleteMut.mutate(item.id);
+        }}
+      >
+        <Trash2 size={12} /> Eliminar
+      </Button>
+    </>
+  );
 
   return (
     <div>
@@ -267,19 +379,57 @@ export default function TourismDetailPage() {
         </Button>
       </div>
 
-      <div className="mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <SearchInput
           value={search}
           onChange={setSearch}
           placeholder="Buscar por nombre, descripción o punto de encuentro"
           label="Buscar excursiones"
         />
+        <ViewToggle view={view} onChange={setView} />
       </div>
 
       {/* Table */}
       <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
         {isLoading ? (
           <TableSkeleton label="Cargando excursiones…" />
+        ) : view === "grid" ? (
+          <CardGrid empty={items.length === 0 && emptyText}>
+            {items.map((item) => (
+              <GridCard key={item.id}>
+                <h2 className="font-medium text-ink text-sm">{item.name}</h2>
+                {item.description && (
+                  <p className="text-sm text-ink-3 line-clamp-3">
+                    {item.description}
+                  </p>
+                )}
+                <CardFields>
+                  <CardField label="Salida">{fmt(item.date_output)}</CardField>
+                  <CardField label="Llegada">
+                    {fmt(item.date_arrival)}
+                  </CardField>
+                  <CardField label="Cupos">
+                    <span className="font-medium">{item.quotas_available}</span>
+                    <span className="text-ink-3"> / {item.quotas}</span>
+                  </CardField>
+                  <CardField label="Precios">{renderPrices(item)}</CardField>
+                  <CardField label="Punto de encuentro">
+                    {item.meeting_point_address ?? "—"}
+                  </CardField>
+                  <CardField label="Itinerario">
+                    {renderItineraryToggle(item)}
+                  </CardField>
+                </CardFields>
+                {expandedId === item.id &&
+                  (item.itinerary?.length ?? 0) > 0 && (
+                    <div className="rounded-lg bg-surface-2 px-4 py-3">
+                      {renderItinerary(item)}
+                    </div>
+                  )}
+                <CardActions>{renderActions(item)}</CardActions>
+              </GridCard>
+            ))}
+          </CardGrid>
         ) : (
           <table className="w-full min-w-160">
             <thead>
@@ -342,39 +492,7 @@ export default function TourismDetailPage() {
                         <span className="text-ink-3"> / {item.quotas}</span>
                       </td>
                       <td className="px-5 py-3.5 text-xs text-ink-2">
-                        {item.prices &&
-                        (item.prices.adult !== undefined ||
-                          item.prices.child !== undefined ||
-                          item.prices.senior !== undefined) ? (
-                          <div className="space-y-0.5">
-                            {item.prices.adult !== undefined && (
-                              <div>
-                                <span className="text-ink-3">Adulto:</span>{" "}
-                                <span className="font-medium">
-                                  ${item.prices.adult.toFixed(2)}
-                                </span>
-                              </div>
-                            )}
-                            {item.prices.child !== undefined && (
-                              <div>
-                                <span className="text-ink-3">Niño:</span>{" "}
-                                <span className="font-medium">
-                                  ${item.prices.child.toFixed(2)}
-                                </span>
-                              </div>
-                            )}
-                            {item.prices.senior !== undefined && (
-                              <div>
-                                <span className="text-ink-3">3ra edad:</span>{" "}
-                                <span className="font-medium">
-                                  ${item.prices.senior.toFixed(2)}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-ink-3 italic">—</span>
-                        )}
+                        {renderPrices(item)}
                       </td>
                       <td className="px-5 py-3.5 text-sm text-ink-3 max-w-40 truncate">
                         {item.meeting_point_address ?? (
@@ -382,85 +500,16 @@ export default function TourismDetailPage() {
                         )}
                       </td>
                       <td className="px-5 py-3.5">
-                        {hasItinerary ? (
-                          <button
-                            onClick={() => toggleExpand(item.id)}
-                            className="flex items-center gap-1 text-xs font-medium text-info-fg hover:text-info-fg transition-colors"
-                          >
-                            {isExpanded ? (
-                              <ChevronDown size={13} />
-                            ) : (
-                              <ChevronRight size={13} />
-                            )}
-                            {item.itinerary!.length} parada
-                            {item.itinerary!.length !== 1 ? "s" : ""}
-                          </button>
-                        ) : (
-                          <span className="text-ink-3 italic text-xs">—</span>
-                        )}
+                        {renderItineraryToggle(item)}
                       </td>
                       <td className="px-5 py-3.5">
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => openEdit(item)}
-                          >
-                            <Pencil size={12} /> Editar
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="danger-soft"
-                            loading={
-                              deleteMut.isPending &&
-                              deleteMut.variables === item.id
-                            }
-                            onClick={async () => {
-                              if (
-                                await confirm({
-                                  title: `¿Eliminar "${item.name}"?`,
-                                })
-                              )
-                                deleteMut.mutate(item.id);
-                            }}
-                          >
-                            <Trash2 size={12} /> Eliminar
-                          </Button>
-                        </div>
+                        <div className="flex gap-2">{renderActions(item)}</div>
                       </td>
                     </tr>
                     {isExpanded && hasItinerary && (
                       <tr key={`${item.id}-itinerary`} className="bg-surface-2">
                         <td colSpan={7} className="px-8 py-4">
-                          <p className="text-xs font-semibold text-ink-3 uppercase tracking-wide mb-3">
-                            Itinerario
-                          </p>
-                          <div className="flex flex-col gap-0">
-                            {item.itinerary!.map((stop, i) => (
-                              <div key={i} className="flex items-start gap-3">
-                                {/* línea de tiempo */}
-                                <div className="flex flex-col items-center">
-                                  <div className="w-2 h-2 rounded-full mt-1 shrink-0 bg-primary" />
-                                  {i < item.itinerary!.length - 1 && (
-                                    <div
-                                      className="w-px flex-1 bg-line-strong my-1"
-                                      style={{ minHeight: 16 }}
-                                    />
-                                  )}
-                                </div>
-                                <div className="pb-3">
-                                  {stop.hour && (
-                                    <span className="text-xs font-semibold text-ink-2 mr-2">
-                                      {stop.hour}
-                                    </span>
-                                  )}
-                                  <span className="text-xs text-ink">
-                                    {stop.place}
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
+                          {renderItinerary(item)}
                         </td>
                       </tr>
                     )}
@@ -473,9 +522,7 @@ export default function TourismDetailPage() {
                     colSpan={7}
                     className="px-5 py-8 text-center text-ink-3 text-sm"
                   >
-                    {debouncedSearch
-                      ? `Sin resultados para "${debouncedSearch}"`
-                      : "No hay excursiones registradas"}
+                    {emptyText}
                   </td>
                 </tr>
               )}

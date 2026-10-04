@@ -23,6 +23,15 @@ import TableSkeleton from "@/components/ui/TableSkeleton";
 import { useCursorPagination } from "@/hooks/useCursorPagination";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import SearchInput from "@/components/ui/SearchInput";
+import ViewToggle from "@/components/ui/ViewToggle";
+import { useViewMode } from "@/hooks/useViewMode";
+import {
+  CardGrid,
+  GridCard,
+  CardFields,
+  CardField,
+  CardActions,
+} from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
 import Badge from "@/components/ui/Badge";
 
@@ -176,6 +185,30 @@ export default function DaycareDetailPage() {
   };
 
   const isPending = createMut.isPending || updateMut.isPending;
+  const [view, setView] = useViewMode();
+  const emptyText = debouncedSearch
+    ? `Sin resultados para "${debouncedSearch}"`
+    : "No hay modalidades de guardería registradas";
+  const renderActions = (item: DetailDaycare) => (
+    <>
+      <Button size="sm" variant="secondary" onClick={() => openEdit(item)}>
+        <Pencil size={12} /> Editar
+      </Button>
+      <Button
+        size="sm"
+        variant="danger-soft"
+        loading={deleteMut.isPending && deleteMut.variables === item.id}
+        onClick={async () => {
+          if (
+            await confirm({ title: "¿Eliminar esta modalidad de guardería?" })
+          )
+            deleteMut.mutate(item.id);
+        }}
+      >
+        <Trash2 size={12} /> Eliminar
+      </Button>
+    </>
+  );
 
   const formatPrice = (val?: number) =>
     val != null ? `$ ${val.toLocaleString("es-CO")}` : null;
@@ -209,19 +242,52 @@ export default function DaycareDetailPage() {
         </Button>
       </div>
 
-      <div className="mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <SearchInput
           value={search}
           onChange={setSearch}
           placeholder="Buscar por modalidad o dirección"
           label="Buscar modalidades"
         />
+        <ViewToggle view={view} onChange={setView} />
       </div>
 
       {/* Table */}
       <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
         {isLoading ? (
           <TableSkeleton label="Cargando modalidades…" />
+        ) : view === "grid" ? (
+          <CardGrid empty={items.length === 0 && emptyText}>
+            {items.map((item) => (
+              <GridCard key={item.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <h2 className="font-medium text-ink text-sm">
+                    {item.service_mode?.name ?? "Modalidad sin nombre"}
+                  </h2>
+                  <Badge variant={item.active ? "success" : "danger"}>
+                    {item.active ? "Activo" : "Inactivo"}
+                  </Badge>
+                </div>
+                <CardFields>
+                  <CardField label="Horas / día">
+                    {item.service_mode?.hours != null
+                      ? `${item.service_mode.hours} h`
+                      : "—"}
+                  </CardField>
+                  <CardField label="Precio recogida">
+                    {formatPrice(item.service_mode?.price_pickup) ?? "—"}
+                  </CardField>
+                  <CardField label="Precio entrega">
+                    {formatPrice(item.service_mode?.price_dropoff) ?? "—"}
+                  </CardField>
+                  <CardField label="Dirección">
+                    {item.address_point ?? "—"}
+                  </CardField>
+                </CardFields>
+                <CardActions>{renderActions(item)}</CardActions>
+              </GridCard>
+            ))}
+          </CardGrid>
         ) : (
           <table className="w-full min-w-160">
             <thead>
@@ -290,32 +356,7 @@ export default function DaycareDetailPage() {
                     </Badge>
                   </td>
                   <td className="px-5 py-3.5">
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => openEdit(item)}
-                      >
-                        <Pencil size={12} /> Editar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="danger-soft"
-                        loading={
-                          deleteMut.isPending && deleteMut.variables === item.id
-                        }
-                        onClick={async () => {
-                          if (
-                            await confirm({
-                              title: "¿Eliminar esta modalidad de guardería?",
-                            })
-                          )
-                            deleteMut.mutate(item.id);
-                        }}
-                      >
-                        <Trash2 size={12} /> Eliminar
-                      </Button>
-                    </div>
+                    <div className="flex gap-2">{renderActions(item)}</div>
                   </td>
                 </tr>
               ))}
@@ -325,9 +366,7 @@ export default function DaycareDetailPage() {
                     colSpan={7}
                     className="px-5 py-8 text-center text-ink-3 text-sm"
                   >
-                    {debouncedSearch
-                      ? `Sin resultados para "${debouncedSearch}"`
-                      : "No hay modalidades de guardería registradas"}
+                    {emptyText}
                   </td>
                 </tr>
               )}

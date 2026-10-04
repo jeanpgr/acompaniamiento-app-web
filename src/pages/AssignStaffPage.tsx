@@ -20,6 +20,15 @@ import TableSkeleton from "@/components/ui/TableSkeleton";
 import { useCursorPagination } from "@/hooks/useCursorPagination";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import SearchInput from "@/components/ui/SearchInput";
+import ViewToggle from "@/components/ui/ViewToggle";
+import { useViewMode } from "@/hooks/useViewMode";
+import {
+  CardGrid,
+  GridCard,
+  CardFields,
+  CardField,
+  CardActions,
+} from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -54,7 +63,8 @@ export default function AssignStaffPage() {
   const status = filterStatus === "all" ? undefined : filterStatus;
   const pager = useCursorPagination(
     ["schedules-acompan", { status, search: debouncedSearch }],
-    (cursor) => getSchedulesAcompanPage(cursor, { status, search: debouncedSearch }),
+    (cursor) =>
+      getSchedulesAcompanPage(cursor, { status, search: debouncedSearch }),
   );
   const { items: schedules, isLoading, counts } = pager;
   const { data: vehicles = [] } = useQuery({
@@ -91,6 +101,38 @@ export default function AssignStaffPage() {
   const completed = counts?.COMPLETADO ?? 0;
 
   const selected = items.find((i) => i.id === selectedId);
+  const [view, setView] = useViewMode();
+  const emptyText = debouncedSearch
+    ? `Sin resultados para "${debouncedSearch}"`
+    : "No hay servicios en este estado";
+
+  type Item = (typeof items)[number];
+  const toggleSelected = (item: Item) =>
+    setSelectedId(item.id === selectedId ? null : item.id);
+
+  const renderStatus = (item: Item) => (
+    <Badge variant={STATUS_VARIANT[item.status] ?? "default"}>
+      {STATUS_LABEL[item.status] ?? item.status}
+    </Badge>
+  );
+
+  const renderVehicle = (item: Item) =>
+    item.vehicle ?? (
+      <span className="text-ink-3 italic text-xs">Sin asignar</span>
+    );
+
+  const renderAssign = (item: Item) =>
+    item.status === "PENDIENTE" && (
+      <button
+        className="text-xs px-3 py-1.5 rounded-lg font-medium bg-primary text-white hover:bg-primary-hover transition-colors"
+        onClick={(e) => {
+          e.stopPropagation();
+          setSelectedId(item.id);
+        }}
+      >
+        Asignar
+      </button>
+    );
 
   return (
     <div>
@@ -126,9 +168,10 @@ export default function AssignStaffPage() {
         />
       </div>
 
-      <div className="flex gap-5">
+      {/* En pantallas angostas el panel de asignación pasa debajo del listado */}
+      <div className="flex flex-col lg:flex-row gap-5">
         {/* Left: service list */}
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           {/* Filters */}
           <div className="flex flex-wrap items-center gap-2 mb-3">
             <SearchInput
@@ -138,25 +181,65 @@ export default function AssignStaffPage() {
               label="Buscar servicios agendados"
               className="w-60"
             />
-            {(["all", "PENDIENTE", "EN CURSO", "COMPLETADO"] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilterStatus(f)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                  filterStatus === f
-                    ? "bg-primary text-white"
-                    : "bg-surface text-ink-2 ring-1 ring-inset ring-line hover:bg-surface-2"
-                }`}
-                aria-pressed={filterStatus === f}
-              >
-                {f === "all" ? "Todos" : STATUS_LABEL[f]}
-              </button>
-            ))}
+            {(["all", "PENDIENTE", "EN CURSO", "COMPLETADO"] as const).map(
+              (f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilterStatus(f)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                    filterStatus === f
+                      ? "bg-primary text-white"
+                      : "bg-surface text-ink-2 ring-1 ring-inset ring-line hover:bg-surface-2"
+                  }`}
+                  aria-pressed={filterStatus === f}
+                >
+                  {f === "all" ? "Todos" : STATUS_LABEL[f]}
+                </button>
+              ),
+            )}
+            <div className="ml-auto">
+              <ViewToggle view={view} onChange={setView} />
+            </div>
           </div>
 
           <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
             {isLoading ? (
               <TableSkeleton label="Cargando servicios…" />
+            ) : view === "grid" ? (
+              <CardGrid empty={items.length === 0 && emptyText}>
+                {items.map((item) => (
+                  <GridCard
+                    key={item.id}
+                    selected={selectedId === item.id}
+                    onClick={() => toggleSelected(item)}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h2 className="font-medium text-ink text-sm">
+                          {item.title}
+                        </h2>
+                        <p className="text-xs text-ink-3">{item.type}</p>
+                      </div>
+                      {renderStatus(item)}
+                    </div>
+                    <CardFields>
+                      <CardField label="Beneficiario">{item.person}</CardField>
+                      <CardField label="Fecha">
+                        <span className="inline-flex items-center gap-1">
+                          <Calendar size={12} className="text-ink-3" />
+                          {item.date}
+                        </span>
+                      </CardField>
+                      <CardField label="Vehículo">
+                        {renderVehicle(item)}
+                      </CardField>
+                    </CardFields>
+                    {item.status === "PENDIENTE" && (
+                      <CardActions>{renderAssign(item)}</CardActions>
+                    )}
+                  </GridCard>
+                ))}
+              </CardGrid>
             ) : (
               <table className="w-full min-w-160">
                 <thead>
@@ -188,9 +271,7 @@ export default function AssignStaffPage() {
                       className={`border-b border-line/70 hover:bg-surface-2 cursor-pointer transition-colors ${
                         selectedId === item.id ? "bg-info-bg/40" : ""
                       }`}
-                      onClick={() =>
-                        setSelectedId(item.id === selectedId ? null : item.id)
-                      }
+                      onClick={() => toggleSelected(item)}
                     >
                       <td className="px-5 py-3.5">
                         <p className="font-medium text-ink text-sm">
@@ -208,32 +289,10 @@ export default function AssignStaffPage() {
                         </div>
                       </td>
                       <td className="px-5 py-3.5 text-sm text-ink-2">
-                        {item.vehicle ?? (
-                          <span className="text-ink-3 italic text-xs">
-                            Sin asignar
-                          </span>
-                        )}
+                        {renderVehicle(item)}
                       </td>
-                      <td className="px-5 py-3.5">
-                        <Badge
-                          variant={STATUS_VARIANT[item.status] ?? "default"}
-                        >
-                          {STATUS_LABEL[item.status] ?? item.status}
-                        </Badge>
-                      </td>
-                      <td className="px-5 py-3.5">
-                        {item.status === "PENDIENTE" && (
-                          <button
-                            className="text-xs px-3 py-1.5 rounded-lg font-medium bg-primary text-white hover:bg-primary-hover transition-colors"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedId(item.id);
-                            }}
-                          >
-                            Asignar
-                          </button>
-                        )}
-                      </td>
+                      <td className="px-5 py-3.5">{renderStatus(item)}</td>
+                      <td className="px-5 py-3.5">{renderAssign(item)}</td>
                     </tr>
                   ))}
                   {items.length === 0 && (
@@ -242,9 +301,7 @@ export default function AssignStaffPage() {
                         colSpan={6}
                         className="px-5 py-8 text-center text-ink-3 text-sm"
                       >
-                        {debouncedSearch
-                          ? `Sin resultados para "${debouncedSearch}"`
-                          : "No hay servicios en este estado"}
+                        {emptyText}
                       </td>
                     </tr>
                   )}
@@ -257,7 +314,7 @@ export default function AssignStaffPage() {
 
         {/* Right: assignment panel */}
         {selected && selected.status === "PENDIENTE" && (
-          <div className="w-72 shrink-0">
+          <div className="w-full lg:w-72 shrink-0">
             <div className="bg-surface rounded-xl shadow-sm border border-line p-5">
               <h3 className="font-semibold text-ink mb-4">Asignar vehículo</h3>
 

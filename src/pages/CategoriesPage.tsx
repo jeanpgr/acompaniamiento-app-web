@@ -23,6 +23,15 @@ import Badge from "@/components/ui/Badge";
 import { useCursorPagination } from "@/hooks/useCursorPagination";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import SearchInput from "@/components/ui/SearchInput";
+import ViewToggle from "@/components/ui/ViewToggle";
+import { useViewMode } from "@/hooks/useViewMode";
+import {
+  CardGrid,
+  GridCard,
+  CardFields,
+  CardField,
+  CardActions,
+} from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
 
 const schema = z.object({
@@ -126,6 +135,29 @@ export default function CategoriesPage() {
   };
 
   const isPending = createMut.isPending || updateMut.isPending;
+  const [view, setView] = useViewMode();
+  const emptyText = debouncedSearch
+    ? `Sin resultados para "${debouncedSearch}"`
+    : "No hay categorías registradas";
+
+  const renderActions = (c: Category) => (
+    <>
+      <Button size="sm" variant="secondary" onClick={() => openEdit(c)}>
+        <Pencil size={12} /> Editar
+      </Button>
+      <Button
+        size="sm"
+        variant="danger-soft"
+        loading={deleteMut.isPending && deleteMut.variables === c.id}
+        onClick={async () => {
+          if (await confirm({ title: `¿Eliminar "${c.name}"?` }))
+            deleteMut.mutate(c.id);
+        }}
+      >
+        <Trash2 size={12} /> Eliminar
+      </Button>
+    </>
+  );
 
   return (
     <div>
@@ -144,18 +176,41 @@ export default function CategoriesPage() {
         </Button>
       </div>
 
-      <div className="mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <SearchInput
           value={search}
           onChange={setSearch}
           placeholder="Buscar por nombre o descripción"
           label="Buscar categorías"
         />
+        <ViewToggle view={view} onChange={setView} />
       </div>
 
       <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
         {isLoading ? (
           <TableSkeleton label="Cargando categorías…" />
+        ) : view === "grid" ? (
+          <CardGrid empty={categories.length === 0 && emptyText}>
+            {categories.map((c) => (
+              <GridCard key={c.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <h2 className="font-medium text-ink text-sm">{c.name}</h2>
+                  <Badge variant={c.active ? "success" : "danger"}>
+                    {c.active ? "Activa" : "Inactiva"}
+                  </Badge>
+                </div>
+                <p className="text-sm text-ink-3 line-clamp-3">
+                  {c.description ?? "Sin descripción"}
+                </p>
+                <CardFields>
+                  <CardField label="Creación">
+                    {new Date(c.created_at).toLocaleDateString("es-CO")}
+                  </CardField>
+                </CardFields>
+                <CardActions>{renderActions(c)}</CardActions>
+              </GridCard>
+            ))}
+          </CardGrid>
         ) : (
           <table className="w-full min-w-160">
             <thead>
@@ -200,30 +255,7 @@ export default function CategoriesPage() {
                     {new Date(c.created_at).toLocaleDateString("es-CO")}
                   </td>
                   <td className="px-5 py-3.5">
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => openEdit(c)}
-                      >
-                        <Pencil size={12} /> Editar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="danger-soft"
-                        loading={
-                          deleteMut.isPending && deleteMut.variables === c.id
-                        }
-                        onClick={async () => {
-                          if (
-                            await confirm({ title: `¿Eliminar "${c.name}"?` })
-                          )
-                            deleteMut.mutate(c.id);
-                        }}
-                      >
-                        <Trash2 size={12} /> Eliminar
-                      </Button>
-                    </div>
+                    <div className="flex gap-2">{renderActions(c)}</div>
                   </td>
                 </tr>
               ))}
@@ -233,9 +265,7 @@ export default function CategoriesPage() {
                     colSpan={5}
                     className="px-5 py-8 text-center text-ink-3 text-sm"
                   >
-                    {debouncedSearch
-                      ? `Sin resultados para "${debouncedSearch}"`
-                      : "No hay categorías registradas"}
+                    {emptyText}
                   </td>
                 </tr>
               )}

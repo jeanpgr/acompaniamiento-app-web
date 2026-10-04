@@ -19,6 +19,15 @@ import TableSkeleton from "@/components/ui/TableSkeleton";
 import { useCursorPagination } from "@/hooks/useCursorPagination";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import SearchInput from "@/components/ui/SearchInput";
+import ViewToggle from "@/components/ui/ViewToggle";
+import { useViewMode } from "@/hooks/useViewMode";
+import {
+  CardGrid,
+  GridCard,
+  CardFields,
+  CardField,
+  CardActions,
+} from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
 
 const REVIEW_THRESHOLD = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -92,6 +101,41 @@ export default function VehiclesPage() {
     users.map((u) => [u.id, `${u.name} ${u.lastname}`]),
   );
 
+  const [view, setView] = useViewMode();
+  const emptyText = debouncedSearch
+    ? `Sin resultados para "${debouncedSearch}"`
+    : "No hay vehículos registrados";
+
+  const renderReview = (v: Vehicle) => {
+    if (!v.next_review) return <span className="text-ink-3 text-sm">—</span>;
+    const reviewSoon = new Date(v.next_review) <= REVIEW_THRESHOLD;
+    return (
+      <span
+        className={`text-sm ${reviewSoon ? "text-warning-fg font-medium" : "text-ink-3"}`}
+      >
+        {reviewSoon && <AlertTriangle size={12} className="inline mr-1" />}
+        {new Date(v.next_review).toLocaleDateString("es-CO")}
+      </span>
+    );
+  };
+
+  const renderActions = (v: Vehicle) => (
+    <>
+      <Button size="sm" variant="secondary" onClick={() => openEdit(v)}>
+        <Pencil size={12} /> Editar
+      </Button>
+      <Button
+        size="sm"
+        variant="danger-soft"
+        onClick={() => deleteMut.mutate(v.id)}
+        aria-label={`Eliminar ${v.name}`}
+        title="Eliminar"
+      >
+        <Trash2 size={12} />
+      </Button>
+    </>
+  );
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
@@ -135,18 +179,57 @@ export default function VehiclesPage() {
         />
       </div>
 
-      <div className="mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <SearchInput
           value={search}
           onChange={setSearch}
           placeholder="Buscar por nombre, modelo o placa"
           label="Buscar vehículos"
         />
+        <ViewToggle view={view} onChange={setView} />
       </div>
 
       <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
         {isLoading ? (
           <TableSkeleton label="Cargando vehículos…" />
+        ) : view === "grid" ? (
+          <CardGrid empty={vehicles.length === 0 && emptyText}>
+            {vehicles.map((v) => (
+              <GridCard key={v.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-lg bg-info-bg flex items-center justify-center shrink-0">
+                      <Truck size={16} className="text-info-fg" />
+                    </div>
+                    <div className="min-w-0">
+                      <h2 className="font-medium text-ink text-sm truncate">
+                        {v.name}
+                      </h2>
+                      <p className="text-xs text-ink-3 truncate">{v.model}</p>
+                    </div>
+                  </div>
+                  <Badge variant={v.active ? "success" : "default"}>
+                    {v.active ? "Activo" : "Inactivo"}
+                  </Badge>
+                </div>
+                <CardFields>
+                  <CardField label="Placa">
+                    <span className="font-mono">{v.license_plate}</span>
+                  </CardField>
+                  <CardField label="Capacidad">
+                    {v.capacity ?? "—"} personas
+                  </CardField>
+                  <CardField label="Conductor">
+                    {userMap[v.id_driver] ?? "Sin asignar"}
+                  </CardField>
+                  <CardField label="Próx. revisión">
+                    {renderReview(v)}
+                  </CardField>
+                </CardFields>
+                <CardActions>{renderActions(v)}</CardActions>
+              </GridCard>
+            ))}
+          </CardGrid>
         ) : (
           <table className="w-full min-w-160">
             <thead>
@@ -175,87 +258,51 @@ export default function VehiclesPage() {
               </tr>
             </thead>
             <tbody>
-              {vehicles.map((v) => {
-                const reviewSoon =
-                  v.next_review && new Date(v.next_review) <= REVIEW_THRESHOLD;
-                return (
-                  <tr
-                    key={v.id}
-                    className="border-b border-line/70 hover:bg-surface-2"
-                  >
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-info-bg flex items-center justify-center">
-                          <Truck size={15} className="text-info-fg" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-ink text-sm">
-                            {v.name}
-                          </p>
-                          <p className="text-xs text-ink-3">{v.model}</p>
-                        </div>
+              {vehicles.map((v) => (
+                <tr
+                  key={v.id}
+                  className="border-b border-line/70 hover:bg-surface-2"
+                >
+                  <td className="px-5 py-3.5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-info-bg flex items-center justify-center">
+                        <Truck size={15} className="text-info-fg" />
                       </div>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <span className="font-mono text-sm text-ink">
-                        {v.license_plate}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5 text-sm text-ink-2">
-                      {v.capacity ?? "—"} personas
-                    </td>
-                    <td className="px-5 py-3.5 text-sm text-ink-2">
-                      {userMap[v.id_driver] ?? "Sin asignar"}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      {v.next_review ? (
-                        <span
-                          className={`text-sm ${reviewSoon ? "text-warning-fg font-medium" : "text-ink-3"}`}
-                        >
-                          {reviewSoon && (
-                            <AlertTriangle size={12} className="inline mr-1" />
-                          )}
-                          {new Date(v.next_review).toLocaleDateString("es-CO")}
-                        </span>
-                      ) : (
-                        <span className="text-ink-3 text-sm">—</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <Badge variant={v.active ? "success" : "default"}>
-                        {v.active ? "Activo" : "Inactivo"}
-                      </Badge>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => openEdit(v)}
-                        >
-                          <Pencil size={12} /> Editar
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="danger-soft"
-                          onClick={() => deleteMut.mutate(v.id)}
-                        >
-                          <Trash2 size={12} />
-                        </Button>
+                      <div>
+                        <p className="font-medium text-ink text-sm">{v.name}</p>
+                        <p className="text-xs text-ink-3">{v.model}</p>
                       </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                    </div>
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <span className="font-mono text-sm text-ink">
+                      {v.license_plate}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3.5 text-sm text-ink-2">
+                    {v.capacity ?? "—"} personas
+                  </td>
+                  <td className="px-5 py-3.5 text-sm text-ink-2">
+                    {userMap[v.id_driver] ?? "Sin asignar"}
+                  </td>
+                  <td className="px-5 py-3.5">{renderReview(v)}</td>
+                  <td className="px-5 py-3.5">
+                    <Badge variant={v.active ? "success" : "default"}>
+                      {v.active ? "Activo" : "Inactivo"}
+                    </Badge>
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <div className="flex gap-2">{renderActions(v)}</div>
+                  </td>
+                </tr>
+              ))}
               {vehicles.length === 0 && (
                 <tr>
                   <td
                     colSpan={7}
                     className="px-5 py-8 text-center text-ink-3 text-sm"
                   >
-                    {debouncedSearch
-                      ? `Sin resultados para "${debouncedSearch}"`
-                      : "No hay vehículos registrados"}
+                    {emptyText}
                   </td>
                 </tr>
               )}

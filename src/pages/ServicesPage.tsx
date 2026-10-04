@@ -24,6 +24,15 @@ import TableSkeleton from "@/components/ui/TableSkeleton";
 import { useCursorPagination } from "@/hooks/useCursorPagination";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import SearchInput from "@/components/ui/SearchInput";
+import ViewToggle from "@/components/ui/ViewToggle";
+import { useViewMode } from "@/hooks/useViewMode";
+import {
+  CardGrid,
+  GridCard,
+  CardFields,
+  CardField,
+  CardActions,
+} from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
 
 // ── Validation ──────────────────────────────────────────────────
@@ -90,7 +99,10 @@ export default function ServicesPage() {
   const pager = useCursorPagination(
     ["services", { active: activeFilter, search: debouncedSearch }],
     (cursor) =>
-      getServicesPage(cursor, { active: activeFilter, search: debouncedSearch }),
+      getServicesPage(cursor, {
+        active: activeFilter,
+        search: debouncedSearch,
+      }),
   );
   const { items: displayed, isLoading } = pager;
 
@@ -167,6 +179,38 @@ export default function ServicesPage() {
   };
 
   const isPending = createMut.isPending || updateMut.isPending;
+  const [view, setView] = useViewMode();
+  const emptyText = debouncedSearch
+    ? `Sin resultados para "${debouncedSearch}"`
+    : "No hay servicios en esta categoría";
+
+  const renderActions = (s: Service) => (
+    <>
+      {s.type && s.type !== "ACOMPAÑAMIENTO" && (
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={() => handleManageDetails(s)}
+        >
+          <ChevronRight size={12} /> Gestionar
+        </Button>
+      )}
+      <Button size="sm" variant="secondary" onClick={() => openEdit(s)}>
+        <Pencil size={12} /> Editar
+      </Button>
+      <Button
+        size="sm"
+        variant="danger-soft"
+        loading={deleteMut.isPending && deleteMut.variables === s.id}
+        onClick={async () => {
+          if (await confirm({ title: `¿Eliminar el servicio "${s.name}"?` }))
+            deleteMut.mutate(s.id);
+        }}
+      >
+        <Trash2 size={12} /> Eliminar
+      </Button>
+    </>
+  );
 
   return (
     <div>
@@ -212,19 +256,48 @@ export default function ServicesPage() {
         ))}
       </div>
 
-      <div className="mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <SearchInput
           value={search}
           onChange={setSearch}
           placeholder="Buscar por nombre o descripción"
           label="Buscar servicios"
         />
+        <ViewToggle view={view} onChange={setView} />
       </div>
 
       {/* Table */}
       <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
         {isLoading ? (
           <TableSkeleton label="Cargando servicios…" />
+        ) : view === "grid" ? (
+          <CardGrid empty={displayed.length === 0 && emptyText}>
+            {displayed.map((s) => (
+              <GridCard key={s.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Briefcase size={14} className="text-ink-3 shrink-0" />
+                    <h2 className="font-medium text-ink text-sm truncate">
+                      {s.name}
+                    </h2>
+                  </div>
+                  <TypeBadge type={s.type} />
+                </div>
+                <p className="text-sm text-ink-3 line-clamp-3">
+                  {s.description ?? "Sin descripción"}
+                </p>
+                <CardFields>
+                  <CardField label="Precio base">
+                    {s.price ? `$ ${s.price}` : "—"}
+                  </CardField>
+                  <CardField label="Creación">
+                    {new Date(s.created_at).toLocaleDateString("es-CO")}
+                  </CardField>
+                </CardFields>
+                <CardActions>{renderActions(s)}</CardActions>
+              </GridCard>
+            ))}
+          </CardGrid>
         ) : (
           <table className="w-full min-w-160">
             <thead>
@@ -247,90 +320,51 @@ export default function ServicesPage() {
               </tr>
             </thead>
             <tbody>
-              {displayed.map((s) => {
-                const hasDetail = s.type && s.type !== "ACOMPAÑAMIENTO";
-                return (
-                  <tr
-                    key={s.id}
-                    className="border-b border-line/70 hover:bg-surface-2"
-                  >
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center gap-2">
-                        <Briefcase size={14} className="text-ink-3 shrink-0" />
-                        <div>
-                          <p className="font-medium text-ink text-sm">
-                            {s.name}
+              {displayed.map((s) => (
+                <tr
+                  key={s.id}
+                  className="border-b border-line/70 hover:bg-surface-2"
+                >
+                  <td className="px-5 py-3.5">
+                    <div className="flex items-center gap-2">
+                      <Briefcase size={14} className="text-ink-3 shrink-0" />
+                      <div>
+                        <p className="font-medium text-ink text-sm">{s.name}</p>
+                        {s.description && (
+                          <p className="text-xs text-ink-3 truncate max-w-56">
+                            {s.description}
                           </p>
-                          {s.description && (
-                            <p className="text-xs text-ink-3 truncate max-w-56">
-                              {s.description}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <TypeBadge type={s.type} />
-                    </td>
-                    <td className="px-5 py-3.5 text-sm text-ink-3">
-                      {s.price ? (
-                        `$ ${s.price}`
-                      ) : (
-                        <span className="text-ink-3 italic text-xs">—</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3.5 text-sm text-ink-3">
-                      {new Date(s.created_at).toLocaleDateString("es-CO")}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex gap-2 flex-wrap">
-                        {hasDetail && (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => handleManageDetails(s)}
-                          >
-                            <ChevronRight size={12} /> Gestionar
-                          </Button>
                         )}
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => openEdit(s)}
-                        >
-                          <Pencil size={12} /> Editar
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="danger-soft"
-                          loading={
-                            deleteMut.isPending && deleteMut.variables === s.id
-                          }
-                          onClick={async () => {
-                            if (
-                              await confirm({
-                                title: `¿Eliminar el servicio "${s.name}"?`,
-                              })
-                            )
-                              deleteMut.mutate(s.id);
-                          }}
-                        >
-                          <Trash2 size={12} /> Eliminar
-                        </Button>
                       </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                    </div>
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <TypeBadge type={s.type} />
+                  </td>
+                  <td className="px-5 py-3.5 text-sm text-ink-3">
+                    {s.price ? (
+                      `$ ${s.price}`
+                    ) : (
+                      <span className="text-ink-3 italic text-xs">—</span>
+                    )}
+                  </td>
+                  <td className="px-5 py-3.5 text-sm text-ink-3">
+                    {new Date(s.created_at).toLocaleDateString("es-CO")}
+                  </td>
+                  <td className="px-5 py-3.5">
+                    <div className="flex gap-2 flex-wrap">
+                      {renderActions(s)}
+                    </div>
+                  </td>
+                </tr>
+              ))}
               {displayed.length === 0 && (
                 <tr>
                   <td
                     colSpan={5}
                     className="px-5 py-8 text-center text-ink-3 text-sm"
                   >
-                    {debouncedSearch
-                      ? `Sin resultados para "${debouncedSearch}"`
-                      : "No hay servicios en esta categoría"}
+                    {emptyText}
                   </td>
                 </tr>
               )}

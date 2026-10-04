@@ -23,6 +23,15 @@ import TableSkeleton from "@/components/ui/TableSkeleton";
 import { useCursorPagination } from "@/hooks/useCursorPagination";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import SearchInput from "@/components/ui/SearchInput";
+import ViewToggle from "@/components/ui/ViewToggle";
+import { useViewMode } from "@/hooks/useViewMode";
+import {
+  CardGrid,
+  GridCard,
+  CardFields,
+  CardField,
+  CardActions,
+} from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
 
 const schema = z.object({
@@ -166,6 +175,63 @@ export default function TrainingDetailPage() {
   };
 
   const isPending = createMut.isPending || updateMut.isPending;
+  const [view, setView] = useViewMode();
+  const emptyText = debouncedSearch
+    ? `Sin resultados para "${debouncedSearch}"`
+    : "No hay capacitaciones registradas";
+
+  const formatDateTime = (item: DetailTraining) =>
+    new Date(item.date_time).toLocaleString("es-CO", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+  const renderPrice = (item: DetailTraining) =>
+    item.price != null ? (
+      <span className="font-medium text-ink">
+        ${Number(item.price).toFixed(2)}
+      </span>
+    ) : (
+      <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-success-bg text-success-fg font-medium">
+        Gratuito
+      </span>
+    );
+
+  const renderLink = (item: DetailTraining) =>
+    item.link_meet ? (
+      <a
+        href={item.link_meet}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-xs text-info-fg hover:underline truncate max-w-36 block"
+      >
+        {item.link_meet}
+      </a>
+    ) : (
+      <span className="text-ink-3 italic text-xs">—</span>
+    );
+
+  const renderActions = (item: DetailTraining) => (
+    <>
+      <Button size="sm" variant="secondary" onClick={() => openEdit(item)}>
+        <Pencil size={12} /> Editar
+      </Button>
+      <Button
+        size="sm"
+        variant="danger-soft"
+        loading={deleteMut.isPending && deleteMut.variables === item.id}
+        onClick={async () => {
+          if (await confirm({ title: `¿Eliminar "${item.topic}"?` }))
+            deleteMut.mutate(item.id);
+        }}
+      >
+        <Trash2 size={12} /> Eliminar
+      </Button>
+    </>
+  );
 
   return (
     <div>
@@ -196,19 +262,42 @@ export default function TrainingDetailPage() {
         </Button>
       </div>
 
-      <div className="mb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <SearchInput
           value={search}
           onChange={setSearch}
           placeholder="Buscar por tema o descripción"
           label="Buscar capacitaciones"
         />
+        <ViewToggle view={view} onChange={setView} />
       </div>
 
       {/* Table */}
       <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
         {isLoading ? (
           <TableSkeleton label="Cargando capacitaciones…" />
+        ) : view === "grid" ? (
+          <CardGrid empty={items.length === 0 && emptyText}>
+            {items.map((item) => (
+              <GridCard key={item.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <h2 className="font-medium text-ink text-sm">{item.topic}</h2>
+                  {renderPrice(item)}
+                </div>
+                {item.description && (
+                  <p className="text-sm text-ink-3 line-clamp-3">
+                    {item.description}
+                  </p>
+                )}
+                <CardFields>
+                  <CardField label="Fecha">{formatDateTime(item)}</CardField>
+                  <CardField label="Duración">{item.duration}</CardField>
+                  <CardField label="Enlace">{renderLink(item)}</CardField>
+                </CardFields>
+                <CardActions>{renderActions(item)}</CardActions>
+              </GridCard>
+            ))}
+          </CardGrid>
         ) : (
           <table className="w-full min-w-160">
             <thead>
@@ -252,69 +341,15 @@ export default function TrainingDetailPage() {
                     )}
                   </td>
                   <td className="px-5 py-3.5 text-sm text-ink-3">
-                    {new Date(item.date_time).toLocaleString("es-CO", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                    {formatDateTime(item)}
                   </td>
                   <td className="px-5 py-3.5 text-sm text-ink-2">
                     {item.duration}
                   </td>
-                  <td className="px-5 py-3.5 text-sm">
-                    {item.price != null ? (
-                      <span className="font-medium text-ink">
-                        ${Number(item.price).toFixed(2)}
-                      </span>
-                    ) : (
-                      <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-success-bg text-success-fg font-medium">
-                        Gratuito
-                      </span>
-                    )}
-                  </td>
+                  <td className="px-5 py-3.5 text-sm">{renderPrice(item)}</td>
+                  <td className="px-5 py-3.5">{renderLink(item)}</td>
                   <td className="px-5 py-3.5">
-                    {item.link_meet ? (
-                      <a
-                        href={item.link_meet}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-info-fg hover:underline truncate max-w-36 block"
-                      >
-                        {item.link_meet}
-                      </a>
-                    ) : (
-                      <span className="text-ink-3 italic text-xs">—</span>
-                    )}
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => openEdit(item)}
-                      >
-                        <Pencil size={12} /> Editar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="danger-soft"
-                        loading={
-                          deleteMut.isPending && deleteMut.variables === item.id
-                        }
-                        onClick={async () => {
-                          if (
-                            await confirm({
-                              title: `¿Eliminar "${item.topic}"?`,
-                            })
-                          )
-                            deleteMut.mutate(item.id);
-                        }}
-                      >
-                        <Trash2 size={12} /> Eliminar
-                      </Button>
-                    </div>
+                    <div className="flex gap-2">{renderActions(item)}</div>
                   </td>
                 </tr>
               ))}
@@ -324,9 +359,7 @@ export default function TrainingDetailPage() {
                     colSpan={6}
                     className="px-5 py-8 text-center text-ink-3 text-sm"
                   >
-                    {debouncedSearch
-                      ? `Sin resultados para "${debouncedSearch}"`
-                      : "No hay capacitaciones registradas"}
+                    {emptyText}
                   </td>
                 </tr>
               )}

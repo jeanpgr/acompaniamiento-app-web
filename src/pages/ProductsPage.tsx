@@ -30,6 +30,15 @@ import ImageLightbox from "@/components/ui/ImageLightbox";
 import { useCursorPagination } from "@/hooks/useCursorPagination";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import SearchInput from "@/components/ui/SearchInput";
+import ViewToggle from "@/components/ui/ViewToggle";
+import { useViewMode } from "@/hooks/useViewMode";
+import {
+  CardGrid,
+  GridCard,
+  CardFields,
+  CardField,
+  CardActions,
+} from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
 import Switch from "@/components/ui/Switch";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -191,10 +200,23 @@ function ImageZone({
   );
 }
 
-function ProductThumbnail({ photo, name }: { photo: string; name: string }) {
+function ProductThumbnail({
+  photo,
+  name,
+  className = "w-12 h-12",
+  iconSize = 16,
+}: {
+  photo: string;
+  name: string;
+  /** Tamaño del recuadro (miniatura de la tabla o portada de la tarjeta). */
+  className?: string;
+  iconSize?: number;
+}) {
   const [imgError, setImgError] = useState(false);
   return (
-    <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-line bg-surface-2 flex items-center justify-center">
+    <div
+      className={`${className} rounded-lg overflow-hidden shrink-0 border border-line bg-surface-2 flex items-center justify-center`}
+    >
       {photo && !imgError ? (
         <ZoomableImage
           src={photo}
@@ -206,7 +228,7 @@ function ProductThumbnail({ photo, name }: { photo: string; name: string }) {
           onError={() => setImgError(true)}
         />
       ) : (
-        <Package size={16} className="text-ink-3" />
+        <Package size={iconSize} className="text-ink-3" />
       )}
     </div>
   );
@@ -253,7 +275,6 @@ export default function ProductsPage() {
     queryFn: getCategories,
   });
   const activeCategories = categories.filter((c) => c.active);
-
 
   // ── Mutations ─────────────────────────────────────────────────
 
@@ -330,6 +351,41 @@ export default function ProductsPage() {
   // ── Modal open/close ──────────────────────────────────────────
 
   const isPending = createMut.isPending || updateMut.isPending;
+  const [view, setView] = useViewMode();
+  const emptyText = debouncedSearch
+    ? `Sin resultados para "${debouncedSearch}"`
+    : filterCat
+      ? "No hay productos en esta categoría."
+      : "No hay productos registrados.";
+
+  const renderStock = (p: Product) => (
+    <span className={`text-sm font-semibold ${stockColor(p.stock)}`}>
+      {p.stock}
+      {p.stock === 0 && (
+        <span className="ml-1 text-xs font-normal">(agotado)</span>
+      )}
+    </span>
+  );
+
+  const renderActions = (p: Product) => (
+    <>
+      <Button size="sm" variant="secondary" onClick={() => openEdit(p)}>
+        <Pencil size={12} /> Editar
+      </Button>
+      <Button
+        size="sm"
+        variant="danger-soft"
+        loading={deleteMut.isPending && deleteMut.variables === p.id}
+        onClick={async () => {
+          if (await confirm({ title: `¿Eliminar "${p.name}"?` })) {
+            deleteMut.mutate(p.id);
+          }
+        }}
+      >
+        <Trash2 size={12} /> Eliminar
+      </Button>
+    </>
+  );
 
   const closeModal = () => {
     setModalOpen(false);
@@ -423,13 +479,14 @@ export default function ProductsPage() {
         </Button>
       </div>
 
-      <div className="mb-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
         <SearchInput
           value={search}
           onChange={setSearch}
           placeholder="Buscar por nombre, descripción o categoría"
           label="Buscar productos"
         />
+        <ViewToggle view={view} onChange={setView} />
       </div>
 
       {/* Filtro por categoría */}
@@ -483,6 +540,44 @@ export default function ProductsPage() {
                 "Verifica la conexión con el servidor"}
             </p>
           </div>
+        ) : view === "grid" ? (
+          <CardGrid empty={displayedProducts.length === 0 && emptyText}>
+            {displayedProducts.map((p) => (
+              <GridCard key={p.id}>
+                <ProductThumbnail
+                  photo={p.photo}
+                  name={p.name}
+                  className="w-full h-40"
+                  iconSize={28}
+                />
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 className="font-medium text-ink text-sm truncate">
+                      {p.name}
+                    </h2>
+                    <p className="text-xs text-ink-3">
+                      {catName(p.id_category)}
+                    </p>
+                  </div>
+                  <Badge variant={p.active ? "success" : "danger"}>
+                    {p.active ? "Activo" : "Inactivo"}
+                  </Badge>
+                </div>
+                {p.description && (
+                  <p className="text-sm text-ink-3 line-clamp-2">
+                    {p.description}
+                  </p>
+                )}
+                <CardFields>
+                  <CardField label="Precio">
+                    <span className="font-medium">{formatPrice(p.price)}</span>
+                  </CardField>
+                  <CardField label="Stock">{renderStock(p)}</CardField>
+                </CardFields>
+                <CardActions>{renderActions(p)}</CardActions>
+              </GridCard>
+            ))}
+          </CardGrid>
         ) : (
           <table className="w-full min-w-160">
             <thead>
@@ -538,18 +633,7 @@ export default function ProductsPage() {
                     {formatPrice(p.price)}
                   </td>
 
-                  <td className="px-5 py-3">
-                    <span
-                      className={`text-sm font-semibold ${stockColor(p.stock)}`}
-                    >
-                      {p.stock}
-                      {p.stock === 0 && (
-                        <span className="ml-1 text-xs font-normal">
-                          (agotado)
-                        </span>
-                      )}
-                    </span>
-                  </td>
+                  <td className="px-5 py-3">{renderStock(p)}</td>
 
                   <td className="px-5 py-3">
                     <Badge variant={p.active ? "success" : "danger"}>
@@ -558,31 +642,7 @@ export default function ProductsPage() {
                   </td>
 
                   <td className="px-5 py-3">
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => openEdit(p)}
-                      >
-                        <Pencil size={12} /> Editar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="danger-soft"
-                        loading={
-                          deleteMut.isPending && deleteMut.variables === p.id
-                        }
-                        onClick={async () => {
-                          if (
-                            await confirm({ title: `¿Eliminar "${p.name}"?` })
-                          ) {
-                            deleteMut.mutate(p.id);
-                          }
-                        }}
-                      >
-                        <Trash2 size={12} /> Eliminar
-                      </Button>
-                    </div>
+                    <div className="flex gap-2">{renderActions(p)}</div>
                   </td>
                 </tr>
               ))}
@@ -593,11 +653,7 @@ export default function ProductsPage() {
                     colSpan={6}
                     className="px-5 py-12 text-center text-ink-3 text-sm"
                   >
-                    {debouncedSearch
-                      ? `Sin resultados para "${debouncedSearch}"`
-                      : filterCat
-                      ? "No hay productos en esta categoría."
-                      : "No hay productos registrados."}
+                    {emptyText}
                   </td>
                 </tr>
               )}
