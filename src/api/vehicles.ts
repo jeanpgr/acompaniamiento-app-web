@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { pageParams, type CursorPage, type ActiveCounts } from "./pagination";
 
 export interface Vehicle {
   id: string;
@@ -27,6 +28,20 @@ const BASE = "/vehicles";
 
 export const getVehicles = () =>
   apiClient.get<Vehicle[]>(BASE).then((r) => r.data);
+
+export interface VehicleCounts extends ActiveCounts {
+  /** Revisión técnica en los próximos 7 días o vencida. */
+  review_due: number;
+}
+
+/** Página por cursor (created_at DESC) para la tabla del panel. */
+export const getVehiclesPage = (
+  cursor: string | null,
+  filters: { search?: string } = {},
+) =>
+  apiClient
+    .get<CursorPage<Vehicle, VehicleCounts>>(BASE, { params: pageParams(cursor, filters) })
+    .then((r) => r.data);
 export const getVehicleById = (id: string) =>
   apiClient
     .get<Vehicle>(`${BASE}/${id}`)

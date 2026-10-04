@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { pageParams, type CursorPage, type ActiveCounts } from "./pagination";
 
 export type ServiceType =
   | "ACOMPAÑAMIENTO"
@@ -30,6 +31,15 @@ const BASE = "/services";
 // so r.data here is already the real payload.
 export const getServices = () =>
   apiClient.get<Service[]>(BASE).then((r) => r.data);
+
+/** Página por cursor (created_at DESC) para la tabla del panel. */
+export const getServicesPage = (
+  cursor: string | null,
+  filters: { active?: boolean; search?: string } = {},
+) =>
+  apiClient
+    .get<CursorPage<Service, ActiveCounts>>(BASE, { params: pageParams(cursor, filters) })
+    .then((r) => r.data);
 export const getServiceById = (id: string) =>
   apiClient.get<Service>(`${BASE}/${id}`).then((r) => r.data);
 export const createService = (body: CreateServiceInput) =>

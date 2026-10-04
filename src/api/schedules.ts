@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { pageParams, type CursorPage } from "./pagination";
 
 export type ScheduleStatus =
   | "PENDIENTE"
@@ -54,6 +55,15 @@ export interface CreateScheduleAcompanInput {
 export const getSchedulesAcompan = () =>
   apiClient
     .get<ScheduleAcompan[]>("/schedule-acompan")
+    .then((r) => r.data);
+
+/** Página por cursor (created_at DESC) para la tabla del panel. */
+export const getSchedulesAcompanPage = (
+  cursor: string | null,
+  filters: { status?: ScheduleStatus; search?: string } = {},
+) =>
+  apiClient
+    .get<CursorPage<ScheduleAcompan, Record<ScheduleStatus, number>>>("/schedule-acompan", { params: pageParams(cursor, filters) })
     .then((r) => r.data);
 export const createScheduleAcompan = (body: CreateScheduleAcompanInput) =>
   apiClient

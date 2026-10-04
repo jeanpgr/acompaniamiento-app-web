@@ -17,6 +17,7 @@ import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import TableSkeleton from "@/components/ui/TableSkeleton";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import SearchInput from "@/components/ui/SearchInput";
 
 const schema = z.object({
   question: z.string().min(5, "La pregunta debe tener al menos 5 caracteres"),
@@ -30,6 +31,7 @@ export default function FAQPage() {
   const confirm = useConfirm();
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<FrequentlyQuestion | null>(null);
+  const [search, setSearch] = useState("");
 
   const { data: faqs = [], isLoading } = useQuery({
     queryKey: ["frequently-questions"],
@@ -128,6 +130,16 @@ export default function FAQPage() {
     return JSON.stringify(faq.response);
   };
 
+  // Pocas preguntas y sin paginar: la búsqueda filtra en el navegador.
+  const q = search.trim().toLowerCase();
+  const visible = q
+    ? faqs.filter(
+        (faq) =>
+          faq.question.toLowerCase().includes(q) ||
+          displayResponse(faq).toLowerCase().includes(q),
+      )
+    : faqs;
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
@@ -144,6 +156,15 @@ export default function FAQPage() {
         </Button>
       </div>
 
+      <div className="mb-4">
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Buscar en preguntas y respuestas"
+          label="Buscar preguntas frecuentes"
+        />
+      </div>
+
       {isLoading ? (
         <div className="bg-surface rounded-xl shadow-sm border border-line">
           <TableSkeleton rows={4} label="Cargando preguntas…" />
@@ -158,9 +179,15 @@ export default function FAQPage() {
             <Plus size={14} /> Agregar primera pregunta
           </Button>
         </div>
+      ) : visible.length === 0 ? (
+        <div className="bg-surface rounded-xl shadow-sm border border-line p-12 text-center">
+          <p className="text-ink-3 text-sm">
+            Sin resultados para "{search.trim()}"
+          </p>
+        </div>
       ) : (
         <div className="space-y-3">
-          {faqs.map((faq, idx) => (
+          {visible.map((faq, idx) => (
             <div
               key={faq.id}
               className="bg-surface rounded-xl shadow-sm border border-line p-5"

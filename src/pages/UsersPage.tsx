@@ -4,7 +4,6 @@ import {
   Users,
   CheckCircle,
   UserX,
-  Search,
   Pencil,
   Trash2,
   UserPlus,
@@ -16,7 +15,7 @@ import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
-  getUsers,
+  getUsersPage,
   createUser,
   updateUser,
   deleteUser,
@@ -32,6 +31,11 @@ import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import TableSkeleton from "@/components/ui/TableSkeleton";
+import ZoomableImage from "@/components/ui/ZoomableImage";
+import { useCursorPagination } from "@/hooks/useCursorPagination";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import SearchInput from "@/components/ui/SearchInput";
+import CursorPagination from "@/components/ui/CursorPagination";
 
 // ── Validation ─────────────────────────────────────────────────
 const baseSchema = z.object({
@@ -96,9 +100,10 @@ function Avatar({
   const initials = `${name[0] ?? ""}${(lastname ?? "")[0] ?? ""}`.toUpperCase();
   if (image && !imgError) {
     return (
-      <img
+      <ZoomableImage
         src={image}
-        alt=""
+        alt={`${name} ${lastname ?? ""}`.trim()}
+        buttonClassName="rounded-full"
         className="w-8 h-8 rounded-full object-cover shrink-0 bg-line"
         onError={() => setImgError(true)}
       />
@@ -164,9 +169,10 @@ function PhotoPicker({
     <div className="flex items-center gap-4">
       <div className="w-16 h-16 rounded-full overflow-hidden bg-line flex items-center justify-center shrink-0 ring-1 ring-line">
         {shown ? (
-          <img
+          <ZoomableImage
             src={shown}
-            alt="Vista previa de la foto"
+            alt="Foto de perfil"
+            buttonClassName="w-full h-full rounded-full"
             className="w-full h-full object-cover"
           />
         ) : (
@@ -249,18 +255,23 @@ export default function UsersPage() {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
 
-  const { data: users = [], isLoading } = useQuery({
-    queryKey: ["users"],
-    queryFn: getUsers,
-  });
+  // Búsqueda y estado se filtran en el servidor (paginación por cursor);
+  // los conteos de las tarjetas respetan la búsqueda.
+  const debouncedSearch = useDebouncedValue(search.trim());
+  const active = statusFilter === "all" ? undefined : statusFilter === "active";
+  const pager = useCursorPagination(
+    ["users", { search: debouncedSearch, active }],
+    (cursor) => getUsersPage(cursor, { search: debouncedSearch, active }),
+  );
+  const { items: filtered, isLoading, counts } = pager;
   const { data: roles = [] } = useQuery({
     queryKey: ["roles"],
     queryFn: getRoles,
   });
   const roleMap = Object.fromEntries(roles.map((r) => [r.id, r.name]));
 
-  const activeCount = users.filter((u) => u.active).length;
-  const inactiveCount = users.filter((u) => !u.active).length;
+  const activeCount = counts?.active ?? 0;
+  const inactiveCount = counts?.inactive ?? 0;
 
   // ── Mutations ────────────────────────────────────────────────
   const createMut = useMutation({
@@ -378,21 +389,6 @@ export default function UsersPage() {
     }
   };
 
-  // ── Filter ───────────────────────────────────────────────────
-  const filtered = users.filter((u) => {
-    const matchSearch =
-      !search ||
-      `${u.name} ${u.lastname ?? ""}`
-        .toLowerCase()
-        .includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase());
-    const matchStatus =
-      statusFilter === "all" ||
-      (statusFilter === "active" && u.active) ||
-      (statusFilter === "inactive" && !u.active);
-    return matchSearch && matchStatus;
-  });
-
   const isPending = createMut.isPending || updateMut.isPending;
 
   return (
@@ -416,7 +412,7 @@ export default function UsersPage() {
         <StatCard
           icon={Users}
           tone="info"
-          value={users.length}
+          value={activeCount + inactiveCount}
           label="Total usuarios"
         />
         <StatCard
@@ -434,19 +430,14 @@ export default function UsersPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="relative">
-          <Search
-            size={13}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3"
-          />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar personal..."
-            className="pl-8 pr-3 py-1.5 text-sm border border-line rounded-lg bg-surface focus:outline-none w-48"
-          />
-        </div>
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Buscar por nombre, email, cédula o teléfono"
+          label="Buscar usuarios"
+          className="w-80"
+        />
         {(["all", "active", "inactive"] as const).map((f) => (
           <button
             key={f}
@@ -577,13 +568,16 @@ export default function UsersPage() {
                     colSpan={6}
                     className="px-5 py-8 text-center text-ink-3 text-sm"
                   >
-                    No se encontraron usuarios
+                    {debouncedSearch
+                      ? `Sin resultados para "${debouncedSearch}"`
+                      : "No hay usuarios registrados"}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         )}
+        {!isLoading && <CursorPagination pager={pager} />}
       </div>
 
       {/* Modal */}

@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, useWatch } from "react-hook-form";
 import { Pencil, Trash2, Plus, Shield } from "lucide-react";
 import { toast } from "sonner";
 import {
-  getRoles,
+  getRolesPage,
   createRole,
   updateRole,
   deleteRole,
@@ -17,6 +17,10 @@ import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import TableSkeleton from "@/components/ui/TableSkeleton";
+import { useCursorPagination } from "@/hooks/useCursorPagination";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import SearchInput from "@/components/ui/SearchInput";
+import CursorPagination from "@/components/ui/CursorPagination";
 
 // Deben coincidir con los módulos de `authorizePermission("<módulo>")` en el backend.
 const ALL_PERMISSIONS = [
@@ -77,10 +81,15 @@ export default function RolesPage() {
   const [editTarget, setEditTarget] = useState<Role | null>(null);
   const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");
 
-  const { data: roles = [], isLoading } = useQuery({
-    queryKey: ["roles"],
-    queryFn: getRoles,
-  });
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search.trim());
+  // Búsqueda y estado se filtran en el servidor (paginación por cursor).
+  const active = filter === "all" ? undefined : filter === "active";
+  const pager = useCursorPagination(
+    ["roles", { active, search: debouncedSearch }],
+    (cursor) => getRolesPage(cursor, { active, search: debouncedSearch }),
+  );
+  const { items: filtered, isLoading, counts } = pager;
 
   const createMut = useMutation({
     mutationFn: createRole,
@@ -166,12 +175,6 @@ export default function RolesPage() {
     }
   };
 
-  const filtered = roles.filter((r) => {
-    if (filter === "active") return r.active;
-    if (filter === "inactive") return !r.active;
-    return true;
-  });
-
   // El panel lateral muestra los permisos del rol seleccionado (clic en la
   // fila o en el selector); por defecto, el primero de la lista filtrada.
   const displayRole = filtered.find((r) => r.id === selectedId) ?? filtered[0];
@@ -191,9 +194,15 @@ export default function RolesPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Buscar por nombre o descripción"
+          label="Buscar roles"
+        />
         <span className="text-xs text-ink-3 bg-line rounded-full px-3 py-1">
-          {roles.length} roles
+          {(counts?.active ?? 0) + (counts?.inactive ?? 0)} roles
         </span>
         {(["all", "active", "inactive"] as const).map((f) => (
           <button
@@ -303,13 +312,16 @@ export default function RolesPage() {
                       colSpan={5}
                       className="px-5 py-8 text-center text-ink-3 text-sm"
                     >
-                      No hay roles disponibles
+                      {debouncedSearch
+                        ? `Sin resultados para "${debouncedSearch}"`
+                        : "No hay roles disponibles"}
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
           )}
+          {!isLoading && <CursorPagination pager={pager} />}
         </div>
 
         {/* Permissions panel */}

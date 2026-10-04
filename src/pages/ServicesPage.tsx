@@ -1,14 +1,14 @@
 import { getErrorMessage } from "@/api/client";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, ChevronRight, Briefcase } from "lucide-react";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
-  getServices,
+  getServicesPage,
   createService,
   updateService,
   deleteService,
@@ -21,6 +21,10 @@ import Modal from "@/components/ui/Modal";
 import { SERVICE_TYPE_STYLE, serviceTypeStyle } from "@/lib/serviceTypes";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import TableSkeleton from "@/components/ui/TableSkeleton";
+import { useCursorPagination } from "@/hooks/useCursorPagination";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import SearchInput from "@/components/ui/SearchInput";
+import CursorPagination from "@/components/ui/CursorPagination";
 
 // ── Validation ──────────────────────────────────────────────────
 const schema = z.object({
@@ -79,10 +83,16 @@ export default function ServicesPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Service | null>(null);
 
-  const { data: services = [], isLoading } = useQuery({
-    queryKey: ["services"],
-    queryFn: getServices,
-  });
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search.trim());
+  // La pestaña filtra en el servidor; los conteos llegan con la página.
+  const activeFilter = tab === "all";
+  const pager = useCursorPagination(
+    ["services", { active: activeFilter, search: debouncedSearch }],
+    (cursor) =>
+      getServicesPage(cursor, { active: activeFilter, search: debouncedSearch }),
+  );
+  const { items: displayed, isLoading } = pager;
 
   const createMut = useMutation({
     mutationFn: createService,
@@ -156,9 +166,6 @@ export default function ServicesPage() {
     }
   };
 
-  const active = services.filter((s) => s.active);
-  const inactive = services.filter((s) => !s.active);
-  const displayed = tab === "all" ? active : inactive;
   const isPending = createMut.isPending || updateMut.isPending;
 
   return (
@@ -183,8 +190,11 @@ export default function ServicesPage() {
       <div className="flex items-center gap-1 mb-4 border-b border-line">
         {(
           [
-            { key: "all", label: `Activos (${active.length})` },
-            { key: "inactive", label: `Inactivos (${inactive.length})` },
+            { key: "all", label: `Activos (${pager.counts?.active ?? 0})` },
+            {
+              key: "inactive",
+              label: `Inactivos (${pager.counts?.inactive ?? 0})`,
+            },
           ] as const
         ).map(({ key, label }) => (
           <button
@@ -200,6 +210,15 @@ export default function ServicesPage() {
             {label}
           </button>
         ))}
+      </div>
+
+      <div className="mb-4">
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Buscar por nombre o descripción"
+          label="Buscar servicios"
+        />
       </div>
 
       {/* Table */}
@@ -309,13 +328,16 @@ export default function ServicesPage() {
                     colSpan={5}
                     className="px-5 py-8 text-center text-ink-3 text-sm"
                   >
-                    No hay servicios en esta categoría
+                    {debouncedSearch
+                      ? `Sin resultados para "${debouncedSearch}"`
+                      : "No hay servicios en esta categoría"}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         )}
+        {!isLoading && <CursorPagination pager={pager} />}
       </div>
 
       {/* Legend */}

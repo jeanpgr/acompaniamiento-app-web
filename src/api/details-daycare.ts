@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { pageParams, type CursorPage } from "./pagination";
 
 export interface ServiceMode {
   name?: string;
@@ -27,6 +28,15 @@ const BASE = "/detail-daycare";
 export const getDetailsDaycare = () =>
   apiClient
     .get<DetailDaycare[]>(BASE)
+    .then((r) => r.data);
+
+/** Página por cursor (created_at DESC) para la tabla del panel. */
+export const getDetailsDaycarePage = (
+  cursor: string | null,
+  filters: { id_service?: string; search?: string } = {},
+) =>
+  apiClient
+    .get<CursorPage<DetailDaycare>>(BASE, { params: pageParams(cursor, filters) })
     .then((r) => r.data);
 
 export const getDetailDaycare = (id: string) =>

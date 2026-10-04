@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { pageParams, type CursorPage, type ActiveCounts } from "./pagination";
 
 export interface User {
   id: string;
@@ -49,6 +50,15 @@ function withPhoto(body: object, photo?: File | null) {
 }
 
 export const getUsers = () => apiClient.get<User[]>(BASE).then((r) => r.data);
+
+/** Página por cursor (created_at DESC) para la tabla del panel. */
+export const getUsersPage = (
+  cursor: string | null,
+  filters: { search?: string; active?: boolean } = {},
+) =>
+  apiClient
+    .get<CursorPage<User, ActiveCounts>>(BASE, { params: pageParams(cursor, filters) })
+    .then((r) => r.data);
 export const createUser = (body: CreateUserInput, photo?: File | null) => {
   const { data, config } = withPhoto(body, photo);
   return apiClient.post<User>(BASE, data, config).then((r) => r.data);

@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { pageParams, type CursorPage } from "./pagination";
 
 /** Tarifas por categoría de persona */
 export interface TourismPrices {
@@ -41,6 +42,15 @@ const BASE = "/detail-tourism";
 export const getDetailsTourism = () =>
   apiClient
     .get<DetailTourism[]>(BASE)
+    .then((r) => r.data);
+
+/** Página por cursor (created_at DESC) para la tabla del panel. */
+export const getDetailsTourismPage = (
+  cursor: string | null,
+  filters: { id_service?: string; search?: string } = {},
+) =>
+  apiClient
+    .get<CursorPage<DetailTourism>>(BASE, { params: pageParams(cursor, filters) })
     .then((r) => r.data);
 
 export const getDetailTourism = (id: string) =>

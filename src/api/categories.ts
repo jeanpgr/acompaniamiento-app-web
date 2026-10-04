@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { pageParams, type CursorPage, type ActiveCounts } from "./pagination";
 
 export interface Category {
   id: string;
@@ -21,6 +22,15 @@ const BASE = "/categories";
 
 export const getCategories = () =>
   apiClient.get<Category[]>(BASE).then((r) => r.data);
+
+/** Página por cursor (created_at DESC) para la tabla del panel. */
+export const getCategoriesPage = (
+  cursor: string | null,
+  filters: { search?: string } = {},
+) =>
+  apiClient
+    .get<CursorPage<Category, ActiveCounts>>(BASE, { params: pageParams(cursor, filters) })
+    .then((r) => r.data);
 
 export const getCategoryById = (id: string) =>
   apiClient.get<Category>(`${BASE}/${id}`).then((r) => r.data);

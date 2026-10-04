@@ -18,8 +18,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
-  getDetailsTourism,
-  getDetailsTourismByService,
+  getDetailsTourismPage,
   createDetailTourism,
   updateDetailTourism,
   deleteDetailTourism,
@@ -32,6 +31,10 @@ import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import TableSkeleton from "@/components/ui/TableSkeleton";
+import { useCursorPagination } from "@/hooks/useCursorPagination";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import SearchInput from "@/components/ui/SearchInput";
+import CursorPagination from "@/components/ui/CursorPagination";
 
 const schema = z.object({
   id_service: z.string().min(1, "Selecciona un servicio"),
@@ -84,11 +87,18 @@ export default function TourismDetailPage() {
   const toggleExpand = (id: string) =>
     setExpandedId((prev) => (prev === id ? null : id));
 
-  const { data: items = [], isLoading } = useQuery({
-    queryKey: serviceId ? ["detail-tourism", serviceId] : ["detail-tourism"],
-    queryFn: () =>
-      serviceId ? getDetailsTourismByService(serviceId) : getDetailsTourism(),
-  });
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search.trim());
+  // Con ?service= se listan solo las del servicio (filtro en el servidor).
+  const pager = useCursorPagination(
+    ["detail-tourism", { id_service: serviceId, search: debouncedSearch }],
+    (cursor) =>
+      getDetailsTourismPage(cursor, {
+        id_service: serviceId ?? undefined,
+        search: debouncedSearch,
+      }),
+  );
+  const { items, isLoading } = pager;
 
   const { data: services = [] } = useQuery({
     queryKey: ["services"],
@@ -255,6 +265,15 @@ export default function TourismDetailPage() {
         <Button onClick={openCreate}>
           <Plus size={14} /> Nueva excursión
         </Button>
+      </div>
+
+      <div className="mb-4">
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Buscar por nombre, descripción o punto de encuentro"
+          label="Buscar excursiones"
+        />
       </div>
 
       {/* Table */}
@@ -454,13 +473,16 @@ export default function TourismDetailPage() {
                     colSpan={7}
                     className="px-5 py-8 text-center text-ink-3 text-sm"
                   >
-                    No hay excursiones registradas
+                    {debouncedSearch
+                      ? `Sin resultados para "${debouncedSearch}"`
+                      : "No hay excursiones registradas"}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         )}
+        {!isLoading && <CursorPagination pager={pager} />}
       </div>
 
       {/* Modal */}

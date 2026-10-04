@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Pencil,
   ShoppingCart,
   Eye,
-  Search,
   Phone,
   MapPin,
   Mail,
@@ -12,7 +11,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import {
-  getSales,
+  getSalesPage,
   updateSaleStatus,
   SALE_STATUS_TRANSITIONS,
   type Order,
@@ -23,6 +22,11 @@ import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import Badge from "@/components/ui/Badge";
 import TableSkeleton from "@/components/ui/TableSkeleton";
+import ZoomableImage from "@/components/ui/ZoomableImage";
+import { useCursorPagination } from "@/hooks/useCursorPagination";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import SearchInput from "@/components/ui/SearchInput";
+import CursorPagination from "@/components/ui/CursorPagination";
 
 const STATUS_CFG: Record<
   SalesStatus,
@@ -73,10 +77,15 @@ export default function SalesPage() {
   const [filter, setFilter] = useState<SalesStatus | "all">("all");
   const [search, setSearch] = useState("");
 
-  const { data: orders = [], isLoading } = useQuery({
-    queryKey: ["sales"],
-    queryFn: getSales,
-  });
+  // Búsqueda y estado se filtran en el servidor (paginación por cursor);
+  // los conteos por estado respetan la búsqueda.
+  const debouncedSearch = useDebouncedValue(search.trim());
+  const status = filter === "all" ? undefined : filter;
+  const pager = useCursorPagination(
+    ["sales", { search: debouncedSearch, status }],
+    (cursor) => getSalesPage(cursor, { search: debouncedSearch, status }),
+  );
+  const { items: filtered, isLoading } = pager;
 
   const updateMut = useMutation({
     mutationFn: ({
@@ -106,18 +115,9 @@ export default function SalesPage() {
   };
 
   const counts = Object.fromEntries(
-    STATUSES.map((s) => [s, orders.filter((o) => o.status === s).length]),
+    STATUSES.map((s) => [s, pager.counts?.[s] ?? 0]),
   ) as Record<SalesStatus, number>;
-
-  const q = search.trim().toLowerCase();
-  const filtered = orders.filter(
-    (o) =>
-      (filter === "all" || o.status === filter) &&
-      (!q ||
-        o.code.toLowerCase().includes(q) ||
-        customerName(o).toLowerCase().includes(q) ||
-        (o.customer?.phone ?? "").includes(q)),
-  );
+  const totalOrders = STATUSES.reduce((sum, s) => sum + counts[s], 0);
 
   const allowed = statusTarget
     ? SALE_STATUS_TRANSITIONS[statusTarget.status]
@@ -138,7 +138,7 @@ export default function SalesPage() {
           {
             key: "all" as const,
             label: "Total",
-            value: orders.length,
+            value: totalOrders,
             color: "text-ink",
           },
           ...STATUSES.map((s) => ({
@@ -166,17 +166,12 @@ export default function SalesPage() {
         ))}
       </div>
 
-      <div className="relative mb-4 w-64">
-        <Search
-          size={13}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3"
-        />
-        <input
+      <div className="mb-4">
+        <SearchInput
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar pedido, cliente o teléfono"
-          aria-label="Buscar pedidos"
-          className="pl-8 pr-3 py-1.5 text-sm border border-line rounded-lg bg-surface focus:outline-none w-full"
+          onChange={setSearch}
+          placeholder="Buscar por código, cliente o teléfono"
+          label="Buscar pedidos"
         />
       </div>
 
@@ -288,7 +283,7 @@ export default function SalesPage() {
                       size={28}
                       className="mx-auto mb-2 text-line-strong"
                     />
-                    {orders.length === 0
+                    {filter === "all" && !debouncedSearch
                       ? "No hay ventas registradas"
                       : "Ningún pedido coincide con el filtro"}
                   </td>
@@ -297,6 +292,7 @@ export default function SalesPage() {
             </tbody>
           </table>
         )}
+        {!isLoading && <CursorPagination pager={pager} />}
       </div>
 
       {/* Detalle */}
@@ -356,9 +352,10 @@ export default function SalesPage() {
                     <td className="py-2">
                       <div className="flex items-center gap-2">
                         {it.photo ? (
-                          <img
+                          <ZoomableImage
                             src={it.photo}
-                            alt=""
+                            alt={it.name}
+                            buttonClassName="rounded"
                             className="w-8 h-8 rounded object-cover bg-line"
                           />
                         ) : (

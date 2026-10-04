@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { pageParams, type CursorPage } from "./pagination";
 
 export interface DiscountCoupon {
   id: string;
@@ -25,6 +26,15 @@ const BASE = "/discount-coupons";
 
 export const getDiscountCoupons = () =>
   apiClient.get<DiscountCoupon[]>(BASE).then((r) => r.data);
+
+/** Página por cursor (created_at DESC) para la tabla del panel. */
+export const getDiscountCouponsPage = (
+  cursor: string | null,
+  filters: { search?: string } = {},
+) =>
+  apiClient
+    .get<CursorPage<DiscountCoupon>>(BASE, { params: pageParams(cursor, filters) })
+    .then((r) => r.data);
 
 export const getDiscountCouponById = (id: string) =>
   apiClient.get<DiscountCoupon>(`${BASE}/${id}`).then((r) => r.data);

@@ -7,8 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
-  getDetailsTraining,
-  getDetailsTrainingByService,
+  getDetailsTrainingPage,
   createDetailTraining,
   updateDetailTraining,
   deleteDetailTraining,
@@ -21,6 +20,10 @@ import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import TableSkeleton from "@/components/ui/TableSkeleton";
+import { useCursorPagination } from "@/hooks/useCursorPagination";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import SearchInput from "@/components/ui/SearchInput";
+import CursorPagination from "@/components/ui/CursorPagination";
 
 const schema = z.object({
   id_service: z.string().min(1, "Selecciona un servicio"),
@@ -47,11 +50,18 @@ export default function TrainingDetailPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<DetailTraining | null>(null);
 
-  const { data: items = [], isLoading } = useQuery({
-    queryKey: serviceId ? ["detail-training", serviceId] : ["detail-training"],
-    queryFn: () =>
-      serviceId ? getDetailsTrainingByService(serviceId) : getDetailsTraining(),
-  });
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search.trim());
+  // Con ?service= se listan solo las del servicio (filtro en el servidor).
+  const pager = useCursorPagination(
+    ["detail-training", { id_service: serviceId, search: debouncedSearch }],
+    (cursor) =>
+      getDetailsTrainingPage(cursor, {
+        id_service: serviceId ?? undefined,
+        search: debouncedSearch,
+      }),
+  );
+  const { items, isLoading } = pager;
 
   const { data: services = [] } = useQuery({
     queryKey: ["services"],
@@ -186,6 +196,15 @@ export default function TrainingDetailPage() {
         </Button>
       </div>
 
+      <div className="mb-4">
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Buscar por tema o descripción"
+          label="Buscar capacitaciones"
+        />
+      </div>
+
       {/* Table */}
       <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
         {isLoading ? (
@@ -305,13 +324,16 @@ export default function TrainingDetailPage() {
                     colSpan={6}
                     className="px-5 py-8 text-center text-ink-3 text-sm"
                   >
-                    No hay capacitaciones registradas
+                    {debouncedSearch
+                      ? `Sin resultados para "${debouncedSearch}"`
+                      : "No hay capacitaciones registradas"}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         )}
+        {!isLoading && <CursorPagination pager={pager} />}
       </div>
 
       {/* Modal */}

@@ -238,6 +238,10 @@ dialog[open]::backdrop {
     background-color: rgb(11 35 59 / 0);
   }
 }
+/* Visor de imágenes (ImageLightbox): fondo más oscuro para resaltar la foto */
+dialog.lightbox[open]::backdrop {
+  background-color: rgb(5 14 24 / 0.85);
+}
 
 /* Cambio de módulo: el contenido cambia con un fundido corto; la
    barra lateral queda fija porque no forma parte de la transición. */

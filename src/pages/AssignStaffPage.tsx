@@ -8,11 +8,19 @@ import {
   MapPin,
   Truck,
 } from "lucide-react";
-import { getSchedulesAcompan, updateScheduleAcompan } from "@/api/schedules";
+import {
+  getSchedulesAcompanPage,
+  updateScheduleAcompan,
+  type ScheduleStatus,
+} from "@/api/schedules";
 import { getVehicles } from "@/api/vehicles";
 import Badge from "@/components/ui/Badge";
 import StatCard from "@/components/ui/StatCard";
 import TableSkeleton from "@/components/ui/TableSkeleton";
+import { useCursorPagination } from "@/hooks/useCursorPagination";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import SearchInput from "@/components/ui/SearchInput";
+import CursorPagination from "@/components/ui/CursorPagination";
 
 const STATUS_LABEL: Record<string, string> = {
   PENDIENTE: "Pendiente",
@@ -31,16 +39,24 @@ const STATUS_VARIANT: Record<
 
 export default function AssignStaffPage() {
   const qc = useQueryClient();
-  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<ScheduleStatus | "all">(
+    "all",
+  );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [vehicleAssign, setVehicleAssign] = useState<Record<string, string>>(
     {},
   );
 
-  const { data: schedules = [], isLoading } = useQuery({
-    queryKey: ["schedules-acompan"],
-    queryFn: getSchedulesAcompan,
-  });
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search.trim());
+  // Búsqueda y estado se filtran en el servidor (paginación por cursor); los conteos
+  // de las tarjetas llegan con la página y cubren todos los agendamientos.
+  const status = filterStatus === "all" ? undefined : filterStatus;
+  const pager = useCursorPagination(
+    ["schedules-acompan", { status, search: debouncedSearch }],
+    (cursor) => getSchedulesAcompanPage(cursor, { status, search: debouncedSearch }),
+  );
+  const { items: schedules, isLoading, counts } = pager;
   const { data: vehicles = [] } = useQuery({
     queryKey: ["vehicles"],
     queryFn: getVehicles,
@@ -70,12 +86,9 @@ export default function AssignStaffPage() {
     vehicle: s.vehicle?.name ?? null,
   }));
 
-  const filtered = items.filter(
-    (i) => filterStatus === "all" || i.status === filterStatus,
-  );
-  const pending = items.filter((i) => i.status === "PENDIENTE").length;
-  const inRoute = items.filter((i) => i.status === "EN CURSO").length;
-  const completed = items.filter((i) => i.status === "COMPLETADO").length;
+  const pending = counts?.PENDIENTE ?? 0;
+  const inRoute = counts?.["EN CURSO"] ?? 0;
+  const completed = counts?.COMPLETADO ?? 0;
 
   const selected = items.find((i) => i.id === selectedId);
 
@@ -117,8 +130,15 @@ export default function AssignStaffPage() {
         {/* Left: service list */}
         <div className="flex-1">
           {/* Filters */}
-          <div className="flex items-center gap-2 mb-3">
-            {["all", "PENDIENTE", "EN CURSO", "COMPLETADO"].map((f) => (
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <SearchInput
+              value={search}
+              onChange={setSearch}
+              placeholder="Buscar por referencia o dirección"
+              label="Buscar servicios agendados"
+              className="w-60"
+            />
+            {(["all", "PENDIENTE", "EN CURSO", "COMPLETADO"] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilterStatus(f)}
@@ -162,7 +182,7 @@ export default function AssignStaffPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((item) => (
+                  {items.map((item) => (
                     <tr
                       key={item.id}
                       className={`border-b border-line/70 hover:bg-surface-2 cursor-pointer transition-colors ${
@@ -216,19 +236,22 @@ export default function AssignStaffPage() {
                       </td>
                     </tr>
                   ))}
-                  {filtered.length === 0 && (
+                  {items.length === 0 && (
                     <tr>
                       <td
                         colSpan={6}
                         className="px-5 py-8 text-center text-ink-3 text-sm"
                       >
-                        No hay servicios en este estado
+                        {debouncedSearch
+                          ? `Sin resultados para "${debouncedSearch}"`
+                          : "No hay servicios en este estado"}
                       </td>
                     </tr>
                   )}
                 </tbody>
               </table>
             )}
+            {!isLoading && <CursorPagination pager={pager} />}
           </div>
         </div>
 

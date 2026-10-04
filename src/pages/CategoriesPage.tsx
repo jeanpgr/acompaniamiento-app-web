@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
-  getCategories,
+  getCategoriesPage,
   createCategory,
   updateCategory,
   deleteCategory,
@@ -20,6 +20,10 @@ import Switch from "@/components/ui/Switch";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import TableSkeleton from "@/components/ui/TableSkeleton";
 import Badge from "@/components/ui/Badge";
+import { useCursorPagination } from "@/hooks/useCursorPagination";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import SearchInput from "@/components/ui/SearchInput";
+import CursorPagination from "@/components/ui/CursorPagination";
 
 const schema = z.object({
   name: z.string().min(1, "Nombre requerido").max(30),
@@ -35,10 +39,13 @@ export default function CategoriesPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Category | null>(null);
 
-  const { data: categories = [], isLoading } = useQuery({
-    queryKey: ["categories"],
-    queryFn: getCategories,
-  });
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search.trim());
+  const pager = useCursorPagination(
+    ["categories", { search: debouncedSearch }],
+    (cursor) => getCategoriesPage(cursor, { search: debouncedSearch }),
+  );
+  const { items: categories, isLoading } = pager;
 
   const createMut = useMutation({
     mutationFn: (data: CreateCategoryInput) => createCategory(data),
@@ -119,8 +126,6 @@ export default function CategoriesPage() {
   };
 
   const isPending = createMut.isPending || updateMut.isPending;
-  const activeList = categories.filter((c) => c.active);
-  const inactive = categories.filter((c) => !c.active);
 
   return (
     <div>
@@ -130,12 +135,22 @@ export default function CategoriesPage() {
             Categorías de productos
           </h1>
           <p className="text-sm text-ink-3 mt-0.5">
-            {activeList.length} activas · {inactive.length} inactivas
+            {pager.counts?.active ?? 0} activas · {pager.counts?.inactive ?? 0}{" "}
+            inactivas
           </p>
         </div>
         <Button onClick={openCreate}>
           <Plus size={14} /> Nueva categoría
         </Button>
+      </div>
+
+      <div className="mb-4">
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Buscar por nombre o descripción"
+          label="Buscar categorías"
+        />
       </div>
 
       <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
@@ -218,13 +233,16 @@ export default function CategoriesPage() {
                     colSpan={5}
                     className="px-5 py-8 text-center text-ink-3 text-sm"
                   >
-                    No hay categorías registradas
+                    {debouncedSearch
+                      ? `Sin resultados para "${debouncedSearch}"`
+                      : "No hay categorías registradas"}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         )}
+        {!isLoading && <CursorPagination pager={pager} />}
       </div>
 
       <Modal

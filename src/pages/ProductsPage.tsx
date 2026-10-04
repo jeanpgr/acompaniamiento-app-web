@@ -1,12 +1,20 @@
 ﻿import { useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, Package, ImagePlus, X } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Package,
+  ImagePlus,
+  Maximize2,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
-  getProducts,
+  getProductsPage,
   createProduct,
   updateProduct,
   deleteProduct,
@@ -17,6 +25,12 @@ import { getErrorMessage } from "@/api/client";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import TableSkeleton from "@/components/ui/TableSkeleton";
+import ZoomableImage from "@/components/ui/ZoomableImage";
+import ImageLightbox from "@/components/ui/ImageLightbox";
+import { useCursorPagination } from "@/hooks/useCursorPagination";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import SearchInput from "@/components/ui/SearchInput";
+import CursorPagination from "@/components/ui/CursorPagination";
 import Switch from "@/components/ui/Switch";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import Badge from "@/components/ui/Badge";
@@ -76,6 +90,7 @@ function ImageZone({
   onFileChange,
   onResetFile,
 }: ImageZoneProps) {
+  const [zoomed, setZoomed] = useState(false);
   return (
     <div>
       <p className="block text-sm font-medium text-ink mb-1.5">
@@ -109,6 +124,21 @@ function ImageZone({
               onChange={onFileChange}
             />
           </label>
+          {/* Toda la zona cambia la imagen; este botón la abre en primer plano */}
+          <button
+            type="button"
+            onClick={() => setZoomed(true)}
+            title="Ver imagen ampliada"
+            aria-label="Ver imagen ampliada"
+            className="absolute top-2 left-2 z-10 w-7 h-7 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-colors"
+          >
+            <Maximize2 size={13} className="text-white" aria-hidden="true" />
+          </button>
+          <ImageLightbox
+            src={zoomed ? displayUrl : null}
+            alt="Imagen del producto"
+            onClose={() => setZoomed(false)}
+          />
           {previewUrl && (
             <button
               type="button"
@@ -166,9 +196,10 @@ function ProductThumbnail({ photo, name }: { photo: string; name: string }) {
   return (
     <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-line bg-surface-2 flex items-center justify-center">
       {photo && !imgError ? (
-        <img
+        <ZoomableImage
           src={photo}
           alt={name}
+          buttonClassName="w-full h-full"
           className="w-full h-full object-cover"
           loading="lazy"
           decoding="async"
@@ -200,21 +231,29 @@ export default function ProductsPage() {
 
   // ── Queries ──────────────────────────────────────────────────
 
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search.trim());
+  // Búsqueda y categoría se filtran en el servidor (paginación por cursor).
+  const pager = useCursorPagination(
+    ["products", { id_category: filterCat, search: debouncedSearch }],
+    (cursor) =>
+      getProductsPage(cursor, {
+        id_category: filterCat || undefined,
+        search: debouncedSearch,
+      }),
+  );
   const {
-    data: products = [],
+    items: displayedProducts,
     isLoading,
     isError,
     error: productsError,
-  } = useQuery({ queryKey: ["products"], queryFn: getProducts });
+  } = pager;
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
     queryFn: getCategories,
   });
   const activeCategories = categories.filter((c) => c.active);
 
-  const displayedProducts = filterCat
-    ? products.filter((p) => p.id_category === filterCat)
-    : products;
 
   // ── Mutations ─────────────────────────────────────────────────
 
@@ -376,12 +415,21 @@ export default function ProductsPage() {
             Catálogo de productos
           </h1>
           <p className="text-sm text-ink-3 mt-0.5">
-            {displayedProducts.length} de {products.length} productos
+            {pager.total} productos{filterCat ? " en esta categoría" : ""}
           </p>
         </div>
         <Button onClick={openCreate}>
           <Plus size={14} /> Nuevo producto
         </Button>
+      </div>
+
+      <div className="mb-3">
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Buscar por nombre, descripción o categoría"
+          label="Buscar productos"
+        />
       </div>
 
       {/* Filtro por categoría */}
@@ -545,7 +593,9 @@ export default function ProductsPage() {
                     colSpan={6}
                     className="px-5 py-12 text-center text-ink-3 text-sm"
                   >
-                    {filterCat
+                    {debouncedSearch
+                      ? `Sin resultados para "${debouncedSearch}"`
+                      : filterCat
                       ? "No hay productos en esta categoría."
                       : "No hay productos registrados."}
                   </td>
@@ -554,6 +604,7 @@ export default function ProductsPage() {
             </tbody>
           </table>
         )}
+        {!isLoading && <CursorPagination pager={pager} />}
       </div>
 
       {/* Modal Crear / Editar */}

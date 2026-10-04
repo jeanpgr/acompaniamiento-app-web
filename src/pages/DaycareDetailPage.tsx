@@ -7,8 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
-  getDetailsDaycare,
-  getDetailsDaycareByService,
+  getDetailsDaycarePage,
   createDetailDaycare,
   updateDetailDaycare,
   deleteDetailDaycare,
@@ -21,6 +20,10 @@ import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import TableSkeleton from "@/components/ui/TableSkeleton";
+import { useCursorPagination } from "@/hooks/useCursorPagination";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import SearchInput from "@/components/ui/SearchInput";
+import CursorPagination from "@/components/ui/CursorPagination";
 import Badge from "@/components/ui/Badge";
 
 const schema = z.object({
@@ -53,11 +56,18 @@ export default function DaycareDetailPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<DetailDaycare | null>(null);
 
-  const { data: items = [], isLoading } = useQuery({
-    queryKey: serviceId ? ["detail-daycare", serviceId] : ["detail-daycare"],
-    queryFn: () =>
-      serviceId ? getDetailsDaycareByService(serviceId) : getDetailsDaycare(),
-  });
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search.trim());
+  // Con ?service= se listan solo las del servicio (filtro en el servidor).
+  const pager = useCursorPagination(
+    ["detail-daycare", { id_service: serviceId, search: debouncedSearch }],
+    (cursor) =>
+      getDetailsDaycarePage(cursor, {
+        id_service: serviceId ?? undefined,
+        search: debouncedSearch,
+      }),
+  );
+  const { items, isLoading } = pager;
 
   const { data: services = [] } = useQuery({
     queryKey: ["services"],
@@ -199,6 +209,15 @@ export default function DaycareDetailPage() {
         </Button>
       </div>
 
+      <div className="mb-4">
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Buscar por modalidad o dirección"
+          label="Buscar modalidades"
+        />
+      </div>
+
       {/* Table */}
       <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
         {isLoading ? (
@@ -306,13 +325,16 @@ export default function DaycareDetailPage() {
                     colSpan={7}
                     className="px-5 py-8 text-center text-ink-3 text-sm"
                   >
-                    No hay modalidades de guardería registradas
+                    {debouncedSearch
+                      ? `Sin resultados para "${debouncedSearch}"`
+                      : "No hay modalidades de guardería registradas"}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         )}
+        {!isLoading && <CursorPagination pager={pager} />}
       </div>
 
       {/* Modal */}

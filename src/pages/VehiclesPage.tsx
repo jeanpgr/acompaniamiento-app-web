@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, Truck, AlertTriangle } from "lucide-react";
 import {
-  getVehicles,
+  getVehiclesPage,
   createVehicle,
   updateVehicle,
   deleteVehicle,
@@ -16,6 +16,10 @@ import Modal from "@/components/ui/Modal";
 import StatCard from "@/components/ui/StatCard";
 import { useForm } from "react-hook-form";
 import TableSkeleton from "@/components/ui/TableSkeleton";
+import { useCursorPagination } from "@/hooks/useCursorPagination";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import SearchInput from "@/components/ui/SearchInput";
+import CursorPagination from "@/components/ui/CursorPagination";
 
 const REVIEW_THRESHOLD = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
@@ -24,10 +28,13 @@ export default function VehiclesPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Vehicle | null>(null);
 
-  const { data: vehicles = [], isLoading } = useQuery({
-    queryKey: ["vehicles"],
-    queryFn: getVehicles,
-  });
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search.trim());
+  const pager = useCursorPagination(
+    ["vehicles", { search: debouncedSearch }],
+    (cursor) => getVehiclesPage(cursor, { search: debouncedSearch }),
+  );
+  const { items: vehicles, isLoading, counts } = pager;
   const { data: users = [] } = useQuery({
     queryKey: ["users"],
     queryFn: getUsers,
@@ -81,11 +88,6 @@ export default function VehiclesPage() {
     else createMut.mutate(data);
   };
 
-  const reviewDue = vehicles.filter((v) => {
-    if (!v.next_review) return false;
-    return new Date(v.next_review) <= REVIEW_THRESHOLD;
-  }).length;
-
   const userMap = Object.fromEntries(
     users.map((u) => [u.id, `${u.name} ${u.lastname}`]),
   );
@@ -110,26 +112,35 @@ export default function VehiclesPage() {
         <StatCard
           icon={Truck}
           tone="info"
-          value={vehicles.length}
+          value={pager.total}
           label="Total vehículos"
         />
         <StatCard
           icon={Truck}
           tone="success"
-          value={vehicles.filter((v) => v.active).length}
+          value={counts?.active ?? 0}
           label="Activos"
         />
         <StatCard
           icon={AlertTriangle}
           tone="warning"
-          value={reviewDue}
+          value={counts?.review_due ?? 0}
           label="Revisión próxima"
         />
         <StatCard
           icon={Truck}
           tone="neutral"
-          value={vehicles.filter((v) => !v.active).length}
+          value={counts?.inactive ?? 0}
           label="Inactivos"
+        />
+      </div>
+
+      <div className="mb-4">
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Buscar por nombre, modelo o placa"
+          label="Buscar vehículos"
         />
       </div>
 
@@ -242,13 +253,16 @@ export default function VehiclesPage() {
                     colSpan={7}
                     className="px-5 py-8 text-center text-ink-3 text-sm"
                   >
-                    No hay vehículos registrados
+                    {debouncedSearch
+                      ? `Sin resultados para "${debouncedSearch}"`
+                      : "No hay vehículos registrados"}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         )}
+        {!isLoading && <CursorPagination pager={pager} />}
       </div>
 
       <Modal

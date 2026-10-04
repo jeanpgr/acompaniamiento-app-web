@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, Percent } from "lucide-react";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
-  getDiscountCoupons,
+  getDiscountCouponsPage,
   createDiscountCoupon,
   updateDiscountCoupon,
   deleteDiscountCoupon,
@@ -19,6 +19,10 @@ import Modal from "@/components/ui/Modal";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import TableSkeleton from "@/components/ui/TableSkeleton";
 import Badge from "@/components/ui/Badge";
+import { useCursorPagination } from "@/hooks/useCursorPagination";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import SearchInput from "@/components/ui/SearchInput";
+import CursorPagination from "@/components/ui/CursorPagination";
 
 const schema = z.object({
   coupon: z.string().min(1, "Código requerido").max(50),
@@ -37,10 +41,13 @@ export default function DiscountCouponsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<DiscountCoupon | null>(null);
 
-  const { data: coupons = [], isLoading } = useQuery({
-    queryKey: ["coupons"],
-    queryFn: getDiscountCoupons,
-  });
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search.trim());
+  const pager = useCursorPagination(
+    ["coupons", { search: debouncedSearch }],
+    (cursor) => getDiscountCouponsPage(cursor, { search: debouncedSearch }),
+  );
+  const { items: coupons, isLoading } = pager;
 
   const createMut = useMutation({
     mutationFn: (data: CreateDiscountCouponInput) => createDiscountCoupon(data),
@@ -132,12 +139,21 @@ export default function DiscountCouponsPage() {
             Cupones de descuento
           </h1>
           <p className="text-sm text-ink-3 mt-0.5">
-            {coupons.length} cupones registrados
+            {pager.total} cupones registrados
           </p>
         </div>
         <Button onClick={openCreate}>
           <Plus size={14} /> Nuevo cupón
         </Button>
+      </div>
+
+      <div className="mb-4">
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Buscar por código"
+          label="Buscar cupones"
+        />
       </div>
 
       <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
@@ -238,13 +254,16 @@ export default function DiscountCouponsPage() {
                     colSpan={6}
                     className="px-5 py-8 text-center text-ink-3 text-sm"
                   >
-                    No hay cupones registrados
+                    {debouncedSearch
+                      ? `Sin resultados para "${debouncedSearch}"`
+                      : "No hay cupones registrados"}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         )}
+        {!isLoading && <CursorPagination pager={pager} />}
       </div>
 
       <Modal
