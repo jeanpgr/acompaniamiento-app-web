@@ -30,6 +30,7 @@ import {
   CardActions,
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
+import AddressMapButton from "@/components/ui/AddressMapButton";
 
 const STATUS_LABEL: Record<string, string> = {
   PENDIENTE: "Pendiente",
@@ -92,6 +93,20 @@ export default function AssignStaffPage() {
     }),
     origin: s.origin_address,
     destination: s.destination_address,
+    mapPoints: [
+      {
+        label: "Origen",
+        address: s.origin_address,
+        lat: s.origin_lat,
+        lng: s.origin_lng,
+      },
+      {
+        label: "Destino",
+        address: s.destination_address,
+        lat: s.destination_lat,
+        lng: s.destination_lng,
+      },
+    ],
     status: s.status ?? "PENDIENTE",
     vehicle: s.vehicle?.name ?? null,
   }));
@@ -336,6 +351,10 @@ export default function AssignStaffPage() {
                     <p>{selected.destination}</p>
                   </div>
                 </div>
+                <AddressMapButton
+                  points={selected.mapPoints}
+                  title="Ruta del servicio"
+                />
               </div>
 
               <div className="mb-4">

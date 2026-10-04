@@ -18,6 +18,7 @@ import {
   type ScheduleStatus,
 } from "@/api/schedules";
 import Badge from "@/components/ui/Badge";
+import AddressMapButton from "@/components/ui/AddressMapButton";
 import StatCard from "@/components/ui/StatCard";
 
 const STATUS_CONFIG: Record<
@@ -102,6 +103,20 @@ export default function ServiceStatusPage() {
     phone: s.contact_emergency,
     origin: s.origin_address,
     destination: s.destination_address,
+    mapPoints: [
+      {
+        label: "Origen",
+        address: s.origin_address,
+        lat: s.origin_lat,
+        lng: s.origin_lng,
+      },
+      {
+        label: "Destino",
+        address: s.destination_address,
+        lat: s.destination_lat,
+        lng: s.destination_lng,
+      },
+    ],
     status: (s.status ?? "PENDIENTE") as ScheduleStatus,
     vehicle: s.vehicle?.name ?? null,
     refundStatus: s.refund_status,
@@ -262,6 +277,11 @@ export default function ServiceStatusPage() {
                     <div className="w-2 h-2 rounded-full bg-success mt-0.5 shrink-0" />
                     <span className="truncate">{item.destination}</span>
                   </div>
+                  <AddressMapButton
+                    points={item.mapPoints}
+                    title={`Ruta · ${item.title}`}
+                    className="mt-1.5"
+                  />
                 </div>
 
                 {/* Vehicle & date */}

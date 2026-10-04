@@ -33,6 +33,8 @@ import {
 } from "@/api/schedules";
 import { getVehicles } from "@/api/vehicles";
 import { SERVICE_TYPE_STYLE, serviceTypeStyle } from "@/lib/serviceTypes";
+import AddressMapButton from "@/components/ui/AddressMapButton";
+import type { MapPoint } from "@/components/ui/AddressMap";
 
 // ── Tipos y helpers ────────────────────────────────────────────────────────────
 
@@ -47,6 +49,8 @@ interface Unified {
   dateTime: string; // fecha de referencia
   status: ScheduleStatus | null;
   address?: string;
+  /** Direcciones para "Ver en mapa" (con el punto exacto si vino de la app). */
+  mapPoints?: MapPoint[];
   needsVehicle: boolean; // CAPACITACION no necesita vehículo
   vehicleId?: string;
   refundStatus: RefundStatus | null;
@@ -66,6 +70,20 @@ function normalizeAcompan(s: ScheduleAcompan): Unified {
     dateTime: s.date_time,
     status: s.status,
     address: s.origin_address,
+    mapPoints: [
+      {
+        label: "Origen",
+        address: s.origin_address,
+        lat: s.origin_lat,
+        lng: s.origin_lng,
+      },
+      {
+        label: "Destino",
+        address: s.destination_address,
+        lat: s.destination_lat,
+        lng: s.destination_lng,
+      },
+    ],
     needsVehicle: true,
     vehicleId: s.id_vehicle ?? undefined,
     refundStatus: s.refund_status,
@@ -123,6 +141,16 @@ function normalizeDaycare(s: ScheduleDaycare): Unified {
     dateTime: s.created_at,
     status: s.status,
     address: s.address_pick_home ?? undefined,
+    mapPoints: s.address_pick_home
+      ? [
+          {
+            label: "Recogida a domicilio",
+            address: s.address_pick_home,
+            lat: s.pick_home_lat,
+            lng: s.pick_home_lng,
+          },
+        ]
+      : undefined,
     needsVehicle: true,
     vehicleId: s.id_vehicle,
     refundStatus: s.refund_status,
@@ -607,6 +635,13 @@ export default function DistributionPage() {
                               <MapPin size={10} />
                               <span className="truncate">{s.address}</span>
                             </div>
+                          )}
+                          {s.mapPoints && (
+                            <AddressMapButton
+                              points={s.mapPoints}
+                              title={s.title}
+                              className="mt-1"
+                            />
                           )}
                         </div>
 

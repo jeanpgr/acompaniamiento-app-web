@@ -22,6 +22,9 @@ export interface OrderCustomer {
   email: string;
   phone: string | null;
   address: string | null;
+  /** Punto del mapa de la dirección de perfil (null si se escribió a mano). */
+  address_lat: number | null;
+  address_lng: number | null;
 }
 
 /** Pedido tal como lo devuelve GET /sales (montos como número). */

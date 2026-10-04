@@ -29,6 +29,11 @@ export interface ScheduleAcompan extends RefundFields {
   id_vehicle: string | null;
   origin_address: string;
   destination_address: string;
+  /** Puntos elegidos en el mapa de la app (null si se escribió a mano). */
+  origin_lat: number | null;
+  origin_lng: number | null;
+  destination_lat: number | null;
+  destination_lng: number | null;
   date_time: string;
   name_contact_emergency: string;
   contact_emergency: string;
@@ -156,6 +161,9 @@ export interface ScheduleDaycare extends RefundFields {
   lastname: string | null;
   transfer: "PICK_HOME" | "TO_CARRY" | null;
   address_pick_home: string | null;
+  /** Punto de recogida elegido en el mapa de la app. */
+  pick_home_lat: number | null;
+  pick_home_lng: number | null;
   status: ScheduleStatus | null;
   active: boolean;
   created_at: string;

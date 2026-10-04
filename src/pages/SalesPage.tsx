@@ -36,6 +36,7 @@ import {
   CardActions,
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
+import AddressMapButton from "@/components/ui/AddressMapButton";
 
 const STATUS_CFG: Record<
   SalesStatus,
@@ -384,10 +385,23 @@ export default function SalesPage() {
                   <Mail size={13} /> {detail.customer.email}
                 </p>
                 {detail.customer.address && (
-                  <p className="flex items-start gap-2 text-ink-2">
-                    <MapPin size={13} className="mt-0.5 shrink-0" />{" "}
-                    {detail.customer.address}
-                  </p>
+                  <div className="flex flex-wrap items-start gap-2 text-ink-2">
+                    <p className="flex items-start gap-2 min-w-0 flex-1">
+                      <MapPin size={13} className="mt-0.5 shrink-0" />{" "}
+                      {detail.customer.address}
+                    </p>
+                    <AddressMapButton
+                      title={`Dirección de ${customerName(detail)}`}
+                      points={[
+                        {
+                          label: "Dirección del cliente",
+                          address: detail.customer.address,
+                          lat: detail.customer.address_lat,
+                          lng: detail.customer.address_lng,
+                        },
+                      ]}
+                    />
+                  </div>
                 )}
               </div>
             )}
