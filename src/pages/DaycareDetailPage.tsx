@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, MapPin, ArrowLeft, X } from "lucide-react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -20,6 +20,7 @@ import {
 import { getServices } from "@/api/services";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
+import MapPickButton from "@/components/ui/MapPickButton";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import TableSkeleton from "@/components/ui/TableSkeleton";
 import { useCursorPagination } from "@/hooks/useCursorPagination";
@@ -54,6 +55,9 @@ const schema = z
       .nonnegative("Debe ser 0 o mayor")
       .optional(),
     address_point: z.string().min(1, "La dirección es requerida"),
+    // Punto de la sede en el mapa; se descarta si la dirección se edita a mano.
+    address_point_lat: z.number().nullable(),
+    address_point_lng: z.number().nullable(),
     // Detalle opcional que la app muestra en la tarjeta del plan.
     mode_price_period: z.enum(["", "dia", "semana", "mes"]),
     mode_description: z.string().max(300, "Máximo 300 caracteres"),
@@ -90,6 +94,8 @@ function formValues(
     mode_price_pickup: m.price_pickup ?? undefined,
     mode_price_dropoff: m.price_dropoff ?? undefined,
     address_point: item?.address_point ?? "",
+    address_point_lat: item?.address_point_lat ?? null,
+    address_point_lng: item?.address_point_lng ?? null,
     mode_price_period: m.price_period ?? "",
     mode_description: m.description ?? "",
     mode_days: m.days ?? [],
@@ -173,10 +179,22 @@ export default function DaycareDetailPage() {
     handleSubmit,
     reset,
     control,
+    setValue,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: formValues(null, serviceId),
+  });
+  const [pointAddress, pointLat, pointLng] = useWatch({
+    control,
+    name: ["address_point", "address_point_lat", "address_point_lng"],
+  });
+  // Escribir la dirección a mano descarta el punto del mapa (ya no coincide).
+  const addressField = register("address_point", {
+    onChange: () => {
+      setValue("address_point_lat", null);
+      setValue("address_point_lng", null);
+    },
   });
   // "Qué incluye" como lista dinámica del propio formulario.
   const includes = useFieldArray({ control, name: "mode_includes" });
@@ -224,6 +242,8 @@ export default function DaycareDetailPage() {
       id_service: data.id_service,
       service_mode,
       address_point: data.address_point,
+      address_point_lat: data.address_point_lat,
+      address_point_lng: data.address_point_lng,
     };
     if (editTarget) {
       updateMut.mutate({ id: editTarget.id, data: payload });
@@ -497,7 +517,7 @@ export default function DaycareDetailPage() {
             )}
           </div>
 
-          {/* Horas + Dirección */}
+          {/* Horas */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label
@@ -520,26 +540,51 @@ export default function DaycareDetailPage() {
                 </p>
               )}
             </div>
-            <div>
-              <label
-                htmlFor="daycaredetail-address_point"
-                className="block text-sm font-medium text-ink mb-1"
-              >
-                Dirección del punto <span className="text-danger-fg">*</span>
-              </label>
+          </div>
+
+          {/* Sede */}
+          <div>
+            <label
+              htmlFor="daycaredetail-address_point"
+              className="block text-sm font-medium text-ink mb-1"
+            >
+              Dirección de la sede <span className="text-danger-fg">*</span>
+            </label>
+            <div className="flex gap-2">
               <input
                 id="daycaredetail-address_point"
                 className="field"
                 aria-invalid={!!errors.address_point}
                 placeholder="Carrera 10 #20-30"
-                {...register("address_point")}
+                maxLength={255}
+                {...addressField}
               />
-              {errors.address_point && (
-                <p className="text-danger-fg text-xs mt-1">
-                  {errors.address_point.message}
-                </p>
-              )}
+              <MapPickButton
+                title="Sede de la guardería"
+                address={pointAddress ?? ""}
+                lat={pointLat}
+                lng={pointLng}
+                onPick={({ address, lat, lng }) => {
+                  setValue("address_point", address, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                  setValue("address_point_lat", lat);
+                  setValue("address_point_lng", lng);
+                }}
+              />
             </div>
+            {errors.address_point ? (
+              <p className="text-danger-fg text-xs mt-1">
+                {errors.address_point.message}
+              </p>
+            ) : (
+              <p className="text-xs text-ink-3 mt-1">
+                {typeof pointLat === "number"
+                  ? "Punto exacto elegido en el mapa: la app lo mostrará ahí."
+                  : "Elige el punto en el mapa para que la app lo ubique con precisión."}
+              </p>
+            )}
           </div>
 
           {/* Precios */}

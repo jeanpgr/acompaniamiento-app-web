@@ -17,6 +17,9 @@ export const tourismSchema = z.object({
   date_arrival: z.string().min(1, "Fecha de llegada requerida"),
   quotas: z.number().int().positive("Debe ser un número positivo"),
   meeting_point_address: z.string().optional(),
+  // Punto del mapa; se descarta si la dirección se edita a mano.
+  meeting_point_lat: z.number().nullable(),
+  meeting_point_lng: z.number().nullable(),
   price_adult: price,
   price_child: price,
   price_senior: price,
@@ -40,6 +43,8 @@ export function formValues(
     date_arrival: item?.date_arrival?.slice(0, 16) ?? "",
     quotas: item?.quotas ?? 1,
     meeting_point_address: item?.meeting_point_address ?? "",
+    meeting_point_lat: item?.meeting_point_lat ?? null,
+    meeting_point_lng: item?.meeting_point_lng ?? null,
     price_adult: item?.prices?.adult,
     price_child: item?.prices?.child,
     price_senior: item?.prices?.senior,
@@ -71,6 +76,13 @@ export function toPayload(
     ...(data.meeting_point_address?.trim() && {
       meeting_point_address: data.meeting_point_address,
     }),
+    // Siempre se envían: null borra un punto anterior si la dirección cambió.
+    meeting_point_lat: data.meeting_point_address?.trim()
+      ? data.meeting_point_lat
+      : null,
+    meeting_point_lng: data.meeting_point_address?.trim()
+      ? data.meeting_point_lng
+      : null,
     ...(stops.length > 0 && { itinerary: stops }),
     ...(Object.keys(prices).length > 0 && { prices }),
   };

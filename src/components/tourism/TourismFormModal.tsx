@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, X } from "lucide-react";
 import type { DetailTourism } from "@/api/details-tourism";
@@ -7,6 +7,7 @@ import type { Service } from "@/api/services";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import FormField from "@/components/ui/FormField";
+import MapPickButton from "@/components/ui/MapPickButton";
 import {
   formValues,
   tourismSchema,
@@ -55,15 +56,32 @@ export default function TourismFormModal({
     register,
     handleSubmit,
     control,
+    setValue,
     formState: { errors },
   } = useForm<TourismFormValues>({
     defaultValues: formValues(item, serviceId),
     resolver: zodResolver(tourismSchema),
   });
   // Paradas del itinerario como lista dinámica del propio formulario.
-  const { fields, append, remove } = useFieldArray({ control, name: "itinerary" });
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "itinerary",
+  });
 
-  const tourismServices = services.filter((s) => s.type === "TURISMO" && s.active);
+  const tourismServices = services.filter(
+    (s) => s.type === "TURISMO" && s.active,
+  );
+  const [meetingAddress, meetingLat, meetingLng] = useWatch({
+    control,
+    name: ["meeting_point_address", "meeting_point_lat", "meeting_point_lng"],
+  });
+  // Escribir la dirección a mano descarta el punto del mapa (ya no coincide).
+  const meetingField = register("meeting_point_address", {
+    onChange: () => {
+      setValue("meeting_point_lat", null);
+      setValue("meeting_point_lng", null);
+    },
+  });
 
   return (
     <Modal
@@ -183,22 +201,47 @@ export default function TourismFormModal({
               {...register("quotas", { valueAsNumber: true })}
             />
           </FormField>
-          <FormField
-            htmlFor="tourismdetail-meeting_point_address"
-            label="Punto de encuentro"
-          >
+        </div>
+
+        <FormField
+          htmlFor="tourismdetail-meeting_point_address"
+          label="Punto de encuentro"
+          hint={
+            typeof meetingLat === "number"
+              ? "Punto exacto elegido en el mapa: la app lo mostrará ahí."
+              : "Elige el punto en el mapa para que la app lo ubique con precisión."
+          }
+        >
+          <div className="flex gap-2">
             <input
               id="tourismdetail-meeting_point_address"
               className="field"
               placeholder="Terminal de transportes"
-              {...register("meeting_point_address")}
+              maxLength={255}
+              {...meetingField}
             />
-          </FormField>
-        </div>
+            <MapPickButton
+              title="Punto de encuentro"
+              address={meetingAddress ?? ""}
+              lat={meetingLat}
+              lng={meetingLng}
+              onPick={({ address, lat, lng }) => {
+                setValue("meeting_point_address", address, {
+                  shouldDirty: true,
+                });
+                setValue("meeting_point_lat", lat);
+                setValue("meeting_point_lng", lng);
+              }}
+            />
+          </div>
+        </FormField>
 
         {/* Tarifas por categoría */}
         <div>
-          <p id="tourism-tarifas" className="block text-sm font-medium text-ink mb-2">
+          <p
+            id="tourism-tarifas"
+            className="block text-sm font-medium text-ink mb-2"
+          >
             Tarifas por persona
           </p>
           <div

@@ -41,6 +41,9 @@ export interface DetailDaycare {
   id_service: string;
   service_mode: ServiceMode | null;
   address_point: string | null;
+  /** Punto de la sede elegido en el mapa del panel. */
+  address_point_lat: number | null;
+  address_point_lng: number | null;
   active: boolean;
   created_at: string;
 }
@@ -49,6 +52,8 @@ export interface CreateDetailDaycareInput {
   id_service: string;
   service_mode?: ServiceMode;
   address_point?: string;
+  address_point_lat?: number | null;
+  address_point_lng?: number | null;
 }
 
 const BASE = "/detail-daycare";
