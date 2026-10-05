@@ -1,9 +1,7 @@
-import { getErrorMessage } from "@/api/client";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, ChevronRight, Briefcase } from "lucide-react";
-import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -34,7 +32,6 @@ import {
   CardActions,
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
-import { invalidateResource } from "@/lib/invalidate";
 
 // ── Validation ──────────────────────────────────────────────────
 const schema = z.object({
@@ -86,7 +83,6 @@ function sanitizePayload(data: FormData): CreateServiceInput {
 
 // ── Page ────────────────────────────────────────────────────────
 export default function ServicesPage() {
-  const qc = useQueryClient();
   const confirm = useConfirm();
   const navigate = useNavigate();
   const [tab, setTab] = useState<"all" | "inactive">("all");
@@ -109,35 +105,32 @@ export default function ServicesPage() {
 
   const createMut = useMutation({
     mutationFn: createService,
-    onSuccess: () => {
-      invalidateResource(qc, "services");
-      setModalOpen(false);
-      toast.success("Servicio creado correctamente");
+    meta: {
+      invalidates: "services",
+      successMessage: "Servicio creado correctamente",
+      errorMessage: "Error al crear el servicio",
     },
-    onError: (err: unknown) =>
-      toast.error(getErrorMessage(err, "Error al crear el servicio")),
+    onSuccess: () => setModalOpen(false),
   });
 
   const updateMut = useMutation({
     mutationFn: ({ id, data }: { id: string; data: FormData }) =>
       updateService(id, sanitizePayload(data)),
-    onSuccess: () => {
-      invalidateResource(qc, "services");
-      setModalOpen(false);
-      toast.success("Servicio actualizado correctamente");
+    meta: {
+      invalidates: "services",
+      successMessage: "Servicio actualizado correctamente",
+      errorMessage: "Error al actualizar el servicio",
     },
-    onError: (err: unknown) =>
-      toast.error(getErrorMessage(err, "Error al actualizar el servicio")),
+    onSuccess: () => setModalOpen(false),
   });
 
   const deleteMut = useMutation({
     mutationFn: deleteService,
-    onSuccess: () => {
-      invalidateResource(qc, "services");
-      toast.success("Servicio eliminado");
+    meta: {
+      invalidates: "services",
+      successMessage: "Servicio eliminado",
+      errorMessage: "Error al eliminar el servicio",
     },
-    onError: (err: unknown) =>
-      toast.error(getErrorMessage(err, "Error al eliminar el servicio")),
   });
 
   const {

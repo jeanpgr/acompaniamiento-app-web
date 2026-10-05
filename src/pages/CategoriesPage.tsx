@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2 } from "lucide-react";
-import { toast } from "sonner";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -33,7 +32,6 @@ import {
   CardActions,
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
-import { invalidateResource } from "@/lib/invalidate";
 
 const schema = z.object({
   name: z.string().min(1, "Nombre requerido").max(30),
@@ -44,7 +42,6 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function CategoriesPage() {
-  const qc = useQueryClient();
   const confirm = useConfirm();
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Category | null>(null);
@@ -59,44 +56,32 @@ export default function CategoriesPage() {
 
   const createMut = useMutation({
     mutationFn: (data: CreateCategoryInput) => createCategory(data),
-    onSuccess: () => {
-      invalidateResource(qc, "categories");
-      setModalOpen(false);
-      toast.success("Categoría creada");
+    meta: {
+      invalidates: "categories",
+      successMessage: "Categoría creada",
+      errorMessage: "Error al crear",
     },
-    onError: (err: unknown) =>
-      toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Error al crear",
-      ),
+    onSuccess: () => setModalOpen(false),
   });
 
   const updateMut = useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateCategoryInput }) =>
       updateCategory(id, data),
-    onSuccess: () => {
-      invalidateResource(qc, "categories");
-      setModalOpen(false);
-      toast.success("Categoría actualizada");
+    meta: {
+      invalidates: "categories",
+      successMessage: "Categoría actualizada",
+      errorMessage: "Error al actualizar",
     },
-    onError: (err: unknown) =>
-      toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Error al actualizar",
-      ),
+    onSuccess: () => setModalOpen(false),
   });
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => deleteCategory(id),
-    onSuccess: () => {
-      invalidateResource(qc, "categories");
-      toast.success("Categoría eliminada");
+    meta: {
+      invalidates: "categories",
+      successMessage: "Categoría eliminada",
+      errorMessage: "Error al eliminar",
     },
-    onError: (err: unknown) =>
-      toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Error al eliminar",
-      ),
   });
 
   const {

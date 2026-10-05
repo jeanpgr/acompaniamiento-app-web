@@ -4,10 +4,10 @@ const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001/api/v1";
 
 /** Extrae el mensaje de error del backend, o retorna el fallback. */
 export function getErrorMessage(err: unknown, fallback: string): string {
-  return (
-    (err as { response?: { data?: { message?: string } } })?.response?.data
-      ?.message ?? fallback
-  );
+  if (axios.isAxiosError<{ message?: string }>(err)) {
+    return err.response?.data?.message || fallback;
+  }
+  return fallback;
 }
 
 export const apiClient = axios.create({

@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, MapPin, ArrowLeft } from "lucide-react";
-import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -15,7 +14,6 @@ import {
   type CreateDetailDaycareInput,
 } from "@/api/details-daycare";
 import { getServices } from "@/api/services";
-import { getErrorMessage } from "@/api/client";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -34,7 +32,6 @@ import {
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
 import Badge from "@/components/ui/Badge";
-import { invalidateResource } from "@/lib/invalidate";
 
 const schema = z.object({
   id_service: z.string().min(1, "Selecciona un servicio"),
@@ -57,7 +54,6 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function DaycareDetailPage() {
-  const qc = useQueryClient();
   const confirm = useConfirm();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -93,13 +89,12 @@ export default function DaycareDetailPage() {
 
   const createMut = useMutation({
     mutationFn: createDetailDaycare,
-    onSuccess: () => {
-      invalidateResource(qc, "detail-daycare");
-      setModalOpen(false);
-      toast.success("Modalidad de guardería creada");
+    meta: {
+      invalidates: "detail-daycare",
+      successMessage: "Modalidad de guardería creada",
+      errorMessage: "Error al crear",
     },
-    onError: (err: unknown) =>
-      toast.error(getErrorMessage(err, "Error al crear")),
+    onSuccess: () => setModalOpen(false),
   });
 
   const updateMut = useMutation({
@@ -110,23 +105,21 @@ export default function DaycareDetailPage() {
       id: string;
       data: Partial<CreateDetailDaycareInput>;
     }) => updateDetailDaycare(id, data),
-    onSuccess: () => {
-      invalidateResource(qc, "detail-daycare");
-      setModalOpen(false);
-      toast.success("Modalidad actualizada");
+    meta: {
+      invalidates: "detail-daycare",
+      successMessage: "Modalidad actualizada",
+      errorMessage: "Error al actualizar",
     },
-    onError: (err: unknown) =>
-      toast.error(getErrorMessage(err, "Error al actualizar")),
+    onSuccess: () => setModalOpen(false),
   });
 
   const deleteMut = useMutation({
     mutationFn: deleteDetailDaycare,
-    onSuccess: () => {
-      invalidateResource(qc, "detail-daycare");
-      toast.success("Modalidad eliminada");
+    meta: {
+      invalidates: "detail-daycare",
+      successMessage: "Modalidad eliminada",
+      errorMessage: "Error al eliminar",
     },
-    onError: (err: unknown) =>
-      toast.error(getErrorMessage(err, "Error al eliminar")),
   });
 
   const {

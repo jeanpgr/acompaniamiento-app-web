@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useForm, useWatch } from "react-hook-form";
 import { Pencil, Trash2, Plus, Shield } from "lucide-react";
 import { toast } from "sonner";
@@ -11,7 +11,6 @@ import {
   type Role,
   type CreateRoleInput,
 } from "@/api/roles";
-import { getErrorMessage } from "@/api/client";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
@@ -30,7 +29,6 @@ import {
   CardActions,
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
-import { invalidateResource } from "@/lib/invalidate";
 
 // Deben coincidir con los módulos de `authorizePermission("<módulo>")` en el backend.
 const ALL_PERMISSIONS = [
@@ -82,7 +80,6 @@ function usersLabel(n: number) {
 }
 
 export default function RolesPage() {
-  const qc = useQueryClient();
   const confirm = useConfirm();
   // Se guarda el id (no el objeto) para que el panel refleje los datos
   // actualizados después de cada refetch.
@@ -103,13 +100,12 @@ export default function RolesPage() {
 
   const createMut = useMutation({
     mutationFn: createRole,
-    onSuccess: () => {
-      invalidateResource(qc, "roles");
-      setModalOpen(false);
-      toast.success("Rol creado correctamente");
+    meta: {
+      invalidates: "roles",
+      successMessage: "Rol creado correctamente",
+      errorMessage: "Error al crear el rol",
     },
-    onError: (err: unknown) =>
-      toast.error(getErrorMessage(err, "Error al crear el rol")),
+    onSuccess: () => setModalOpen(false),
   });
   const updateMut = useMutation({
     mutationFn: ({
@@ -119,22 +115,20 @@ export default function RolesPage() {
       id: string;
       data: Partial<CreateRoleInput>;
     }) => updateRole(id, data),
-    onSuccess: () => {
-      invalidateResource(qc, "roles");
-      setModalOpen(false);
-      toast.success("Rol actualizado correctamente");
+    meta: {
+      invalidates: "roles",
+      successMessage: "Rol actualizado correctamente",
+      errorMessage: "Error al actualizar el rol",
     },
-    onError: (err: unknown) =>
-      toast.error(getErrorMessage(err, "Error al actualizar el rol")),
+    onSuccess: () => setModalOpen(false),
   });
   const deleteMut = useMutation({
     mutationFn: deleteRole,
-    onSuccess: () => {
-      invalidateResource(qc, "roles");
-      toast.success("Rol eliminado");
+    meta: {
+      invalidates: "roles",
+      successMessage: "Rol eliminado",
+      errorMessage: "Error al eliminar el rol",
     },
-    onError: (err: unknown) =>
-      toast.error(getErrorMessage(err, "Error al eliminar el rol")),
   });
 
   const onDelete = async (role: Role) => {

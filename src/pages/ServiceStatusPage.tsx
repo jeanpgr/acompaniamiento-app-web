@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   Clock,
   Truck,
@@ -20,7 +20,7 @@ import {
 import Badge from "@/components/ui/Badge";
 import AddressMapButton from "@/components/ui/AddressMapButton";
 import StatCard from "@/components/ui/StatCard";
-import { invalidateResource, LIVE_REFETCH_MS } from "@/lib/invalidate";
+import { LIVE_REFETCH_MS } from "@/lib/invalidate";
 
 const STATUS_CONFIG: Record<
   ScheduleStatus,
@@ -73,7 +73,6 @@ const STATUS_TABS: (ScheduleStatus | "all")[] = [
 ];
 
 export default function ServiceStatusPage() {
-  const qc = useQueryClient();
   const [filter, setFilter] = useState<ScheduleStatus | "all">("all");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
@@ -87,15 +86,19 @@ export default function ServiceStatusPage() {
   const updateMut = useMutation({
     mutationFn: ({ id, status }: { id: string; status: ScheduleStatus }) =>
       updateScheduleAcompan(id, { status }),
-    onSuccess: () => {
-      invalidateResource(qc, "schedules-acompan");
-      setUpdatingId(null);
+    meta: {
+      invalidates: "schedules-acompan",
+      errorMessage: "No se pudo actualizar el estado",
     },
+    onSuccess: () => setUpdatingId(null),
   });
 
   const refundMut = useMutation({
     mutationFn: (id: string) => markRefundCompleteAcompan(id),
-    onSuccess: () => invalidateResource(qc, "schedules-acompan"),
+    meta: {
+      invalidates: "schedules-acompan",
+      errorMessage: "No se pudo registrar el reembolso",
+    },
   });
 
   const items = schedules.map((s) => ({

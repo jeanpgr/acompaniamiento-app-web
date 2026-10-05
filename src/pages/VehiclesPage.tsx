@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, Truck, AlertTriangle } from "lucide-react";
 import {
   getVehiclesPage,
@@ -29,12 +29,10 @@ import {
   CardActions,
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
-import { invalidateResource } from "@/lib/invalidate";
 
 const REVIEW_THRESHOLD = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
 export default function VehiclesPage() {
-  const qc = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Vehicle | null>(null);
 
@@ -52,10 +50,12 @@ export default function VehiclesPage() {
 
   const createMut = useMutation({
     mutationFn: createVehicle,
-    onSuccess: () => {
-      invalidateResource(qc, "vehicles");
-      setModalOpen(false);
+    meta: {
+      invalidates: "vehicles",
+      successMessage: "Vehículo creado",
+      errorMessage: "Error al crear el vehículo",
     },
+    onSuccess: () => setModalOpen(false),
   });
   const updateMut = useMutation({
     mutationFn: ({
@@ -65,14 +65,20 @@ export default function VehiclesPage() {
       id: string;
       data: Partial<CreateVehicleInput>;
     }) => updateVehicle(id, data),
-    onSuccess: () => {
-      invalidateResource(qc, "vehicles");
-      setModalOpen(false);
+    meta: {
+      invalidates: "vehicles",
+      successMessage: "Vehículo actualizado",
+      errorMessage: "Error al actualizar el vehículo",
     },
+    onSuccess: () => setModalOpen(false),
   });
   const deleteMut = useMutation({
     mutationFn: deleteVehicle,
-    onSuccess: () => invalidateResource(qc, "vehicles"),
+    meta: {
+      invalidates: "vehicles",
+      successMessage: "Vehículo eliminado",
+      errorMessage: "Error al eliminar el vehículo",
+    },
   });
 
   const { register, handleSubmit, reset } = useForm<CreateVehicleInput>();

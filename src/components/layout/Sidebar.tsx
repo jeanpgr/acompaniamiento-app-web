@@ -19,6 +19,7 @@ import {
   Settings,
   X,
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { clearAuth } from "@/store/authStore";
 import type { AuthUser } from "@/api/auth";
 
@@ -64,8 +65,12 @@ interface Props {
 export default function Sidebar({ user, open, onClose }: Props) {
   const navigate = useNavigate();
 
+  const queryClient = useQueryClient();
+
   const handleLogout = () => {
     clearAuth();
+    // Los datos en caché eran de esta sesión: el siguiente usuario no debe verlos.
+    queryClient.clear();
     navigate("/login");
   };
 

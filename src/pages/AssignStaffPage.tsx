@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   UserCheck,
   Clock,
@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
 import AddressMapButton from "@/components/ui/AddressMapButton";
-import { invalidateResource, LIVE_REFETCH_MS } from "@/lib/invalidate";
+import { LIVE_REFETCH_MS } from "@/lib/invalidate";
 
 const STATUS_LABEL: Record<string, string> = {
   PENDIENTE: "Pendiente",
@@ -49,7 +49,6 @@ const STATUS_VARIANT: Record<
 };
 
 export default function AssignStaffPage() {
-  const qc = useQueryClient();
   const [filterStatus, setFilterStatus] = useState<ScheduleStatus | "all">(
     "all",
   );
@@ -79,10 +78,11 @@ export default function AssignStaffPage() {
   const assignMut = useMutation({
     mutationFn: ({ id, vehicle_id }: { id: string; vehicle_id: string }) =>
       updateScheduleAcompan(id, { id_vehicle: vehicle_id, status: "EN CURSO" }),
-    onSuccess: () => {
-      invalidateResource(qc, "schedules-acompan");
-      setSelectedId(null);
+    meta: {
+      invalidates: "schedules-acompan",
+      errorMessage: "No se pudo asignar el vehículo",
     },
+    onSuccess: () => setSelectedId(null),
   });
 
   const items = schedules.map((s) => ({

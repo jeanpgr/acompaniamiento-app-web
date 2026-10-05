@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import {
   Pencil,
   ShoppingCart,
@@ -17,7 +17,6 @@ import {
   type Order,
   type SalesStatus,
 } from "@/api/sales";
-import { getErrorMessage } from "@/api/client";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import Badge from "@/components/ui/Badge";
@@ -37,7 +36,7 @@ import {
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
 import AddressMapButton from "@/components/ui/AddressMapButton";
-import { invalidateResource, LIVE_REFETCH_MS } from "@/lib/invalidate";
+import { LIVE_REFETCH_MS } from "@/lib/invalidate";
 
 const STATUS_CFG: Record<
   SalesStatus,
@@ -80,7 +79,6 @@ const customerName = (o: Order) =>
     : "—";
 
 export default function SalesPage() {
-  const qc = useQueryClient();
   const [detail, setDetail] = useState<Order | null>(null);
   const [statusTarget, setStatusTarget] = useState<Order | null>(null);
   const [newStatus, setNewStatus] = useState<SalesStatus | null>(null);
@@ -110,14 +108,16 @@ export default function SalesPage() {
       status: SalesStatus;
       obs?: string;
     }) => updateSaleStatus(id, status, obs),
-    onSuccess: (order) => {
+    meta: {
       // Cancelar repone stock y el uso del cupón: refresca productos y cupones.
-      invalidateResource(qc, "sales");
+      invalidates: "sales",
+      errorMessage: "No se pudo actualizar el estado",
+    },
+    onSuccess: (order) => {
       setStatusTarget(null);
+      // El mensaje depende del pedido devuelto: va aquí y no en meta.
       toast.success(`Pedido #${order.code}: ${order.status_label}`);
     },
-    onError: (err: unknown) =>
-      toast.error(getErrorMessage(err, "No se pudo actualizar el estado")),
   });
 
   const openStatus = (o: Order) => {

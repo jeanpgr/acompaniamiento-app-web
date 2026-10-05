@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLoaderData, useLocation } from "react-router-dom";
 import { Heart, Menu } from "lucide-react";
 import Sidebar from "./Sidebar";
-import { getStoredUser } from "@/store/authStore";
+import type { requireAuthLoader } from "@/store/authStore";
 
 export default function Layout() {
-  const user = getStoredUser();
+  const { user } = useLoaderData<typeof requireAuthLoader>();
   const { pathname } = useLocation();
   // En pantallas angostas la navegación es un cajón lateral. Se guarda la ruta
   // en la que se abrió: al navegar a otra, queda cerrado sin efectos extra.

@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, HelpCircle } from "lucide-react";
-import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -18,7 +17,6 @@ import Modal from "@/components/ui/Modal";
 import TableSkeleton from "@/components/ui/TableSkeleton";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import SearchInput from "@/components/ui/SearchInput";
-import { invalidateResource } from "@/lib/invalidate";
 
 const schema = z.object({
   question: z.string().min(5, "La pregunta debe tener al menos 5 caracteres"),
@@ -28,7 +26,6 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function FAQPage() {
-  const qc = useQueryClient();
   const confirm = useConfirm();
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<FrequentlyQuestion | null>(null);
@@ -42,16 +39,12 @@ export default function FAQPage() {
   const createMut = useMutation({
     mutationFn: (data: CreateFrequentlyQuestionInput) =>
       createFrequentlyQuestion(data),
-    onSuccess: () => {
-      invalidateResource(qc, "frequently-questions");
-      setModalOpen(false);
-      toast.success("Pregunta creada correctamente");
+    meta: {
+      invalidates: "frequently-questions",
+      successMessage: "Pregunta creada correctamente",
+      errorMessage: "Error al crear",
     },
-    onError: (err: unknown) =>
-      toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Error al crear",
-      ),
+    onSuccess: () => setModalOpen(false),
   });
 
   const updateMut = useMutation({
@@ -62,29 +55,21 @@ export default function FAQPage() {
       id: string;
       data: Partial<CreateFrequentlyQuestionInput>;
     }) => updateFrequentlyQuestion(id, data),
-    onSuccess: () => {
-      invalidateResource(qc, "frequently-questions");
-      setModalOpen(false);
-      toast.success("Pregunta actualizada");
+    meta: {
+      invalidates: "frequently-questions",
+      successMessage: "Pregunta actualizada",
+      errorMessage: "Error al actualizar",
     },
-    onError: (err: unknown) =>
-      toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Error al actualizar",
-      ),
+    onSuccess: () => setModalOpen(false),
   });
 
   const deleteMut = useMutation({
     mutationFn: deleteFrequentlyQuestion,
-    onSuccess: () => {
-      invalidateResource(qc, "frequently-questions");
-      toast.success("Pregunta eliminada");
+    meta: {
+      invalidates: "frequently-questions",
+      successMessage: "Pregunta eliminada",
+      errorMessage: "Error al eliminar",
     },
-    onError: (err: unknown) =>
-      toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Error al eliminar",
-      ),
   });
 
   const {

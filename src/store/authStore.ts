@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { redirect } from "react-router-dom";
 import type { AuthUser } from "@/api/auth";
 
 const TOKEN_KEY = "auth_token";
@@ -27,30 +27,20 @@ export function clearAuth() {
   localStorage.removeItem(USER_KEY);
 }
 
-export function useAuthState() {
-  const [user, setUser] = useState<AuthUser | null>(getStoredUser);
-  const [token, setToken] = useState<string | null>(getStoredToken);
+// ── Loaders del router ────────────────────────────────────────
+// La sesión se revisa antes de mostrar la ruta, no dentro de un
+// componente: sin sesión no llega a pintarse el panel. Si el token vence
+// a mitad de uso, el interceptor de 401 (api/client.ts) manda a /login.
+// https://reactrouter.com/api/utils/redirect
 
-  useEffect(() => {
-    const onStorage = () => {
-      setUser(getStoredUser());
-      setToken(getStoredToken());
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
+/** Rutas del panel: exige sesión y entrega el usuario al layout. */
+export function requireAuthLoader() {
+  if (!getStoredToken()) throw redirect("/login");
+  return { user: getStoredUser() };
+}
 
-  const login = (tok: string, usr: AuthUser) => {
-    saveAuth(tok, usr);
-    setToken(tok);
-    setUser(usr);
-  };
-
-  const logout = () => {
-    clearAuth();
-    setToken(null);
-    setUser(null);
-  };
-
-  return { user, token, isAuthenticated: !!token, login, logout };
+/** /login: si ya hay sesión, va directo al panel. */
+export function guestOnlyLoader() {
+  if (getStoredToken()) throw redirect("/dashboard");
+  return null;
 }

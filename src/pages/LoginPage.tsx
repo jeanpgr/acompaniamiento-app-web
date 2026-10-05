@@ -7,6 +7,7 @@ import { Heart, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { signIn } from "@/api/auth";
 import { saveAuth } from "@/store/authStore";
 import Button from "@/components/ui/Button";
+import { getErrorMessage } from "@/api/client";
 
 const schema = z.object({
   email: z.string().email("Ingresa un email válido"),
@@ -32,11 +33,10 @@ export default function LoginPage() {
       const res = await signIn(data.email, data.password);
       saveAuth(res.token, res.user);
       navigate("/dashboard", { replace: true });
-    } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Credenciales incorrectas. Intenta de nuevo.";
-      setApiError(msg);
+    } catch (err) {
+      setApiError(
+        getErrorMessage(err, "Credenciales incorrectas. Intenta de nuevo."),
+      );
     }
   };
 

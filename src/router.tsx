@@ -1,7 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import type { ComponentType } from "react";
 import Layout from "@/components/layout/Layout";
-import RequireAuth from "@/components/RequireAuth";
+import { guestOnlyLoader, requireAuthLoader } from "@/store/authStore";
 
 // Cada página se descarga bajo demanda (un chunk por ruta) en lugar de
 // empaquetar todo el panel en un único bundle: el navegador solo baja el
@@ -14,15 +14,14 @@ const page = (load: () => Promise<{ default: ComponentType }>) => async () => ({
 export const router = createBrowserRouter([
   {
     path: "/login",
+    loader: guestOnlyLoader,
     lazy: page(() => import("@/pages/LoginPage")),
   },
   {
     path: "/",
-    element: (
-      <RequireAuth>
-        <Layout />
-      </RequireAuth>
-    ),
+    // Sin sesión redirige a /login antes de pintar el panel.
+    loader: requireAuthLoader,
+    element: <Layout />,
     children: [
       { index: true, element: <Navigate to="/dashboard" replace /> },
       { path: "dashboard", lazy: page(() => import("@/pages/DashboardPage")) },

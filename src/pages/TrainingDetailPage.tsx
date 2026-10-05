@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, Clock, Video, ArrowLeft } from "lucide-react";
-import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -15,7 +14,6 @@ import {
   type CreateDetailTrainingInput,
 } from "@/api/details-training";
 import { getServices } from "@/api/services";
-import { getErrorMessage } from "@/api/client";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -33,7 +31,6 @@ import {
   CardActions,
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
-import { invalidateResource } from "@/lib/invalidate";
 
 const schema = z.object({
   id_service: z.string().min(1, "Selecciona un servicio"),
@@ -51,7 +48,6 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function TrainingDetailPage() {
-  const qc = useQueryClient();
   const confirm = useConfirm();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -87,13 +83,12 @@ export default function TrainingDetailPage() {
 
   const createMut = useMutation({
     mutationFn: createDetailTraining,
-    onSuccess: () => {
-      invalidateResource(qc, "detail-training");
-      setModalOpen(false);
-      toast.success("Capacitación creada correctamente");
+    meta: {
+      invalidates: "detail-training",
+      successMessage: "Capacitación creada correctamente",
+      errorMessage: "Error al crear",
     },
-    onError: (err: unknown) =>
-      toast.error(getErrorMessage(err, "Error al crear")),
+    onSuccess: () => setModalOpen(false),
   });
 
   const updateMut = useMutation({
@@ -104,23 +99,21 @@ export default function TrainingDetailPage() {
       id: string;
       data: Partial<CreateDetailTrainingInput>;
     }) => updateDetailTraining(id, data),
-    onSuccess: () => {
-      invalidateResource(qc, "detail-training");
-      setModalOpen(false);
-      toast.success("Capacitación actualizada");
+    meta: {
+      invalidates: "detail-training",
+      successMessage: "Capacitación actualizada",
+      errorMessage: "Error al actualizar",
     },
-    onError: (err: unknown) =>
-      toast.error(getErrorMessage(err, "Error al actualizar")),
+    onSuccess: () => setModalOpen(false),
   });
 
   const deleteMut = useMutation({
     mutationFn: deleteDetailTraining,
-    onSuccess: () => {
-      invalidateResource(qc, "detail-training");
-      toast.success("Capacitación eliminada");
+    meta: {
+      invalidates: "detail-training",
+      successMessage: "Capacitación eliminada",
+      errorMessage: "Error al eliminar",
     },
-    onError: (err: unknown) =>
-      toast.error(getErrorMessage(err, "Error al eliminar")),
   });
 
   const {
