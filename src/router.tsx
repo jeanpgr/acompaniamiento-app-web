@@ -30,7 +30,14 @@ export const router = createBrowserRouter([
       { path: "services", lazy: page(() => import("@/pages/ServicesPage")) },
       {
         path: "distribution",
-        lazy: page(() => import("@/pages/DistributionPage")),
+        children: [
+          { index: true, lazy: page(() => import("@/pages/DistributionPage")) },
+          // Página hija: todas las citas con su estado, sin el calendario.
+          {
+            path: "servicios",
+            lazy: page(() => import("@/pages/DistributionServicesPage")),
+          },
+        ],
       },
       {
         path: "acompanamiento",

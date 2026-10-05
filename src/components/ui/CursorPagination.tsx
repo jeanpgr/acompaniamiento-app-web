@@ -5,15 +5,30 @@ import type { useCursorPagination } from "@/hooks/useCursorPagination";
 
 type Pager = Pick<
   ReturnType<typeof useCursorPagination<unknown, unknown>>,
-  "items" | "total" | "page" | "hasPrev" | "hasNext" | "prev" | "next" | "isFetching"
+  | "items"
+  | "total"
+  | "page"
+  | "hasPrev"
+  | "hasNext"
+  | "prev"
+  | "next"
+  | "isFetching"
 >;
 
 // Pie de tabla para los listados paginados por cursor: rango visible,
 // total y navegación Anterior/Siguiente.
-export default function CursorPagination({ pager }: { pager: Pager }) {
-  const { items, total, page, hasPrev, hasNext, prev, next, isFetching } = pager;
+export default function CursorPagination({
+  pager,
+  pageSize = PAGE_SIZE,
+}: {
+  pager: Pager;
+  /** Tamaño de página, si no es el del servidor (p. ej. paginación en memoria). */
+  pageSize?: number;
+}) {
+  const { items, total, page, hasPrev, hasNext, prev, next, isFetching } =
+    pager;
   if (total === 0) return null;
-  const from = (page - 1) * PAGE_SIZE + 1;
+  const from = (page - 1) * pageSize + 1;
   const to = from + items.length - 1;
 
   return (
@@ -25,7 +40,10 @@ export default function CursorPagination({ pager }: { pager: Pager }) {
         {items.length > 0 ? `${from}–${to} de ${total}` : `${total} en total`}
       </p>
       {(hasPrev || hasNext) && (
-        <div className="flex items-center gap-2" aria-busy={isFetching || undefined}>
+        <div
+          className="flex items-center gap-2"
+          aria-busy={isFetching || undefined}
+        >
           <Button
             variant="secondary"
             size="sm"

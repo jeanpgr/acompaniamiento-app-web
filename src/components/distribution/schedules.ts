@@ -61,7 +61,12 @@ function normalizeAcompan(s: ScheduleAcompan): Unified {
     status: s.status,
     address: s.origin_address,
     mapPoints: [
-      { label: "Origen", address: s.origin_address, lat: s.origin_lat, lng: s.origin_lng },
+      {
+        label: "Origen",
+        address: s.origin_address,
+        lat: s.origin_lat,
+        lng: s.origin_lng,
+      },
       {
         label: "Destino",
         address: s.destination_address,
@@ -169,17 +174,41 @@ export const STATUS_LABEL: Record<ScheduleStatus, string> = {
   CANCELADA: "Cancelada",
 };
 
+/** Color del distintivo de cada estado (variantes de <Badge>). */
+export const STATUS_VARIANT: Record<
+  ScheduleStatus,
+  "warning" | "info" | "success" | "danger" | "default"
+> = {
+  PENDIENTE: "warning",
+  "EN CURSO": "info",
+  COMPLETADO: "success",
+  OLVIDADA: "default",
+  CANCELADA: "danger",
+};
+
 // ── Acciones por tipo de cita ──
 
 /** Asigna el vehículo (si aplica) y pasa la cita a "EN CURSO". */
-export function assignSchedule(s: Unified, vehicleId: string): Promise<unknown> {
+export function assignSchedule(
+  s: Unified,
+  vehicleId: string,
+): Promise<unknown> {
   switch (s.originalType) {
     case "acompan":
-      return updateScheduleAcompan(s.id, { id_vehicle: vehicleId, status: "EN CURSO" });
+      return updateScheduleAcompan(s.id, {
+        id_vehicle: vehicleId,
+        status: "EN CURSO",
+      });
     case "tourism":
-      return updateScheduleTourism(s.id, { id_vehicle: vehicleId, status: "EN CURSO" });
+      return updateScheduleTourism(s.id, {
+        id_vehicle: vehicleId,
+        status: "EN CURSO",
+      });
     case "daycare":
-      return updateScheduleDaycare(s.id, { id_vehicle: vehicleId, status: "EN CURSO" });
+      return updateScheduleDaycare(s.id, {
+        id_vehicle: vehicleId,
+        status: "EN CURSO",
+      });
     case "training":
       // Capacitación no usa vehículo: solo se confirma.
       return updateScheduleTraining(s.id, { status: "EN CURSO" });
@@ -211,4 +240,7 @@ export const FILTER_TABS: { key: FilterTab; label: string }[] = [
 // ── Fechas ──
 
 export const formatTime = (iso: string) =>
-  new Date(iso).toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
+  new Date(iso).toLocaleTimeString("es-CO", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });

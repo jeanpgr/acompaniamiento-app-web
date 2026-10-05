@@ -19,19 +19,17 @@ import {
 } from "@/api/settings";
 import Button from "@/components/ui/Button";
 
-// Mismas reglas que el backend (features/settings/settings.registry.ts).
+// Reglas dentro de las del backend (features/settings/settings.registry.ts),
+// más estrictas para Ecuador.
+const EC_PREFIX = "593";
+/** Celular de Ecuador sin el 0 inicial: 9 dígitos que empiezan en 9. */
+const EC_MOBILE_DIGITS = 9;
+
+// El formulario guarda solo el número local; +593 va fijo delante.
 const whatsappSchema = z.object({
   whatsapp_number: z
     .string()
-    .transform((v) => v.replace(/[\s+\-()]/g, ""))
-    .pipe(
-      z
-        .string()
-        .regex(
-          /^\d{8,15}$/,
-          "Entre 8 y 15 dígitos, con código de país (ej. 593991234567)",
-        ),
-    ),
+    .regex(/^9\d{8}$/, "Celular de 9 dígitos que empieza en 9 (ej. 991234567)"),
 });
 
 const bankSchema = z.object({
@@ -40,15 +38,50 @@ const bankSchema = z.object({
   account_number: z
     .string()
     .trim()
-    .regex(/^[\d-]{4,30}$/, "Solo dígitos y guiones (4 a 30)"),
+    .regex(/^\d{4,30}$/, "Solo números (4 a 30 dígitos)"),
   holder_name: z.string().trim().min(2, "Escribe el titular").max(100),
   holder_id: z
     .string()
     .trim()
-    .regex(/^(\d{10}|\d{13})$/, "Cédula de 10 dígitos o RUC de 13"),
+    .regex(/^\d{10}$/, "La cédula debe tener 10 dígitos"),
 });
 
-type WhatsappForm = z.input<typeof whatsappSchema>;
+/** Deja solo dígitos (y como máximo `max`) en lo que se escribe o pega. */
+const onlyDigits = (value: string, max: number) =>
+  value.replace(/\D/g, "").slice(0, max);
+
+/**
+ * Número local de Ecuador a partir de lo escrito o pegado: quita el código
+ * de país (593) y el 0 inicial, p. ej. "+593 99 123 4567" o "0991234567".
+ */
+function toLocalMobile(value: string) {
+  let digits = value.replace(/\D/g, "");
+  if (digits.startsWith(EC_PREFIX) && digits.length > EC_MOBILE_DIGITS) {
+    digits = digits.slice(EC_PREFIX.length);
+  }
+  return digits.replace(/^0+/, "").slice(0, EC_MOBILE_DIGITS);
+}
+
+type ChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => unknown;
+
+/**
+ * register() que limpia el valor antes de que react-hook-form lo lea: el
+ * campo nunca muestra letras ni símbolos, ni siquiera al pegar.
+ */
+function sanitized<T extends { onChange: ChangeHandler }>(
+  registration: T,
+  clean: (value: string) => string,
+): T {
+  return {
+    ...registration,
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+      e.target.value = clean(e.target.value);
+      return registration.onChange(e);
+    },
+  };
+}
+
+type WhatsappForm = z.infer<typeof whatsappSchema>;
 type BankForm = z.infer<typeof bankSchema>;
 
 function LastChange({ data, k }: { data?: SettingsResponse; k: SettingKey }) {
@@ -138,14 +171,24 @@ export default function SettingsPage() {
   // Carga los valores guardados en los formularios.
   useEffect(() => {
     if (!data) return;
-    wa.reset({ whatsapp_number: data.values.whatsapp_number ?? "" });
-    if (data.values.bank_account) bank.reset(data.values.bank_account);
+    wa.reset({
+      whatsapp_number: toLocalMobile(data.values.whatsapp_number ?? ""),
+    });
+    const account = data.values.bank_account;
+    if (account) {
+      // Datos guardados antes de estas reglas (guiones, espacios): solo dígitos.
+      bank.reset({
+        ...account,
+        account_number: onlyDigits(account.account_number, 30),
+        holder_id: onlyDigits(account.holder_id, 10),
+      });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 
-  const waNumber = (
-    useWatch({ control: wa.control, name: "whatsapp_number" }) ?? ""
-  ).replace(/\D/g, "");
+  const waLocal =
+    useWatch({ control: wa.control, name: "whatsapp_number" }) ?? "";
+  const waReady = waLocal.length === EC_MOBILE_DIGITS;
   const preview = useWatch({ control: bank.control });
 
   return (
@@ -200,25 +243,43 @@ export default function SettingsPage() {
               className="flex flex-wrap items-start gap-3"
               onSubmit={wa.handleSubmit((v) =>
                 saveMut.mutate({
-                  whatsapp_number: whatsappSchema.parse(v).whatsapp_number,
+                  whatsapp_number: EC_PREFIX + v.whatsapp_number,
                 }),
               )}
             >
               <div className="w-72">
                 <Field
                   id="set-wa-number"
-                  label="Número con código de país"
+                  label="Número de celular"
                   error={wa.formState.errors.whatsapp_number?.message}
-                  hint="Ecuador: 593 + número sin el 0 inicial (ej. 593991234567)"
+                  hint="Sin el 0 inicial: el +593 ya está incluido (ej. 991234567)"
                 >
-                  <input
-                    id="set-wa-number"
-                    className="field"
-                    inputMode="tel"
-                    placeholder="593XXXXXXXXX"
-                    aria-invalid={!!wa.formState.errors.whatsapp_number}
-                    {...wa.register("whatsapp_number")}
-                  />
+                  <div className="flex">
+                    <span
+                      className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-line bg-surface-2 text-sm font-medium text-ink-2 select-none"
+                      aria-hidden="true"
+                    >
+                      +593
+                    </span>
+                    <input
+                      id="set-wa-number"
+                      className="field rounded-l-none"
+                      type="tel"
+                      inputMode="numeric"
+                      autoComplete="tel-national"
+                      maxLength={EC_MOBILE_DIGITS}
+                      placeholder="991234567"
+                      aria-describedby="set-wa-prefix"
+                      aria-invalid={!!wa.formState.errors.whatsapp_number}
+                      {...sanitized(
+                        wa.register("whatsapp_number"),
+                        toLocalMobile,
+                      )}
+                    />
+                    <span id="set-wa-prefix" className="sr-only">
+                      Código de país +593 incluido
+                    </span>
+                  </div>
                 </Field>
               </div>
               <div className="flex gap-2 pt-6">
@@ -233,15 +294,13 @@ export default function SettingsPage() {
                 </Button>
                 <a
                   href={
-                    waNumber.length >= 8
-                      ? `https://wa.me/${waNumber}`
-                      : undefined
+                    waReady ? `https://wa.me/${EC_PREFIX}${waLocal}` : undefined
                   }
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-disabled={waNumber.length < 8}
+                  aria-disabled={!waReady}
                   className={`inline-flex items-center gap-2 h-10 px-4 rounded-lg text-sm font-medium border border-line ${
-                    waNumber.length >= 8
+                    waReady
                       ? "text-ink-2 hover:bg-surface-2"
                       : "text-ink-3 opacity-50 pointer-events-none"
                   }`}
@@ -314,21 +373,27 @@ export default function SettingsPage() {
                     id="set-bank-number"
                     className="field"
                     inputMode="numeric"
-                    placeholder="Solo dígitos"
-                    {...bank.register("account_number")}
+                    maxLength={30}
+                    placeholder="Solo números"
+                    {...sanitized(bank.register("account_number"), (v) =>
+                      onlyDigits(v, 30),
+                    )}
                   />
                 </Field>
                 <Field
                   id="set-bank-holder-id"
-                  label="Cédula o RUC del titular"
+                  label="Cédula del titular"
                   error={bank.formState.errors.holder_id?.message}
                 >
                   <input
                     id="set-bank-holder-id"
                     className="field"
                     inputMode="numeric"
-                    placeholder="10 o 13 dígitos"
-                    {...bank.register("holder_id")}
+                    maxLength={10}
+                    placeholder="10 dígitos"
+                    {...sanitized(bank.register("holder_id"), (v) =>
+                      onlyDigits(v, 10),
+                    )}
                   />
                 </Field>
                 <div className="sm:col-span-2">
@@ -379,7 +444,7 @@ export default function SettingsPage() {
                         : "",
                     ],
                     ["Número", preview.account_number],
-                    ["C.I. / RUC", preview.holder_id],
+                    ["Cédula", preview.holder_id],
                   ].map(([k, v]) => (
                     <div key={k}>
                       <dt className="text-xs text-ink-3">{k}</dt>

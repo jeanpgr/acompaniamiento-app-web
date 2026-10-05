@@ -1,35 +1,31 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import {
-  useQuery,
-  useQueries,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
-import {
-  getSchedulesAcompan,
-  getSchedulesTourism,
-  getSchedulesTraining,
-  getSchedulesDaycare,
-} from "@/api/schedules";
+import { Link } from "react-router-dom";
+import { List } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getVehicles } from "@/api/vehicles";
 import { serviceTypeStyle } from "@/lib/serviceTypes";
-import { invalidateResource, LIVE_REFETCH_MS } from "@/lib/invalidate";
+import { invalidateResource } from "@/lib/invalidate";
 import WeekCalendar from "@/components/distribution/WeekCalendar";
 import PendingQueue from "@/components/distribution/PendingQueue";
 import RefundsPanel from "@/components/distribution/RefundsPanel";
 import ServiceTypeLegend from "@/components/distribution/ServiceTypeLegend";
+import { useDistributionSchedules } from "@/components/distribution/useDistributionSchedules";
 import {
   FILTER_TABS,
   assignSchedule,
-  combineSchedules,
   isPending,
   markRefundComplete,
   type FilterTab,
   type Unified,
 } from "@/components/distribution/schedules";
 
-const SERVICE_TYPES = ["ACOMPAÑAMIENTO", "TURISMO", "CAPACITACION", "GUARDERIA"] as const;
+const SERVICE_TYPES = [
+  "ACOMPAÑAMIENTO",
+  "TURISMO",
+  "CAPACITACION",
+  "GUARDERIA",
+] as const;
 
 export default function DistributionPage() {
   const qc = useQueryClient();
@@ -37,17 +33,7 @@ export default function DistributionPage() {
   // Citas recién asignadas: se animan fuera de la cola antes de refrescar.
   const [leaving, setLeaving] = useState<ReadonlySet<string>>(() => new Set());
 
-  // Los 4 tipos de agendamiento en paralelo, unidos en una sola lista.
-  // Las reservas nuevas llegan desde la app sin que el panel haga nada.
-  const { schedules, isLoading } = useQueries({
-    queries: [
-      { queryKey: ["schedules-acompan"], queryFn: getSchedulesAcompan, refetchInterval: LIVE_REFETCH_MS },
-      { queryKey: ["schedules-tourism"], queryFn: getSchedulesTourism, refetchInterval: LIVE_REFETCH_MS },
-      { queryKey: ["schedules-training"], queryFn: getSchedulesTraining, refetchInterval: LIVE_REFETCH_MS },
-      { queryKey: ["schedules-daycare"], queryFn: getSchedulesDaycare, refetchInterval: LIVE_REFETCH_MS },
-    ],
-    combine: combineSchedules,
-  });
+  const { schedules, isLoading } = useDistributionSchedules();
   const { data: vehicles = [] } = useQuery({
     queryKey: ["vehicles"],
     queryFn: getVehicles,
@@ -76,10 +62,14 @@ export default function DistributionPage() {
     onSuccess: (_data, { s }) => {
       setLeaving((prev) => new Set(prev).add(s.id));
       toast.success("Asignado · la cita pasa a En ruta");
-      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const reduced = window.matchMedia(
+        "(prefers-reduced-motion: reduce)",
+      ).matches;
       window.setTimeout(
         () => {
-          invalidateResource(qc, "schedules").finally(() => setLeaving(new Set()));
+          invalidateResource(qc, "schedules").finally(() =>
+            setLeaving(new Set()),
+          );
         },
         reduced ? 200 : 420,
       );
@@ -105,13 +95,15 @@ export default function DistributionPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
         <div>
-          <h1 className="text-xl font-semibold text-ink">Panel de distribución</h1>
+          <h1 className="text-xl font-semibold text-ink">
+            Panel de distribución
+          </h1>
           <p className="text-sm text-ink-3 mt-0.5">
             Agendamientos de todos los servicios · Asigna vehículo y confirma
           </p>
         </div>
-        {/* Pendientes por tipo de servicio */}
-        <div className="flex gap-2 text-xs">
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          {/* Pendientes por tipo de servicio */}
           {SERVICE_TYPES.map((t) => {
             const count = schedules.filter(
               (s) => s.serviceType === t && isPending(s),
@@ -127,6 +119,12 @@ export default function DistributionPage() {
               </span>
             );
           })}
+          <Link
+            to="servicios"
+            className="inline-flex items-center gap-2 h-9 px-3 rounded-lg text-sm font-medium bg-surface border border-line text-ink-2 hover:bg-surface-2 hover:border-line-strong transition-colors"
+          >
+            <List size={14} aria-hidden="true" /> Ver servicios y estados
+          </Link>
         </div>
       </div>
 
@@ -144,7 +142,10 @@ export default function DistributionPage() {
             }`}
           >
             {tab.label}
-            <span className="ml-1.5 text-xs opacity-70" title="Pendientes por asignar">
+            <span
+              className="ml-1.5 text-xs opacity-70"
+              title="Pendientes por asignar"
+            >
               ({pendingByTab(tab.key)})
             </span>
           </button>
@@ -165,7 +166,9 @@ export default function DistributionPage() {
           />
           <RefundsPanel
             cancelled={cancelled}
-            savingId={refundMut.isPending ? (refundMut.variables?.id ?? null) : null}
+            savingId={
+              refundMut.isPending ? (refundMut.variables?.id ?? null) : null
+            }
             onMarkRefunded={(s) => refundMut.mutate(s)}
           />
           <ServiceTypeLegend />
