@@ -34,6 +34,7 @@ import {
   CardActions,
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
+import { invalidateResource } from "@/lib/invalidate";
 
 // ── Validation ──────────────────────────────────────────────────
 const schema = z.object({
@@ -109,7 +110,7 @@ export default function ServicesPage() {
   const createMut = useMutation({
     mutationFn: createService,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["services"] });
+      invalidateResource(qc, "services");
       setModalOpen(false);
       toast.success("Servicio creado correctamente");
     },
@@ -121,7 +122,7 @@ export default function ServicesPage() {
     mutationFn: ({ id, data }: { id: string; data: FormData }) =>
       updateService(id, sanitizePayload(data)),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["services"] });
+      invalidateResource(qc, "services");
       setModalOpen(false);
       toast.success("Servicio actualizado correctamente");
     },
@@ -132,7 +133,7 @@ export default function ServicesPage() {
   const deleteMut = useMutation({
     mutationFn: deleteService,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["services"] });
+      invalidateResource(qc, "services");
       toast.success("Servicio eliminado");
     },
     onError: (err: unknown) =>

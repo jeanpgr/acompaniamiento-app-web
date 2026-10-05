@@ -33,6 +33,7 @@ import {
   CardActions,
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
+import { invalidateResource } from "@/lib/invalidate";
 
 const schema = z.object({
   id_service: z.string().min(1, "Selecciona un servicio"),
@@ -87,7 +88,7 @@ export default function TrainingDetailPage() {
   const createMut = useMutation({
     mutationFn: createDetailTraining,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["detail-training"] });
+      invalidateResource(qc, "detail-training");
       setModalOpen(false);
       toast.success("Capacitación creada correctamente");
     },
@@ -104,7 +105,7 @@ export default function TrainingDetailPage() {
       data: Partial<CreateDetailTrainingInput>;
     }) => updateDetailTraining(id, data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["detail-training"] });
+      invalidateResource(qc, "detail-training");
       setModalOpen(false);
       toast.success("Capacitación actualizada");
     },
@@ -115,7 +116,7 @@ export default function TrainingDetailPage() {
   const deleteMut = useMutation({
     mutationFn: deleteDetailTraining,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["detail-training"] });
+      invalidateResource(qc, "detail-training");
       toast.success("Capacitación eliminada");
     },
     onError: (err: unknown) =>

@@ -20,6 +20,7 @@ import {
 import Badge from "@/components/ui/Badge";
 import AddressMapButton from "@/components/ui/AddressMapButton";
 import StatCard from "@/components/ui/StatCard";
+import { invalidateResource, LIVE_REFETCH_MS } from "@/lib/invalidate";
 
 const STATUS_CONFIG: Record<
   ScheduleStatus,
@@ -79,20 +80,22 @@ export default function ServiceStatusPage() {
   const { data: schedules = [], isLoading } = useQuery({
     queryKey: ["schedules-acompan"],
     queryFn: getSchedulesAcompan,
+    // Reservas y cancelaciones llegan desde la app sin que el panel haga nada.
+    refetchInterval: LIVE_REFETCH_MS,
   });
 
   const updateMut = useMutation({
     mutationFn: ({ id, status }: { id: string; status: ScheduleStatus }) =>
       updateScheduleAcompan(id, { status }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["schedules-acompan"] });
+      invalidateResource(qc, "schedules-acompan");
       setUpdatingId(null);
     },
   });
 
   const refundMut = useMutation({
     mutationFn: (id: string) => markRefundCompleteAcompan(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["schedules-acompan"] }),
+    onSuccess: () => invalidateResource(qc, "schedules-acompan"),
   });
 
   const items = schedules.map((s) => ({

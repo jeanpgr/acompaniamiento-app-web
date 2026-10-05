@@ -30,6 +30,7 @@ import {
   CardActions,
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
+import { invalidateResource } from "@/lib/invalidate";
 
 // Deben coincidir con los módulos de `authorizePermission("<módulo>")` en el backend.
 const ALL_PERMISSIONS = [
@@ -103,7 +104,7 @@ export default function RolesPage() {
   const createMut = useMutation({
     mutationFn: createRole,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["roles"] });
+      invalidateResource(qc, "roles");
       setModalOpen(false);
       toast.success("Rol creado correctamente");
     },
@@ -119,7 +120,7 @@ export default function RolesPage() {
       data: Partial<CreateRoleInput>;
     }) => updateRole(id, data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["roles"] });
+      invalidateResource(qc, "roles");
       setModalOpen(false);
       toast.success("Rol actualizado correctamente");
     },
@@ -129,7 +130,7 @@ export default function RolesPage() {
   const deleteMut = useMutation({
     mutationFn: deleteRole,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["roles"] });
+      invalidateResource(qc, "roles");
       toast.success("Rol eliminado");
     },
     onError: (err: unknown) =>

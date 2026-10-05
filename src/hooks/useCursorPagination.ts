@@ -14,6 +14,8 @@ import type { CursorPage } from "@/api/pagination";
 export function useCursorPagination<T, C = undefined>(
   queryKey: readonly unknown[],
   fetchPage: (cursor: string | null) => Promise<CursorPage<T, C>>,
+  /** Refresco periódico (ms) para listados que cambian desde la app móvil. */
+  options: { refetchInterval?: number } = {},
 ) {
   const key = JSON.stringify(queryKey);
   const [state, setState] = useState<{ key: string; cursors: (string | null)[] }>(
@@ -30,6 +32,7 @@ export function useCursorPagination<T, C = undefined>(
     queryFn: () => fetchPage(cursor),
     // Mantiene la página anterior en pantalla mientras llega la nueva.
     placeholderData: keepPreviousData,
+    refetchInterval: options.refetchInterval,
   });
   const data = query.data;
 

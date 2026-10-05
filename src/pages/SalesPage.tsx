@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
 import AddressMapButton from "@/components/ui/AddressMapButton";
+import { invalidateResource, LIVE_REFETCH_MS } from "@/lib/invalidate";
 
 const STATUS_CFG: Record<
   SalesStatus,
@@ -94,6 +95,8 @@ export default function SalesPage() {
   const pager = useCursorPagination(
     ["sales", { search: debouncedSearch, status }],
     (cursor) => getSalesPage(cursor, { search: debouncedSearch, status }),
+    // Las compras nuevas llegan desde la app sin que el panel haga nada.
+    { refetchInterval: LIVE_REFETCH_MS },
   );
   const { items: filtered, isLoading } = pager;
 
@@ -108,9 +111,8 @@ export default function SalesPage() {
       obs?: string;
     }) => updateSaleStatus(id, status, obs),
     onSuccess: (order) => {
-      qc.invalidateQueries({ queryKey: ["sales"] });
-      // Cancelar devuelve stock: el inventario de productos cambia.
-      qc.invalidateQueries({ queryKey: ["products"] });
+      // Cancelar repone stock y el uso del cupón: refresca productos y cupones.
+      invalidateResource(qc, "sales");
       setStatusTarget(null);
       toast.success(`Pedido #${order.code}: ${order.status_label}`);
     },

@@ -32,6 +32,7 @@ import {
   CardActions,
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
+import { invalidateResource } from "@/lib/invalidate";
 
 const schema = z.object({
   coupon: z.string().min(1, "Código requerido").max(50),
@@ -61,7 +62,7 @@ export default function DiscountCouponsPage() {
   const createMut = useMutation({
     mutationFn: (data: CreateDiscountCouponInput) => createDiscountCoupon(data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["coupons"] });
+      invalidateResource(qc, "coupons");
       setModalOpen(false);
       toast.success("Cupón creado");
     },
@@ -78,7 +79,7 @@ export default function DiscountCouponsPage() {
       data: Partial<CreateDiscountCouponInput>;
     }) => updateDiscountCoupon(id, data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["coupons"] });
+      invalidateResource(qc, "coupons");
       setModalOpen(false);
       toast.success("Cupón actualizado");
     },
@@ -89,7 +90,7 @@ export default function DiscountCouponsPage() {
   const deleteMut = useMutation({
     mutationFn: deleteDiscountCoupon,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["coupons"] });
+      invalidateResource(qc, "coupons");
       toast.success("Cupón eliminado");
     },
     onError: (err: unknown) =>

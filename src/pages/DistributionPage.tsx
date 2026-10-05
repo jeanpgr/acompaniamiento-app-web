@@ -35,6 +35,7 @@ import { getVehicles } from "@/api/vehicles";
 import { SERVICE_TYPE_STYLE, serviceTypeStyle } from "@/lib/serviceTypes";
 import AddressMapButton from "@/components/ui/AddressMapButton";
 import type { MapPoint } from "@/components/ui/AddressMap";
+import { invalidateResource, LIVE_REFETCH_MS } from "@/lib/invalidate";
 
 // ── Tipos y helpers ────────────────────────────────────────────────────────────
 
@@ -224,18 +225,23 @@ export default function DistributionPage() {
   const { data: acompanRaw = [], isLoading: l1 } = useQuery({
     queryKey: ["schedules-acompan"],
     queryFn: getSchedulesAcompan,
+    // Las reservas nuevas llegan desde la app sin que el panel haga nada.
+    refetchInterval: LIVE_REFETCH_MS,
   });
   const { data: tourismRaw = [], isLoading: l2 } = useQuery({
     queryKey: ["schedules-tourism"],
     queryFn: getSchedulesTourism,
+    refetchInterval: LIVE_REFETCH_MS,
   });
   const { data: trainingRaw = [], isLoading: l3 } = useQuery({
     queryKey: ["schedules-training"],
     queryFn: getSchedulesTraining,
+    refetchInterval: LIVE_REFETCH_MS,
   });
   const { data: daycareRaw = [], isLoading: l4 } = useQuery({
     queryKey: ["schedules-daycare"],
     queryFn: getSchedulesDaycare,
+    refetchInterval: LIVE_REFETCH_MS,
   });
   const { data: vehicles = [] } = useQuery({
     queryKey: ["vehicles"],
@@ -299,12 +305,7 @@ export default function DistributionPage() {
 
   function invalidateAll() {
     setAssigningId(null);
-    return Promise.all([
-      qc.invalidateQueries({ queryKey: ["schedules-acompan"] }),
-      qc.invalidateQueries({ queryKey: ["schedules-tourism"] }),
-      qc.invalidateQueries({ queryKey: ["schedules-training"] }),
-      qc.invalidateQueries({ queryKey: ["schedules-daycare"] }),
-    ]);
+    return invalidateResource(qc, "schedules");
   }
 
   // La tarjeta sale de "Sin asignar" (animación leaving-to-calendar) y

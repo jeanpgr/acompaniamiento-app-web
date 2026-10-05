@@ -29,6 +29,7 @@ import {
   CardActions,
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
+import { invalidateResource } from "@/lib/invalidate";
 
 const REVIEW_THRESHOLD = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
@@ -52,7 +53,7 @@ export default function VehiclesPage() {
   const createMut = useMutation({
     mutationFn: createVehicle,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["vehicles"] });
+      invalidateResource(qc, "vehicles");
       setModalOpen(false);
     },
   });
@@ -65,13 +66,13 @@ export default function VehiclesPage() {
       data: Partial<CreateVehicleInput>;
     }) => updateVehicle(id, data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["vehicles"] });
+      invalidateResource(qc, "vehicles");
       setModalOpen(false);
     },
   });
   const deleteMut = useMutation({
     mutationFn: deleteVehicle,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["vehicles"] }),
+    onSuccess: () => invalidateResource(qc, "vehicles"),
   });
 
   const { register, handleSubmit, reset } = useForm<CreateVehicleInput>();

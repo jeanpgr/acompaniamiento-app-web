@@ -45,6 +45,7 @@ import {
   CardActions,
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
+import { invalidateResource } from "@/lib/invalidate";
 
 // ── Validation ─────────────────────────────────────────────────
 const baseSchema = z.object({
@@ -292,9 +293,8 @@ export default function UsersPage() {
       photo: File | null;
     }) => createUser(data, photo),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["users"] });
-      // El conteo de usuarios por rol (página de roles) depende de esto.
-      qc.invalidateQueries({ queryKey: ["roles"] });
+      // Incluye roles: su conteo de usuarios depende de esto.
+      invalidateResource(qc, "users");
       setModalOpen(false);
       toast.success("Usuario creado correctamente");
     },
@@ -313,9 +313,8 @@ export default function UsersPage() {
       photo: File | null;
     }) => updateUser(id, sanitize(data) as UpdateUserInput, photo),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["users"] });
-      // El conteo de usuarios por rol (página de roles) depende de esto.
-      qc.invalidateQueries({ queryKey: ["roles"] });
+      // Incluye roles: su conteo de usuarios depende de esto.
+      invalidateResource(qc, "users");
       setModalOpen(false);
       toast.success("Usuario actualizado correctamente");
     },
@@ -326,7 +325,7 @@ export default function UsersPage() {
   const deleteMut = useMutation({
     mutationFn: deleteUser,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["users"] });
+      invalidateResource(qc, "users");
       toast.success("Usuario desactivado");
     },
     onError: (err: unknown) =>

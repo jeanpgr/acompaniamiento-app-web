@@ -43,6 +43,7 @@ import CursorPagination from "@/components/ui/CursorPagination";
 import Switch from "@/components/ui/Switch";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import Badge from "@/components/ui/Badge";
+import { invalidateResource } from "@/lib/invalidate";
 
 // ── Schema Zod (sin photo — llega como archivo) ───────────────
 
@@ -281,7 +282,7 @@ export default function ProductsPage() {
   const createMut = useMutation({
     mutationFn: (fd: FormData) => createProduct(fd),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["products"] });
+      invalidateResource(qc, "products");
       closeModal();
       toast.success("Producto creado exitosamente");
     },
@@ -293,7 +294,7 @@ export default function ProductsPage() {
     mutationFn: ({ id, fd }: { id: string; fd: FormData }) =>
       updateProduct(id, fd),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["products"] });
+      invalidateResource(qc, "products");
       closeModal();
       toast.success("Producto actualizado");
     },
@@ -304,7 +305,7 @@ export default function ProductsPage() {
   const deleteMut = useMutation({
     mutationFn: deleteProduct,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["products"] });
+      invalidateResource(qc, "products");
       toast.success("Producto eliminado");
     },
     onError: (err: unknown) =>

@@ -44,6 +44,7 @@ import {
   CardActions,
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
+import { invalidateResource } from "@/lib/invalidate";
 
 const schema = z.object({
   id_service: z.string().min(1, "Selecciona un servicio"),
@@ -124,7 +125,7 @@ export default function TourismDetailPage() {
   const createMut = useMutation({
     mutationFn: createDetailTourism,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["detail-tourism"] });
+      invalidateResource(qc, "detail-tourism");
       setModalOpen(false);
       toast.success("Excursión creada correctamente");
     },
@@ -141,7 +142,7 @@ export default function TourismDetailPage() {
       data: Partial<CreateDetailTourismInput>;
     }) => updateDetailTourism(id, data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["detail-tourism"] });
+      invalidateResource(qc, "detail-tourism");
       setModalOpen(false);
       toast.success("Excursión actualizada");
     },
@@ -152,7 +153,7 @@ export default function TourismDetailPage() {
   const deleteMut = useMutation({
     mutationFn: deleteDetailTourism,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["detail-tourism"] });
+      invalidateResource(qc, "detail-tourism");
       toast.success("Excursión eliminada");
     },
     onError: (err: unknown) =>

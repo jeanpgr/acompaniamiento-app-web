@@ -18,6 +18,7 @@ import {
   type SettingKey,
 } from "@/api/settings";
 import { getErrorMessage } from "@/api/client";
+import { invalidateResource } from "@/lib/invalidate";
 import Button from "@/components/ui/Button";
 
 // Mismas reglas que el backend (features/settings/settings.registry.ts).
@@ -108,6 +109,8 @@ export default function SettingsPage() {
     mutationFn: updateSettings,
     onSuccess: (res, vars) => {
       qc.setQueryData(["settings"], res);
+      // Los pedidos arman su enlace de WhatsApp con este número.
+      invalidateResource(qc, "settings");
       toast.success(
         "whatsapp_number" in vars
           ? "Número de WhatsApp guardado. La app lo usa desde ahora."

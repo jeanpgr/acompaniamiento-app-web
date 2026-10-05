@@ -18,6 +18,7 @@ import Modal from "@/components/ui/Modal";
 import TableSkeleton from "@/components/ui/TableSkeleton";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import SearchInput from "@/components/ui/SearchInput";
+import { invalidateResource } from "@/lib/invalidate";
 
 const schema = z.object({
   question: z.string().min(5, "La pregunta debe tener al menos 5 caracteres"),
@@ -42,7 +43,7 @@ export default function FAQPage() {
     mutationFn: (data: CreateFrequentlyQuestionInput) =>
       createFrequentlyQuestion(data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["frequently-questions"] });
+      invalidateResource(qc, "frequently-questions");
       setModalOpen(false);
       toast.success("Pregunta creada correctamente");
     },
@@ -62,7 +63,7 @@ export default function FAQPage() {
       data: Partial<CreateFrequentlyQuestionInput>;
     }) => updateFrequentlyQuestion(id, data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["frequently-questions"] });
+      invalidateResource(qc, "frequently-questions");
       setModalOpen(false);
       toast.success("Pregunta actualizada");
     },
@@ -76,7 +77,7 @@ export default function FAQPage() {
   const deleteMut = useMutation({
     mutationFn: deleteFrequentlyQuestion,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["frequently-questions"] });
+      invalidateResource(qc, "frequently-questions");
       toast.success("Pregunta eliminada");
     },
     onError: (err: unknown) =>

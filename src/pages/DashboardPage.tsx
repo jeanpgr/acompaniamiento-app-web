@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { LIVE_REFETCH_MS } from "@/lib/invalidate";
 import { Briefcase, Star, Clock, Truck } from "lucide-react";
 import StatCard from "@/components/ui/StatCard";
 import { getReviews } from "@/api/reviews";
@@ -92,6 +93,7 @@ export default function DashboardPage() {
   const { data: reviews = [] } = useQuery({
     queryKey: ["reviews"],
     queryFn: getReviews,
+    refetchInterval: LIVE_REFETCH_MS,
   });
   const { data: services = [] } = useQuery({
     queryKey: ["services"],
@@ -100,6 +102,7 @@ export default function DashboardPage() {
   const { data: schedules = [] } = useQuery({
     queryKey: ["schedules-acompan"],
     queryFn: getSchedulesAcompan,
+    refetchInterval: LIVE_REFETCH_MS,
   });
 
   const avgGrade =

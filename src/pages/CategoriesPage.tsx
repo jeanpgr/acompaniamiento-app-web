@@ -33,6 +33,7 @@ import {
   CardActions,
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
+import { invalidateResource } from "@/lib/invalidate";
 
 const schema = z.object({
   name: z.string().min(1, "Nombre requerido").max(30),
@@ -59,7 +60,7 @@ export default function CategoriesPage() {
   const createMut = useMutation({
     mutationFn: (data: CreateCategoryInput) => createCategory(data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["categories"] });
+      invalidateResource(qc, "categories");
       setModalOpen(false);
       toast.success("Categoría creada");
     },
@@ -74,7 +75,7 @@ export default function CategoriesPage() {
     mutationFn: ({ id, data }: { id: string; data: UpdateCategoryInput }) =>
       updateCategory(id, data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["categories"] });
+      invalidateResource(qc, "categories");
       setModalOpen(false);
       toast.success("Categoría actualizada");
     },
@@ -88,7 +89,7 @@ export default function CategoriesPage() {
   const deleteMut = useMutation({
     mutationFn: (id: string) => deleteCategory(id),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["categories"] });
+      invalidateResource(qc, "categories");
       toast.success("Categoría eliminada");
     },
     onError: (err: unknown) =>

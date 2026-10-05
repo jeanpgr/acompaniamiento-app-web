@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
 import Badge from "@/components/ui/Badge";
+import { invalidateResource } from "@/lib/invalidate";
 
 const schema = z.object({
   id_service: z.string().min(1, "Selecciona un servicio"),
@@ -93,7 +94,7 @@ export default function DaycareDetailPage() {
   const createMut = useMutation({
     mutationFn: createDetailDaycare,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["detail-daycare"] });
+      invalidateResource(qc, "detail-daycare");
       setModalOpen(false);
       toast.success("Modalidad de guardería creada");
     },
@@ -110,7 +111,7 @@ export default function DaycareDetailPage() {
       data: Partial<CreateDetailDaycareInput>;
     }) => updateDetailDaycare(id, data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["detail-daycare"] });
+      invalidateResource(qc, "detail-daycare");
       setModalOpen(false);
       toast.success("Modalidad actualizada");
     },
@@ -121,7 +122,7 @@ export default function DaycareDetailPage() {
   const deleteMut = useMutation({
     mutationFn: deleteDetailDaycare,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["detail-daycare"] });
+      invalidateResource(qc, "detail-daycare");
       toast.success("Modalidad eliminada");
     },
     onError: (err: unknown) =>

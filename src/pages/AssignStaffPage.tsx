@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
 import AddressMapButton from "@/components/ui/AddressMapButton";
+import { invalidateResource, LIVE_REFETCH_MS } from "@/lib/invalidate";
 
 const STATUS_LABEL: Record<string, string> = {
   PENDIENTE: "Pendiente",
@@ -66,6 +67,8 @@ export default function AssignStaffPage() {
     ["schedules-acompan", { status, search: debouncedSearch }],
     (cursor) =>
       getSchedulesAcompanPage(cursor, { status, search: debouncedSearch }),
+    // Las reservas nuevas llegan desde la app sin que el panel haga nada.
+    { refetchInterval: LIVE_REFETCH_MS },
   );
   const { items: schedules, isLoading, counts } = pager;
   const { data: vehicles = [] } = useQuery({
@@ -77,7 +80,7 @@ export default function AssignStaffPage() {
     mutationFn: ({ id, vehicle_id }: { id: string; vehicle_id: string }) =>
       updateScheduleAcompan(id, { id_vehicle: vehicle_id, status: "EN CURSO" }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["schedules-acompan"] });
+      invalidateResource(qc, "schedules-acompan");
       setSelectedId(null);
     },
   });
