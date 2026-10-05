@@ -163,7 +163,9 @@ function PendingCard({
                 </>
               ) : (
                 <p className="text-xs text-ink-3 italic">
-                  Capacitación en línea — no requiere vehículo
+                  {s.originalType === "training"
+                    ? "Capacitación en línea — no requiere vehículo"
+                    : "La familia lleva al adulto a la sede — no requiere vehículo"}
                 </p>
               )}
 
@@ -175,7 +177,11 @@ function PendingCard({
                     disabled={busy}
                     className="flex-1 py-1.5 rounded-lg text-xs font-medium disabled:opacity-50 bg-primary text-white hover:bg-primary-hover transition-colors"
                   >
-                    {busy ? "Confirmando…" : "Confirmar inscripción"}
+                    {busy
+                      ? "Confirmando…"
+                      : s.originalType === "training"
+                        ? "Confirmar inscripción"
+                        : "Confirmar servicio"}
                   </button>
                 )}
                 <button

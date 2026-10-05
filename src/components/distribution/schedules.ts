@@ -131,8 +131,9 @@ function normalizeDaycare(s: ScheduleDaycare): Unified {
           },
         ]
       : undefined,
-    needsVehicle: true,
-    vehicleId: s.id_vehicle,
+    // Si la familia lleva al adulto a la sede no hace falta vehículo.
+    needsVehicle: s.transfer === "PICK_HOME",
+    vehicleId: s.id_vehicle ?? undefined,
     ...refundOf(s),
   };
 }
@@ -205,10 +206,13 @@ export function assignSchedule(
         status: "EN CURSO",
       });
     case "daycare":
-      return updateScheduleDaycare(s.id, {
-        id_vehicle: vehicleId,
-        status: "EN CURSO",
-      });
+      // Con recogida se asigna vehículo; si la familia lo lleva, solo se confirma.
+      return updateScheduleDaycare(
+        s.id,
+        s.needsVehicle
+          ? { id_vehicle: vehicleId, status: "EN CURSO" }
+          : { status: "EN CURSO" },
+      );
     case "training":
       // Capacitación no usa vehículo: solo se confirma.
       return updateScheduleTraining(s.id, { status: "EN CURSO" });

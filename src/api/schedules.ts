@@ -59,9 +59,7 @@ export interface CreateScheduleAcompanInput {
 }
 
 export const getSchedulesAcompan = () =>
-  apiClient
-    .get<ScheduleAcompan[]>("/schedule-acompan")
-    .then((r) => r.data);
+  apiClient.get<ScheduleAcompan[]>("/schedule-acompan").then((r) => r.data);
 
 /** Página por cursor (created_at DESC) para la tabla del panel. */
 export const getSchedulesAcompanPage = (
@@ -69,7 +67,9 @@ export const getSchedulesAcompanPage = (
   filters: { status?: ScheduleStatus; search?: string } = {},
 ) =>
   apiClient
-    .get<CursorPage<ScheduleAcompan, Record<ScheduleStatus, number>>>("/schedule-acompan", { params: pageParams(cursor, filters) })
+    .get<
+      CursorPage<ScheduleAcompan, Record<ScheduleStatus, number>>
+    >("/schedule-acompan", { params: pageParams(cursor, filters) })
     .then((r) => r.data);
 export const createScheduleAcompan = (body: CreateScheduleAcompanInput) =>
   apiClient
@@ -107,9 +107,7 @@ export interface ScheduleTourism extends RefundFields {
 }
 
 export const getSchedulesTourism = () =>
-  apiClient
-    .get<ScheduleTourism[]>("/schedule-tourism")
-    .then((r) => r.data);
+  apiClient.get<ScheduleTourism[]>("/schedule-tourism").then((r) => r.data);
 export const updateScheduleTourism = (
   id: string,
   body: Partial<ScheduleTourism>,
@@ -137,9 +135,7 @@ export interface ScheduleTraining extends RefundFields {
 }
 
 export const getSchedulesTraining = () =>
-  apiClient
-    .get<ScheduleTraining[]>("/schedule-training")
-    .then((r) => r.data);
+  apiClient.get<ScheduleTraining[]>("/schedule-training").then((r) => r.data);
 export const updateScheduleTraining = (
   id: string,
   body: Partial<ScheduleTraining>,
@@ -156,7 +152,8 @@ export const markRefundCompleteTraining = (id: string) =>
 export interface ScheduleDaycare extends RefundFields {
   id: string;
   id_detail_daycare: string;
-  id_vehicle: string;
+  /** Null hasta que se asigna; solo hace falta con recogida (PICK_HOME). */
+  id_vehicle: string | null;
   name: string | null;
   lastname: string | null;
   transfer: "PICK_HOME" | "TO_CARRY" | null;
@@ -173,9 +170,7 @@ export interface ScheduleDaycare extends RefundFields {
 }
 
 export const getSchedulesDaycare = () =>
-  apiClient
-    .get<ScheduleDaycare[]>("/schedule-daycare")
-    .then((r) => r.data);
+  apiClient.get<ScheduleDaycare[]>("/schedule-daycare").then((r) => r.data);
 export const updateScheduleDaycare = (
   id: string,
   body: Partial<ScheduleDaycare>,
