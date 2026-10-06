@@ -30,6 +30,7 @@ import {
   FILTER_TABS,
   STATUS_LABEL,
   STATUS_VARIANT,
+  statusLabelOf,
   formatTime,
   type FilterTab,
   type Unified,
@@ -78,7 +79,7 @@ function chipClass(selected: boolean) {
 
 function StatusBadge({ s }: { s: Unified }) {
   const status = statusOf(s);
-  return <Badge variant={STATUS_VARIANT[status]}>{STATUS_LABEL[status]}</Badge>;
+  return <Badge variant={STATUS_VARIANT[status]}>{statusLabelOf(s)}</Badge>;
 }
 
 function RefundBadge({ s }: { s: Unified }) {

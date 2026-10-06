@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { serviceTypeStyle } from "@/lib/serviceTypes";
-import { STATUS_LABEL, formatTime, type Unified } from "./schedules";
+import { statusLabelOf, formatTime, type Unified } from "./schedules";
 
 const DAYS = ["Lun", "Mar", "Miérc", "Jue", "Vie", "Sáb", "Dom"];
 
@@ -144,7 +144,7 @@ export default function WeekCalendar({ items, isLoading }: Props) {
                     </p>
                     {item.status && item.status !== "PENDIENTE" && (
                       <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide opacity-80">
-                        {STATUS_LABEL[item.status]}
+                        {statusLabelOf(item)}
                       </p>
                     )}
                   </div>

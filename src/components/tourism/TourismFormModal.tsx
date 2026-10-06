@@ -11,6 +11,7 @@ import MapPickButton from "@/components/ui/MapPickButton";
 import {
   formValues,
   tourismSchema,
+  TOURISM_LIMITS,
   type TourismFormValues,
 } from "./tourismForm";
 
@@ -60,7 +61,7 @@ export default function TourismFormModal({
     formState: { errors },
   } = useForm<TourismFormValues>({
     defaultValues: formValues(item, serviceId),
-    resolver: zodResolver(tourismSchema),
+    resolver: zodResolver(tourismSchema(item)),
   });
   // Paradas del itinerario como lista dinámica del propio formulario.
   const { fields, append, remove } = useFieldArray({
@@ -71,9 +72,15 @@ export default function TourismFormModal({
   const tourismServices = services.filter(
     (s) => s.type === "TURISMO" && s.active,
   );
-  const [meetingAddress, meetingLat, meetingLng] = useWatch({
+  const [meetingAddress, meetingLat, meetingLng, name, description] = useWatch({
     control,
-    name: ["meeting_point_address", "meeting_point_lat", "meeting_point_lng"],
+    name: [
+      "meeting_point_address",
+      "meeting_point_lat",
+      "meeting_point_lng",
+      "name",
+      "description",
+    ],
   });
   // Escribir la dirección a mano descarta el punto del mapa (ya no coincide).
   const meetingField = register("meeting_point_address", {
@@ -99,7 +106,12 @@ export default function TourismFormModal({
         </>
       }
     >
-      <form id={formId} className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+      <form
+        id={formId}
+        className="space-y-4"
+        noValidate
+        onSubmit={handleSubmit(onSubmit)}
+      >
         {!serviceId && (
           <FormField
             htmlFor="tourismdetail-id_service"
@@ -128,12 +140,14 @@ export default function TourismFormModal({
           label="Nombre de la excursión"
           required
           error={errors.name?.message}
+          hint={`${name?.length ?? 0}/${TOURISM_LIMITS.name} caracteres`}
         >
           <input
             id="tourismdetail-name"
             className="field"
             aria-invalid={!!errors.name}
-            placeholder="Excursión Cartagena"
+            placeholder="Excursión a Baños"
+            maxLength={TOURISM_LIMITS.name}
             {...register("name")}
           />
         </FormField>
@@ -143,13 +157,15 @@ export default function TourismFormModal({
           label="Descripción"
           required
           error={errors.description?.message}
+          hint={`${description?.length ?? 0}/${TOURISM_LIMITS.description} caracteres`}
         >
           <textarea
             id="tourismdetail-description"
-            rows={2}
+            rows={3}
             className="field resize-none"
             aria-invalid={!!errors.description}
             placeholder="Descripción de la excursión"
+            maxLength={TOURISM_LIMITS.description}
             {...register("description")}
           />
         </FormField>
@@ -196,6 +212,7 @@ export default function TourismFormModal({
               id="tourismdetail-quotas"
               type="number"
               min={1}
+              max={1000}
               className="field"
               aria-invalid={!!errors.quotas}
               {...register("quotas", { valueAsNumber: true })}
@@ -285,7 +302,7 @@ export default function TourismFormModal({
           </p>
         </div>
 
-        {/* Itinerario */}
+        {/* Itinerario: hora + lugar de cada parada, en el orden del recorrido */}
         <fieldset>
           <div className="flex items-center justify-between mb-2">
             <legend className="block text-sm font-medium text-ink">
@@ -305,30 +322,46 @@ export default function TourismFormModal({
             </p>
           ) : (
             <div className="space-y-2">
-              {fields.map((field, i) => (
-                <div key={field.id} className="flex gap-2 items-center">
-                  <input
-                    aria-label={`Hora de la parada ${i + 1}`}
-                    placeholder="09:00"
-                    className="border border-line rounded-lg px-2 py-1.5 text-xs focus:outline-none w-20"
-                    {...register(`itinerary.${i}.hour`)}
-                  />
-                  <input
-                    aria-label={`Lugar o actividad de la parada ${i + 1}`}
-                    placeholder="Lugar o actividad"
-                    className="border border-line rounded-lg px-2 py-1.5 text-xs focus:outline-none flex-1"
-                    {...register(`itinerary.${i}.place`)}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => remove(i)}
-                    aria-label={`Quitar parada ${i + 1}`}
-                    className="text-ink-3 hover:text-danger-fg transition-colors"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              ))}
+              <div className="flex gap-2 text-xs text-ink-3" aria-hidden="true">
+                <span className="w-28">Hora</span>
+                <span className="flex-1">Lugar o actividad</span>
+              </div>
+              {fields.map((field, i) => {
+                const placeError = errors.itinerary?.[i]?.place?.message;
+                return (
+                  <div key={field.id}>
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="time"
+                        aria-label={`Hora de la parada ${i + 1}`}
+                        className="field w-28 shrink-0"
+                        {...register(`itinerary.${i}.hour`)}
+                      />
+                      <input
+                        aria-label={`Lugar o actividad de la parada ${i + 1}`}
+                        aria-invalid={!!placeError}
+                        placeholder="Mirador, almuerzo, hotel…"
+                        maxLength={TOURISM_LIMITS.place}
+                        className="field flex-1"
+                        {...register(`itinerary.${i}.place`)}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => remove(i)}
+                        aria-label={`Quitar parada ${i + 1}`}
+                        className="text-ink-3 hover:text-danger-fg transition-colors"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                    {placeError && (
+                      <p className="text-danger-fg text-xs mt-1 ml-30">
+                        {placeError}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </fieldset>

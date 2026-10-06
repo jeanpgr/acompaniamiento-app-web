@@ -23,7 +23,10 @@ export interface ActiveCounts {
 export type PageFilters = Record<string, string | boolean | undefined>;
 
 /** Query params de una página: limit, cursor y los filtros con valor. */
-export const pageParams = (cursor: string | null, filters: PageFilters = {}) => ({
+export const pageParams = (
+  cursor: string | null,
+  filters: PageFilters = {},
+) => ({
   limit: PAGE_SIZE,
   ...(cursor ? { cursor } : {}),
   ...Object.fromEntries(

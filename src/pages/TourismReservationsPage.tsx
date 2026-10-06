@@ -1,0 +1,443 @@
+import { useState } from "react";
+import { Link, useParams } from "react-router-dom";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import {
+  ArrowLeft,
+  BadgeCheck,
+  Clock,
+  MessageCircle,
+  Ticket,
+  Undo2,
+  Wallet,
+} from "lucide-react";
+import { getDetailTourism } from "@/api/details-tourism";
+import {
+  confirmScheduleTourism,
+  getSchedulesTourismByDetail,
+  markRefundCompleteTourism,
+  unconfirmScheduleTourism,
+  type ScheduleStatus,
+  type ScheduleTourismWithUser,
+} from "@/api/schedules";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import StatCard from "@/components/ui/StatCard";
+import TableSkeleton from "@/components/ui/TableSkeleton";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import {
+  EmptyCell,
+  EmptyRow,
+  TableHead,
+  TableRow,
+  type Column,
+} from "@/components/ui/DataTable";
+import {
+  formatDateRange,
+  formatMoney,
+  formatTripMeta,
+} from "@/components/tourism/tourismForm";
+import { LIVE_REFETCH_MS } from "@/lib/invalidate";
+import { whatsappUrl } from "@/lib/whatsapp";
+
+type Reservation = ScheduleTourismWithUser;
+
+// ── Estados de una reserva de excursión ──
+// El backend guarda "EN CURSO" cuando el pago se confirmó; aquí y en la app
+// se muestra como "Confirmada".
+type Group = "pending" | "confirmed" | "cancelled" | "past";
+
+function groupOf(r: Reservation): Group {
+  const s: ScheduleStatus = r.status ?? "PENDIENTE";
+  if (s === "PENDIENTE") return "pending";
+  if (s === "EN CURSO" || s === "COMPLETADO") return "confirmed";
+  if (s === "CANCELADA") return "cancelled";
+  return "past"; // OLVIDADA: el viaje salió sin que se confirmara
+}
+
+const TABS: { key: Group | "all"; label: string }[] = [
+  { key: "pending", label: "Por confirmar" },
+  { key: "confirmed", label: "Confirmadas" },
+  { key: "cancelled", label: "Canceladas" },
+  { key: "past", label: "Sin confirmar (viaje pasado)" },
+  { key: "all", label: "Todas" },
+];
+
+const COLUMNS: Column[] = [
+  "Reservó",
+  "Pasajeros",
+  "Contacto",
+  "Total",
+  "Estado",
+  { label: "Acciones", className: "text-right" },
+];
+
+const toAmount = (v: string | null) => (v == null ? null : Number(v));
+
+const formatCreated = (iso: string) =>
+  new Date(iso).toLocaleString("es-CO", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+function StatusBadge({ r }: { r: Reservation }) {
+  switch (groupOf(r)) {
+    case "pending":
+      return <Badge variant="warning">Por confirmar</Badge>;
+    case "confirmed":
+      return <Badge variant="success">Confirmada</Badge>;
+    case "cancelled":
+      return (
+        <div className="flex flex-col items-start gap-1">
+          <Badge variant="danger">Cancelada</Badge>
+          <span className="text-[11px] text-ink-3">
+            Reembolso{" "}
+            {r.refund_status === "REALIZADO" ? "realizado" : "por hacer"}
+          </span>
+        </div>
+      );
+    case "past":
+      return <Badge>No confirmada</Badge>;
+  }
+}
+
+function holderName(r: Reservation) {
+  return r.user ? `${r.user.name} ${r.user.lastname}` : "Cuenta eliminada";
+}
+
+/**
+ * Reservas de una excursión (página hija de Turismo). Quien reserva en la
+ * app queda "Por confirmar" y envía el comprobante por WhatsApp; aquí el
+ * administrador abre el chat, revisa el pago y confirma la reserva.
+ */
+export default function TourismReservationsPage() {
+  const { tripId = "" } = useParams();
+  const confirm = useConfirm();
+
+  const trip = useQuery({
+    queryKey: ["detail-tourism", tripId],
+    queryFn: () => getDetailTourism(tripId),
+  });
+  const reservations = useQuery({
+    queryKey: ["schedules-tourism", "detail", tripId],
+    queryFn: () => getSchedulesTourismByDetail(tripId),
+    // Llegan reservas nuevas desde la app mientras la pantalla está abierta.
+    refetchInterval: LIVE_REFETCH_MS,
+  });
+  const items = reservations.data ?? [];
+
+  const pendingCount = items.filter((r) => groupOf(r) === "pending").length;
+  // Por defecto se abren las que esperan confirmación; si no hay, todas.
+  const [tab, setTab] = useState<Group | "all" | null>(null);
+  const activeTab = tab ?? (pendingCount > 0 ? "pending" : "all");
+  const shown =
+    activeTab === "all" ? items : items.filter((r) => groupOf(r) === activeTab);
+  const countOf = (key: Group | "all") =>
+    key === "all"
+      ? items.length
+      : items.filter((r) => groupOf(r) === key).length;
+
+  const confirmed = items.filter((r) => groupOf(r) === "confirmed");
+  const pending = items.filter((r) => groupOf(r) === "pending");
+  const seats = (list: Reservation[]) => list.reduce((n, r) => n + r.quotas, 0);
+  const income = confirmed.reduce(
+    (sum, r) => sum + (toAmount(r.price_pay) ?? 0),
+    0,
+  );
+
+  // ── Mutaciones (refresco y avisos: lib/queryClient) ──
+  const confirmMut = useMutation({
+    mutationFn: confirmScheduleTourism,
+    meta: {
+      invalidates: "schedules-tourism",
+      successMessage:
+        "Reserva confirmada. El cliente ya la ve como confirmada en la app.",
+      errorMessage: "No se pudo confirmar la reserva",
+    },
+  });
+  const unconfirmMut = useMutation({
+    mutationFn: unconfirmScheduleTourism,
+    meta: {
+      invalidates: "schedules-tourism",
+      successMessage: "La reserva volvió a Por confirmar",
+      errorMessage: "No se pudo deshacer la confirmación",
+    },
+  });
+  const refundMut = useMutation({
+    mutationFn: markRefundCompleteTourism,
+    meta: {
+      invalidates: "schedules-tourism",
+      successMessage: "Reembolso marcado como realizado",
+      errorMessage: "No se pudo marcar el reembolso",
+    },
+  });
+
+  const tripName = trip.data?.name ?? "la excursión";
+  const amountText = (r: Reservation) => {
+    const amount = toAmount(r.price_pay);
+    return amount != null ? ` por ${formatMoney(amount)}` : "";
+  };
+
+  const askConfirm = async (r: Reservation) => {
+    if (
+      await confirm({
+        title: "¿Confirmar el pago de esta reserva?",
+        message: `${holderName(r)} · ${r.quotas} ${r.quotas === 1 ? "cupo" : "cupos"}${amountText(r)}. Confírmala solo si ya revisaste el comprobante en WhatsApp.`,
+        confirmLabel: "Sí, confirmar pago",
+        tone: "primary",
+      })
+    )
+      confirmMut.mutate(r.id);
+  };
+
+  const askUnconfirm = async (r: Reservation) => {
+    if (
+      await confirm({
+        title: "¿Volver la reserva a Por confirmar?",
+        message: `La reserva de ${holderName(r)} dejará de verse como confirmada en la app.`,
+        confirmLabel: "Volver a Por confirmar",
+        tone: "danger",
+      })
+    )
+      unconfirmMut.mutate(r.id);
+  };
+
+  const askRefund = async (r: Reservation) => {
+    if (
+      await confirm({
+        title: "¿Ya se hizo la transferencia del reembolso?",
+        message: [
+          `${holderName(r)}${amountText(r)}`,
+          r.refund_bank_name &&
+            `${r.refund_bank_name} · ${r.refund_account_type ?? ""} ${r.refund_bank_account ?? ""}`,
+          r.refund_holder_cedula &&
+            `Cédula del titular: ${r.refund_holder_cedula}`,
+        ]
+          .filter(Boolean)
+          .join("\n"),
+        confirmLabel: "Sí, reembolso realizado",
+        tone: "primary",
+      })
+    )
+      refundMut.mutate(r.id);
+  };
+
+  const renderActions = (r: Reservation) => {
+    const group = groupOf(r);
+    if (group === "pending")
+      return (
+        <Button
+          size="sm"
+          loading={confirmMut.isPending && confirmMut.variables === r.id}
+          onClick={() => askConfirm(r)}
+        >
+          <BadgeCheck size={13} /> Confirmar pago
+        </Button>
+      );
+    if (group === "confirmed" && r.status === "EN CURSO")
+      return (
+        <Button
+          size="sm"
+          variant="ghost"
+          loading={unconfirmMut.isPending && unconfirmMut.variables === r.id}
+          onClick={() => askUnconfirm(r)}
+        >
+          <Undo2 size={13} /> Deshacer
+        </Button>
+      );
+    if (group === "cancelled" && r.refund_status !== "REALIZADO")
+      return (
+        <Button
+          size="sm"
+          variant="secondary"
+          loading={refundMut.isPending && refundMut.variables === r.id}
+          onClick={() => askRefund(r)}
+        >
+          <Wallet size={13} /> Reembolso hecho
+        </Button>
+      );
+    return null;
+  };
+
+  const contact = (r: Reservation) => {
+    const url = whatsappUrl(
+      r.phone_responsible,
+      `Hola ${r.user?.name ?? ""}, te escribimos de ServiMayor por tu reserva de ${r.quotas} ${r.quotas === 1 ? "cupo" : "cupos"} para "${tripName}".`,
+    );
+    return (
+      <div className="whitespace-nowrap">
+        {url ? (
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-sm font-medium text-success-fg hover:underline"
+            aria-label={`Escribir por WhatsApp a ${r.phone_responsible}`}
+          >
+            <MessageCircle size={14} aria-hidden="true" /> {r.phone_responsible}
+          </a>
+        ) : (
+          <span className="text-sm text-ink-2">{r.phone_responsible}</span>
+        )}
+        {r.user?.email && (
+          <p className="text-xs text-ink-3 truncate max-w-48">{r.user.email}</p>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div>
+      {/* Encabezado */}
+      <div className="mb-6">
+        <Link
+          to={
+            trip.data
+              ? `/tourism-details?service=${trip.data.id_service}`
+              : "/tourism-details"
+          }
+          className="inline-flex items-center gap-1 text-xs text-ink-3 hover:text-ink-2 mb-1 transition-colors"
+        >
+          <ArrowLeft size={12} /> Volver a excursiones
+        </Link>
+        <h1 className="text-xl font-semibold text-ink">
+          Reservas · {trip.data?.name ?? "…"}
+        </h1>
+        {trip.data && (
+          <p className="text-sm text-ink-3 mt-0.5">
+            {formatDateRange(trip.data.date_output, trip.data.date_arrival)} ·{" "}
+            {formatTripMeta(trip.data.date_output, trip.data.date_arrival)}
+          </p>
+        )}
+        <p className="text-sm text-ink-3 mt-2 max-w-2xl">
+          Las reservas hechas en la app llegan como{" "}
+          <strong>Por confirmar</strong>. Abre el WhatsApp del cliente, revisa
+          el comprobante y pulsa <strong>Confirmar pago</strong>: la app le
+          mostrará su reserva como confirmada.
+        </p>
+      </div>
+
+      {/* Resumen */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <StatCard
+          icon={Clock}
+          tone="warning"
+          value={pending.length}
+          label={`Por confirmar · ${seats(pending)} cupos`}
+        />
+        <StatCard
+          icon={BadgeCheck}
+          tone="success"
+          value={confirmed.length}
+          label={`Confirmadas · ${seats(confirmed)} cupos`}
+        />
+        <StatCard
+          icon={Ticket}
+          tone="info"
+          value={
+            trip.data
+              ? `${trip.data.quotas_available}/${trip.data.quotas}`
+              : "—"
+          }
+          label="Cupos disponibles"
+        />
+        <StatCard
+          icon={Wallet}
+          tone="primary"
+          value={formatMoney(income)}
+          label="Pagos confirmados"
+        />
+      </div>
+
+      {/* Filtros */}
+      <div
+        className="flex flex-wrap gap-2 mb-4"
+        role="group"
+        aria-label="Filtrar reservas por estado"
+      >
+        {TABS.map(({ key, label }) => {
+          const count = countOf(key);
+          if (count === 0 && key !== "all" && key !== "pending") return null;
+          const selected = activeTab === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setTab(key)}
+              aria-pressed={selected}
+              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                selected
+                  ? "bg-primary text-white border-primary"
+                  : "bg-surface text-ink-2 border-line hover:border-line-strong hover:text-ink"
+              }`}
+            >
+              {label} ({count})
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Tabla */}
+      <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
+        {reservations.isLoading ? (
+          <TableSkeleton label="Cargando reservas…" />
+        ) : (
+          <table className="w-full min-w-200">
+            <TableHead columns={COLUMNS} />
+            <tbody>
+              {shown.map((r) => {
+                const amount = toAmount(r.price_pay);
+                const names = Array.isArray(r.names_persons)
+                  ? r.names_persons
+                  : [];
+                return (
+                  <TableRow key={r.id}>
+                    <td className="px-5 py-3.5">
+                      <p className="font-medium text-ink text-sm whitespace-nowrap">
+                        {holderName(r)}
+                      </p>
+                      <p className="text-xs text-ink-3 whitespace-nowrap">
+                        {formatCreated(r.created_at)}
+                      </p>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <p className="text-sm text-ink-2 whitespace-nowrap">
+                        {r.quotas} {r.quotas === 1 ? "cupo" : "cupos"}
+                      </p>
+                      <p
+                        className="text-xs text-ink-3 truncate max-w-56"
+                        title={names.join(", ")}
+                      >
+                        {names.join(", ") || "—"}
+                      </p>
+                    </td>
+                    <td className="px-5 py-3.5">{contact(r)}</td>
+                    <td className="px-5 py-3.5 text-sm font-medium text-ink whitespace-nowrap">
+                      {amount != null ? formatMoney(amount) : <EmptyCell />}
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <StatusBadge r={r} />
+                    </td>
+                    <td className="px-5 py-3.5 text-right">
+                      {renderActions(r)}
+                    </td>
+                  </TableRow>
+                );
+              })}
+              {shown.length === 0 && (
+                <EmptyRow colSpan={COLUMNS.length}>
+                  {items.length === 0
+                    ? "Esta excursión todavía no tiene reservas"
+                    : activeTab === "pending"
+                      ? "No hay reservas por confirmar"
+                      : "No hay reservas en este estado"}
+                </EmptyRow>
+              )}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}

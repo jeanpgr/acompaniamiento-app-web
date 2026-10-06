@@ -108,14 +108,24 @@ export default function AddressMap({ points }: { points: MapPoint[] }) {
         title: `${p.label}: ${p.address}`,
         alt: p.label,
       })
-        .bindTooltip(`${p.letter} · ${p.label}`, { direction: "top", offset: [0, -28] })
+        .bindTooltip(`${p.letter} · ${p.label}`, {
+          direction: "top",
+          offset: [0, -28],
+        })
         .addTo(map);
     });
 
     const latLngs = located.map((p) => L.latLng(p.coords!.lat, p.coords!.lng));
     if (latLngs.length > 1) {
-      L.polyline(latLngs, { color: "#1D3461", weight: 3, dashArray: "6 6" }).addTo(map);
-      map.fitBounds(L.latLngBounds(latLngs), { padding: [40, 40], maxZoom: 16 });
+      L.polyline(latLngs, {
+        color: "#1D3461",
+        weight: 3,
+        dashArray: "6 6",
+      }).addTo(map);
+      map.fitBounds(L.latLngBounds(latLngs), {
+        padding: [40, 40],
+        maxZoom: 16,
+      });
     } else if (latLngs.length === 1) {
       map.setView(latLngs[0], 16);
     } else {

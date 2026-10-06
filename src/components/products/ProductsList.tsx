@@ -76,7 +76,9 @@ export default function ProductsList({
                 <h2 className="font-medium text-ink text-sm truncate">
                   {p.name}
                 </h2>
-                <p className="text-xs text-ink-3">{categoryName(p.id_category)}</p>
+                <p className="text-xs text-ink-3">
+                  {categoryName(p.id_category)}
+                </p>
               </div>
               <StatusBadge active={p.active} />
             </div>
@@ -108,7 +110,9 @@ export default function ProductsList({
               <div className="flex items-center gap-3">
                 <ProductThumbnail photo={p.photo} name={p.name} />
                 <div className="min-w-0">
-                  <p className="font-medium text-ink text-sm truncate">{p.name}</p>
+                  <p className="font-medium text-ink text-sm truncate">
+                    {p.name}
+                  </p>
                   {p.description && (
                     <p className="text-xs text-ink-3 truncate max-w-40">
                       {p.description}

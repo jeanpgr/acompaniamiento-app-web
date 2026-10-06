@@ -2,7 +2,11 @@ import { apiClient } from "./client";
 import { pageParams, type CursorPage } from "./pagination";
 
 /** Estado de entrega del pedido (enum status_sales). */
-export type SalesStatus = "POR_ENTREGAR" | "EN_ENTREGA" | "ENTREGADO" | "CANCELADO";
+export type SalesStatus =
+  | "POR_ENTREGAR"
+  | "EN_ENTREGA"
+  | "ENTREGADO"
+  | "CANCELADO";
 
 export interface OrderItem {
   id: string;
@@ -63,7 +67,9 @@ export const getSalesPage = (
   filters: { search?: string; status?: SalesStatus } = {},
 ) =>
   apiClient
-    .get<CursorPage<Order, Record<SalesStatus, number>>>(BASE, { params: pageParams(cursor, filters) })
+    .get<
+      CursorPage<Order, Record<SalesStatus, number>>
+    >(BASE, { params: pageParams(cursor, filters) })
     .then((r) => r.data);
 
 export const getSaleById = (id: string) =>

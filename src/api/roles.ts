@@ -30,7 +30,9 @@ export const getRolesPage = (
   filters: { active?: boolean; search?: string } = {},
 ) =>
   apiClient
-    .get<CursorPage<Role, ActiveCounts>>(BASE, { params: pageParams(cursor, filters) })
+    .get<
+      CursorPage<Role, ActiveCounts>
+    >(BASE, { params: pageParams(cursor, filters) })
     .then((r) => r.data);
 export const getRoleById = (id: string) =>
   apiClient.get<Role>(`${BASE}/${id}`).then((r) => r.data);

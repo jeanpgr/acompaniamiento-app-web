@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, ArrowLeft } from "lucide-react";
+import { Plus, Pencil, Trash2, ArrowLeft, Ticket } from "lucide-react";
 import {
   getDetailsTourismPage,
   createDetailTourism,
@@ -11,6 +11,8 @@ import {
   type CreateDetailTourismInput,
 } from "@/api/details-tourism";
 import { getServices } from "@/api/services";
+import { getSchedulesTourism } from "@/api/schedules";
+import { LIVE_REFETCH_MS } from "@/lib/invalidate";
 import Button from "@/components/ui/Button";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import TableSkeleton from "@/components/ui/TableSkeleton";
@@ -26,6 +28,38 @@ import {
   toPayload,
   type TourismFormValues,
 } from "@/components/tourism/tourismForm";
+
+/** Botón a las reservas de la excursión, con cuántas esperan confirmar el pago. */
+function ReservationsLink({
+  tripId,
+  pending,
+}: {
+  tripId: string;
+  pending: number;
+}) {
+  return (
+    <Link
+      to={`${tripId}/reservas`}
+      className={`inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+        pending > 0
+          ? "bg-warning-bg text-warning-fg hover:brightness-95"
+          : "bg-surface border border-line text-ink-2 hover:bg-surface-2 hover:border-line-strong"
+      }`}
+      aria-label={
+        pending > 0
+          ? `Reservas: ${pending} por confirmar`
+          : "Ver reservas de la excursión"
+      }
+    >
+      <Ticket size={12} aria-hidden="true" /> Reservas
+      {pending > 0 && (
+        <span className="min-w-5 h-5 px-1.5 rounded-full bg-warning-fg text-white text-[11px] font-semibold inline-flex items-center justify-center tabular-nums">
+          {pending}
+        </span>
+      )}
+    </Link>
+  );
+}
 
 export default function TourismDetailPage() {
   const confirm = useConfirm();
@@ -59,6 +93,21 @@ export default function TourismDetailPage() {
   const currentService = serviceId
     ? services.find((s) => s.id === serviceId)
     : null;
+
+  // Reservas que esperan confirmar el pago, por excursión (aviso en "Reservas").
+  const { data: reservations = [] } = useQuery({
+    queryKey: ["schedules-tourism"],
+    queryFn: getSchedulesTourism,
+    refetchInterval: LIVE_REFETCH_MS,
+  });
+  const pendingByTrip = new Map<string, number>();
+  for (const r of reservations) {
+    if (r.status && r.status !== "PENDIENTE") continue;
+    pendingByTrip.set(
+      r.id_detail_tourism,
+      (pendingByTrip.get(r.id_detail_tourism) ?? 0) + 1,
+    );
+  }
 
   // ── Mutaciones (refresco y avisos: lib/queryClient) ──────────
   const createMut = useMutation({
@@ -166,13 +215,23 @@ export default function TourismDetailPage() {
             emptyText={emptyText}
             renderActions={(item) => (
               <>
-                <Button size="sm" variant="secondary" onClick={() => openForm(item)}>
+                <ReservationsLink
+                  tripId={item.id}
+                  pending={pendingByTrip.get(item.id) ?? 0}
+                />
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => openForm(item)}
+                >
                   <Pencil size={12} /> Editar
                 </Button>
                 <Button
                   size="sm"
                   variant="danger-soft"
-                  loading={deleteMut.isPending && deleteMut.variables === item.id}
+                  loading={
+                    deleteMut.isPending && deleteMut.variables === item.id
+                  }
                   onClick={() => confirmDelete(item)}
                 >
                   <Trash2 size={12} /> Eliminar

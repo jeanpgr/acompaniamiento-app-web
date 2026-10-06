@@ -33,12 +33,7 @@ export default function AddressMapButton({ points, title, className }: Props) {
       >
         <MapIcon size={12} aria-hidden="true" /> Ver en mapa
       </Button>
-      <Modal
-        open={open}
-        onClose={() => setOpen(false)}
-        title={title}
-        size="lg"
-      >
+      <Modal open={open} onClose={() => setOpen(false)} title={title} size="lg">
         <Suspense
           fallback={
             <div className="h-80 rounded-lg bg-surface-2 animate-pulse" />

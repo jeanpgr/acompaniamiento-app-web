@@ -1,11 +1,11 @@
 import { SERVICE_TYPE_STYLE } from "@/lib/serviceTypes";
 
-/** Leyenda de colores por tipo de servicio. */
+/** Leyenda de colores por tipo de servicio, en una fila al pie del calendario. */
 export default function ServiceTypeLegend() {
   return (
-    <div className="mt-3 bg-surface rounded-xl shadow-sm border border-line p-3">
-      <p className="text-xs font-medium text-ink-3 mb-2">Tipos de servicio</p>
-      <ul className="space-y-1.5">
+    <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 bg-surface rounded-xl shadow-sm border border-line px-4 py-2.5">
+      <p className="text-xs font-medium text-ink-3">Tipos de servicio</p>
+      <ul className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
         {Object.entries(SERVICE_TYPE_STYLE).map(([key, st]) => (
           <li key={key} className="flex items-center gap-2">
             <span

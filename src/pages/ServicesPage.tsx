@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Plus, Pencil, Trash2, ChevronRight, Briefcase } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -37,12 +38,16 @@ import CursorPagination from "@/components/ui/CursorPagination";
 const schema = z.object({
   name: z
     .string()
+    .trim()
     .min(1, "El nombre es requerido")
     .max(30, "Máximo 30 caracteres"),
   description: z.string().max(250, "Máximo 250 caracteres").optional(),
-  type: z
-    .enum(["ACOMPAÑAMIENTO", "TURISMO", "CAPACITACION", "GUARDERIA"])
-    .optional(),
+  // Obligatorio: la app decide con el tipo qué pantalla abrir y el panel
+  // qué detalles (excursiones, talleres, planes) gestionar. Antes el select
+  // vacío ("") fallaba la validación sin mostrar error y "Crear" no hacía nada.
+  type: z.enum(["ACOMPAÑAMIENTO", "TURISMO", "CAPACITACION", "GUARDERIA"], {
+    message: "Selecciona el tipo de servicio",
+  }),
   price: z
     .string()
     .regex(/^\d+(\.\d{1,2})?$/, "Formato inválido (ej. 50 o 50.00)")
@@ -76,7 +81,7 @@ function TypeBadge({ type }: { type: ServiceType | null }) {
 function sanitizePayload(data: FormData): CreateServiceInput {
   const out: CreateServiceInput = { name: data.name.trim() };
   if (data.description?.trim()) out.description = data.description.trim();
-  if (data.type) out.type = data.type;
+  out.type = data.type;
   if (data.price?.trim()) out.price = data.price.trim();
   return out;
 }
@@ -107,10 +112,27 @@ export default function ServicesPage() {
     mutationFn: createService,
     meta: {
       invalidates: "services",
-      successMessage: "Servicio creado correctamente",
       errorMessage: "Error al crear el servicio",
     },
-    onSuccess: () => setModalOpen(false),
+    onSuccess: (created) => {
+      setModalOpen(false);
+      // Turismo, Capacitación y Guardería necesitan sus detalles para
+      // aparecer con contenido en la app: se ofrece ir directo a cargarlos.
+      const route = created.type ? TYPE_DETAIL_ROUTE[created.type] : null;
+      toast.success(
+        "Servicio creado correctamente",
+        route
+          ? {
+              description:
+                "Agrega ahora sus detalles para que se vea en la app.",
+              action: {
+                label: "Agregar detalles",
+                onClick: () => navigate(`${route}?service=${created.id}`),
+              },
+            }
+          : undefined,
+      );
+    },
   });
 
   const updateMut = useMutation({
@@ -409,6 +431,7 @@ export default function ServicesPage() {
               className="field"
               aria-invalid={!!errors.name}
               placeholder="Nombre del servicio"
+              maxLength={30}
               {...register("name")}
             />
             {errors.name && (
@@ -429,9 +452,16 @@ export default function ServicesPage() {
               id="services-description"
               rows={3}
               className="field resize-none"
+              aria-invalid={!!errors.description}
               placeholder="Descripción del servicio"
+              maxLength={250}
               {...register("description")}
             />
+            {errors.description && (
+              <p className="text-danger-fg text-xs mt-1">
+                {errors.description.message}
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -440,11 +470,12 @@ export default function ServicesPage() {
                 htmlFor="services-type"
                 className="block text-sm font-medium text-ink mb-1"
               >
-                Tipo
+                Tipo <span className="text-danger-fg">*</span>
               </label>
               <select
                 id="services-type"
                 className="field"
+                aria-invalid={!!errors.type}
                 {...register("type")}
               >
                 <option value="">Seleccionar tipo</option>
@@ -453,6 +484,11 @@ export default function ServicesPage() {
                 <option value="CAPACITACION">Capacitación</option>
                 <option value="GUARDERIA">Guardería</option>
               </select>
+              {errors.type && (
+                <p className="text-danger-fg text-xs mt-1">
+                  {errors.type.message}
+                </p>
+              )}
             </div>
             <div>
               <label

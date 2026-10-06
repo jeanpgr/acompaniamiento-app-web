@@ -1,8 +1,10 @@
 import { useState, type ImgHTMLAttributes } from "react";
 import ImageLightbox from "@/components/ui/ImageLightbox";
 
-interface Props
-  extends Omit<ImgHTMLAttributes<HTMLImageElement>, "src" | "alt"> {
+interface Props extends Omit<
+  ImgHTMLAttributes<HTMLImageElement>,
+  "src" | "alt"
+> {
   src: string;
   /** Describe la imagen; también es el pie en el visor. */
   alt: string;

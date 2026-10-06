@@ -22,7 +22,9 @@ export type SettingKey = keyof SettingsValues;
 export interface SettingsResponse {
   values: SettingsValues;
   /** Último cambio de cada parámetro guardado. */
-  meta: Partial<Record<SettingKey, { updated_at: string; updated_by: string | null }>>;
+  meta: Partial<
+    Record<SettingKey, { updated_at: string; updated_by: string | null }>
+  >;
 }
 
 const BASE = "/settings";

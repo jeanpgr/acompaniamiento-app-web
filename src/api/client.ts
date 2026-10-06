@@ -2,10 +2,17 @@ import axios from "axios";
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001/api/v1";
 
-/** Extrae el mensaje de error del backend, o retorna el fallback. */
+/**
+ * Extrae el mensaje de error del backend, o retorna el fallback. Las
+ * validaciones (400 "Datos inválidos") traen en `error` qué campo falló; se
+ * agrega para que el usuario sepa qué corregir.
+ */
 export function getErrorMessage(err: unknown, fallback: string): string {
-  if (axios.isAxiosError<{ message?: string }>(err)) {
-    return err.response?.data?.message || fallback;
+  if (axios.isAxiosError<{ message?: string; error?: unknown }>(err)) {
+    const data = err.response?.data;
+    const message = data?.message || fallback;
+    const detail = typeof data?.error === "string" ? data.error.trim() : "";
+    return detail && detail !== message ? `${message}: ${detail}` : message;
   }
   return fallback;
 }

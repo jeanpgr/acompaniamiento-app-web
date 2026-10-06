@@ -175,6 +175,17 @@ export const STATUS_LABEL: Record<ScheduleStatus, string> = {
   CANCELADA: "Cancelada",
 };
 
+/**
+ * Etiqueta del estado de una cita concreta. En turismo "EN CURSO" significa
+ * que el pago se confirmó (página Reservas de la excursión), no "En ruta".
+ */
+export function statusLabelOf(s: Pick<Unified, "status" | "originalType">) {
+  const status = s.status ?? "PENDIENTE";
+  if (s.originalType === "tourism" && status === "EN CURSO")
+    return "Confirmada";
+  return STATUS_LABEL[status];
+}
+
 /** Color del distintivo de cada estado (variantes de <Badge>). */
 export const STATUS_VARIANT: Record<
   ScheduleStatus,

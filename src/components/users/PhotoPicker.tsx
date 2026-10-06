@@ -67,7 +67,12 @@ export default function PhotoPicker({
             <ImagePlus size={12} /> {shown ? "Cambiar foto" : "Subir foto"}
           </Button>
           {file && (
-            <Button size="sm" variant="ghost" disabled={disabled} onClick={onClear}>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={disabled}
+              onClick={onClear}
+            >
               <X size={12} /> Descartar
             </Button>
           )}

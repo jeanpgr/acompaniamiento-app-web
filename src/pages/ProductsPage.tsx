@@ -105,7 +105,8 @@ export default function ProductsPage() {
   };
 
   const confirmDelete = async (p: Product) => {
-    if (await confirm({ title: `¿Eliminar "${p.name}"?` })) deleteMut.mutate(p.id);
+    if (await confirm({ title: `¿Eliminar "${p.name}"?` }))
+      deleteMut.mutate(p.id);
   };
 
   const categoryName = (id: string) =>
@@ -121,7 +122,9 @@ export default function ProductsPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-ink">Catálogo de productos</h1>
+          <h1 className="text-xl font-semibold text-ink">
+            Catálogo de productos
+          </h1>
           <p className="text-sm text-ink-3 mt-0.5">
             {pager.total} productos{filterCat ? " en esta categoría" : ""}
           </p>
@@ -188,7 +191,11 @@ export default function ProductsPage() {
             categoryName={categoryName}
             renderActions={(p) => (
               <>
-                <Button size="sm" variant="secondary" onClick={() => openForm(p)}>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => openForm(p)}
+                >
                   <Pencil size={12} /> Editar
                 </Button>
                 <Button

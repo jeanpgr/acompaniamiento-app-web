@@ -57,7 +57,9 @@ export const getUsersPage = (
   filters: { search?: string; active?: boolean } = {},
 ) =>
   apiClient
-    .get<CursorPage<User, ActiveCounts>>(BASE, { params: pageParams(cursor, filters) })
+    .get<
+      CursorPage<User, ActiveCounts>
+    >(BASE, { params: pageParams(cursor, filters) })
     .then((r) => r.data);
 export const createUser = (body: CreateUserInput, photo?: File | null) => {
   const { data, config } = withPhoto(body, photo);

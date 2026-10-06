@@ -13,13 +13,9 @@ export interface CustomerReview {
 const BASE = "/customer-reviews";
 
 export const getReviews = () =>
-  apiClient
-    .get<CustomerReview[]>(BASE)
-    .then((r) => r.data);
+  apiClient.get<CustomerReview[]>(BASE).then((r) => r.data);
 export const getReviewById = (id: string) =>
-  apiClient
-    .get<CustomerReview>(`${BASE}/${id}`)
-    .then((r) => r.data);
+  apiClient.get<CustomerReview>(`${BASE}/${id}`).then((r) => r.data);
 export const getReviewsBySchedule = (scheduleId: string) =>
   apiClient
     .get<CustomerReview[]>(`${BASE}/schedule/${scheduleId}`)

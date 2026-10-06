@@ -44,7 +44,10 @@ export function EmptyRow({
 }) {
   return (
     <tr>
-      <td colSpan={colSpan} className="px-5 py-8 text-center text-ink-3 text-sm">
+      <td
+        colSpan={colSpan}
+        className="px-5 py-8 text-center text-ink-3 text-sm"
+      >
         {children}
       </td>
     </tr>

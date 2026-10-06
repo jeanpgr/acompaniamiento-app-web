@@ -70,8 +70,13 @@ export default function UsersPage() {
 
   // ── Mutaciones (refresco y avisos: lib/queryClient) ──────────
   const createMut = useMutation({
-    mutationFn: ({ data, photo }: { data: CreateUserInput; photo: File | null }) =>
-      createUser(data, photo),
+    mutationFn: ({
+      data,
+      photo,
+    }: {
+      data: CreateUserInput;
+      photo: File | null;
+    }) => createUser(data, photo),
     meta: {
       // Incluye roles: su conteo de usuarios depende de esto.
       invalidates: "users",
@@ -227,7 +232,11 @@ export default function UsersPage() {
             }
             renderActions={(u) => (
               <>
-                <Button size="sm" variant="secondary" onClick={() => openForm(u)}>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => openForm(u)}
+                >
                   <Pencil size={12} /> Editar
                 </Button>
                 <Button

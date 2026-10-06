@@ -29,6 +29,8 @@ const RELATED = {
   "detail-training": ["detail-training", "schedules-training"],
   "detail-daycare": ["detail-daycare", "schedules-daycare"],
   "schedules-acompan": ["schedules-acompan"],
+  // Las excursiones muestran cuántas reservas esperan confirmación.
+  "schedules-tourism": ["schedules-tourism", "detail-tourism"],
   schedules: [
     "schedules-acompan",
     "schedules-tourism",

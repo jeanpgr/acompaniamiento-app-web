@@ -50,7 +50,17 @@ export const router = createBrowserRouter([
       { path: "vehicles", lazy: page(() => import("@/pages/VehiclesPage")) },
       {
         path: "tourism-details",
-        lazy: page(() => import("@/pages/TourismDetailPage")),
+        children: [
+          {
+            index: true,
+            lazy: page(() => import("@/pages/TourismDetailPage")),
+          },
+          // Página hija: reservas de una excursión para confirmar pagos.
+          {
+            path: ":tripId/reservas",
+            lazy: page(() => import("@/pages/TourismReservationsPage")),
+          },
+        ],
       },
       {
         path: "training-details",

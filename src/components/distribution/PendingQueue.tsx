@@ -34,7 +34,7 @@ export default function PendingQueue({
 
   return (
     <div className="bg-surface rounded-xl shadow-sm border border-line overflow-hidden">
-      <div className="px-4 py-3 border-b border-line flex items-center gap-2">
+      <div className="h-12 px-4 border-b border-line flex items-center gap-2">
         <Clock size={14} className="text-warning-fg" />
         <span className="font-semibold text-ink text-sm">
           Sin asignar ({pending.length})

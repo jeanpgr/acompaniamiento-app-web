@@ -29,7 +29,9 @@ export const getCategoriesPage = (
   filters: { search?: string } = {},
 ) =>
   apiClient
-    .get<CursorPage<Category, ActiveCounts>>(BASE, { params: pageParams(cursor, filters) })
+    .get<
+      CursorPage<Category, ActiveCounts>
+    >(BASE, { params: pageParams(cursor, filters) })
     .then((r) => r.data);
 
 export const getCategoryById = (id: string) =>

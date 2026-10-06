@@ -25,8 +25,8 @@ export default function RefundsPanel({
   const pendingCount = cancelled.filter(isRefundPending).length;
 
   return (
-    <div className="mt-3 bg-surface rounded-xl shadow-sm border border-line overflow-hidden">
-      <div className="px-4 py-3 border-b border-line flex items-center gap-2">
+    <div className="bg-surface rounded-xl shadow-sm border border-line overflow-hidden">
+      <div className="h-12 px-4 border-b border-line flex items-center gap-2">
         <Landmark size={14} className="text-danger-fg" />
         <span className="font-semibold text-ink text-sm">
           Reembolsos ({cancelled.length})

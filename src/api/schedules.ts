@@ -106,8 +106,28 @@ export interface ScheduleTourism extends RefundFields {
   vehicle?: { id: string; name: string; license_plate: string };
 }
 
+/** Reserva con la cuenta que la hizo (listado por viaje). */
+export interface ScheduleTourismWithUser extends ScheduleTourism {
+  user: { name: string; lastname: string; phone: string; email: string } | null;
+}
+
 export const getSchedulesTourism = () =>
   apiClient.get<ScheduleTourism[]>("/schedule-tourism").then((r) => r.data);
+/** Reservas de una excursión. */
+export const getSchedulesTourismByDetail = (idDetail: string) =>
+  apiClient
+    .get<ScheduleTourismWithUser[]>(`/schedule-tourism/detail/${idDetail}`)
+    .then((r) => r.data);
+/** Pago verificado: PENDIENTE → EN CURSO ("Confirmada"). */
+export const confirmScheduleTourism = (id: string) =>
+  apiClient
+    .put<ScheduleTourism>(`/schedule-tourism/${id}/confirm`)
+    .then((r) => r.data);
+/** Deshace una confirmación: EN CURSO → PENDIENTE. */
+export const unconfirmScheduleTourism = (id: string) =>
+  apiClient
+    .put<ScheduleTourism>(`/schedule-tourism/${id}/unconfirm`)
+    .then((r) => r.data);
 export const updateScheduleTourism = (
   id: string,
   body: Partial<ScheduleTourism>,

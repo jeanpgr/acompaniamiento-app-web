@@ -17,27 +17,19 @@ export interface CreateFrequentlyQuestionInput {
 const BASE = "/frequently-questions";
 
 export const getFrequentlyQuestions = () =>
-  apiClient
-    .get<FrequentlyQuestion[]>(BASE)
-    .then((r) => r.data);
+  apiClient.get<FrequentlyQuestion[]>(BASE).then((r) => r.data);
 
 export const getFrequentlyQuestion = (id: string) =>
-  apiClient
-    .get<FrequentlyQuestion>(`${BASE}/${id}`)
-    .then((r) => r.data);
+  apiClient.get<FrequentlyQuestion>(`${BASE}/${id}`).then((r) => r.data);
 
 export const createFrequentlyQuestion = (data: CreateFrequentlyQuestionInput) =>
-  apiClient
-    .post<FrequentlyQuestion>(BASE, data)
-    .then((r) => r.data);
+  apiClient.post<FrequentlyQuestion>(BASE, data).then((r) => r.data);
 
 export const updateFrequentlyQuestion = (
   id: string,
   data: Partial<CreateFrequentlyQuestionInput>,
 ) =>
-  apiClient
-    .put<FrequentlyQuestion>(`${BASE}/${id}`, data)
-    .then((r) => r.data);
+  apiClient.put<FrequentlyQuestion>(`${BASE}/${id}`, data).then((r) => r.data);
 
 export const deleteFrequentlyQuestion = (id: string) =>
   apiClient.delete(`${BASE}/${id}`);

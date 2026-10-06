@@ -20,12 +20,28 @@ import {
   type Unified,
 } from "@/components/distribution/schedules";
 
-const SERVICE_TYPES = [
-  "ACOMPAÑAMIENTO",
-  "TURISMO",
-  "CAPACITACION",
-  "GUARDERIA",
-] as const;
+// Color de cada pestaña: el del tipo de servicio (mismo que el calendario).
+const TAB_SERVICE_TYPE: Record<Exclude<FilterTab, "todos">, string> = {
+  acompan: "ACOMPAÑAMIENTO",
+  tourism: "TURISMO",
+  training: "CAPACITACION",
+  daycare: "GUARDERIA",
+};
+
+function tabClass(key: FilterTab, selected: boolean) {
+  const color =
+    key === "todos"
+      ? selected
+        ? "bg-primary text-white"
+        : "bg-surface-2 text-ink-2 hover:bg-line"
+      : `${serviceTypeStyle(TAB_SERVICE_TYPE[key]).badge} hover:brightness-95`;
+  // La pestaña activa se marca con un anillo de su propio color.
+  const active =
+    selected && key !== "todos"
+      ? "ring-2 ring-current ring-offset-1 ring-offset-surface"
+      : "";
+  return `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-[filter,background-color] ${color} ${active}`;
+}
 
 export default function DistributionPage() {
   const qc = useQueryClient();
@@ -102,23 +118,7 @@ export default function DistributionPage() {
             Agendamientos de todos los servicios · Asigna vehículo y confirma
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          {/* Pendientes por tipo de servicio */}
-          {SERVICE_TYPES.map((t) => {
-            const count = schedules.filter(
-              (s) => s.serviceType === t && isPending(s),
-            ).length;
-            if (!count) return null;
-            const st = serviceTypeStyle(t);
-            return (
-              <span
-                key={t}
-                className={`px-2 py-1 rounded-full font-medium ${st.badge}`}
-              >
-                {st.label} · {count}
-              </span>
-            );
-          })}
+        <div className="flex flex-wrap items-center gap-2">
           <Link
             to="servicios"
             className="inline-flex items-center gap-2 h-9 px-3 rounded-lg text-sm font-medium bg-surface border border-line text-ink-2 hover:bg-surface-2 hover:border-line-strong transition-colors"
@@ -128,34 +128,44 @@ export default function DistributionPage() {
         </div>
       </div>
 
-      <div className="flex gap-1 mb-4 border-b border-line pb-3">
-        {FILTER_TABS.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => setActiveTab(tab.key)}
-            aria-pressed={activeTab === tab.key}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === tab.key
-                ? "bg-primary text-white"
-                : "text-ink-3 hover:bg-line"
-            }`}
-          >
-            {tab.label}
-            <span
-              className="ml-1.5 text-xs opacity-70"
-              title="Pendientes por asignar"
+      <div
+        className="flex flex-wrap gap-2 mb-4 border-b border-line pb-3"
+        role="group"
+        aria-label="Filtrar por tipo de servicio"
+      >
+        {FILTER_TABS.map((tab) => {
+          const count = pendingByTab(tab.key);
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setActiveTab(tab.key)}
+              aria-pressed={activeTab === tab.key}
+              aria-label={`${tab.label}: ${count} por asignar`}
+              className={tabClass(tab.key, activeTab === tab.key)}
             >
-              ({pendingByTab(tab.key)})
-            </span>
-          </button>
-        ))}
+              {tab.label}
+              <span
+                className="text-xs opacity-80"
+                title="Pendientes por asignar"
+              >
+                · {count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="flex flex-col xl:flex-row xl:items-start gap-5">
-        <WeekCalendar items={filtered} isLoading={isLoading} />
+        {/* Calendario con la leyenda de colores al pie */}
+        <div className="flex-1 min-w-0">
+          <WeekCalendar items={filtered} isLoading={isLoading} />
+          <ServiceTypeLegend />
+        </div>
 
-        <div className="w-full xl:w-72 shrink-0 grid items-start gap-3 md:grid-cols-2 xl:block">
+        {/* Paneles por estado: el espacio entre ellos lo pone la grilla, así
+            quedan alineados lado a lado (md) o apilados (xl). */}
+        <div className="w-full xl:w-72 shrink-0 grid items-start gap-3 md:grid-cols-2 xl:grid-cols-1">
           <PendingQueue
             pending={pending}
             vehicles={vehicles}
@@ -171,7 +181,6 @@ export default function DistributionPage() {
             }
             onMarkRefunded={(s) => refundMut.mutate(s)}
           />
-          <ServiceTypeLegend />
         </div>
       </div>
     </div>

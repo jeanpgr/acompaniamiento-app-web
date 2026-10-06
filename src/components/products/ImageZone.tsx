@@ -71,7 +71,9 @@ export default function ImageZone({
           />
           <label className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-sidebar/60 opacity-0 group-hover:opacity-100 focus-within:opacity-100 focus-within:outline-2 focus-within:outline-focus transition-opacity cursor-pointer">
             <ImagePlus size={22} className="text-white" />
-            <span className="text-white text-xs font-medium">Cambiar imagen</span>
+            <span className="text-white text-xs font-medium">
+              Cambiar imagen
+            </span>
             <span className="text-white/80 text-[11px]">
               JPEG o PNG · máx. 5 MB
             </span>
@@ -112,7 +114,10 @@ export default function ImageZone({
               : "border-line bg-surface-2 hover:border-info hover:bg-info-bg/40"
           }`}
         >
-          <ImagePlus size={28} className={error ? "text-danger-fg" : "text-ink-3"} />
+          <ImagePlus
+            size={28}
+            className={error ? "text-danger-fg" : "text-ink-3"}
+          />
           <p className="mt-2 text-sm font-medium text-ink-3">
             Haz clic para subir imagen
           </p>

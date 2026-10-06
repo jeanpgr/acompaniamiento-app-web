@@ -40,22 +40,16 @@ export const getVehiclesPage = (
   filters: { search?: string } = {},
 ) =>
   apiClient
-    .get<CursorPage<Vehicle, VehicleCounts>>(BASE, { params: pageParams(cursor, filters) })
+    .get<
+      CursorPage<Vehicle, VehicleCounts>
+    >(BASE, { params: pageParams(cursor, filters) })
     .then((r) => r.data);
 export const getVehicleById = (id: string) =>
-  apiClient
-    .get<Vehicle>(`${BASE}/${id}`)
-    .then((r) => r.data);
+  apiClient.get<Vehicle>(`${BASE}/${id}`).then((r) => r.data);
 export const getVehiclesByDriver = (driverId: string) =>
-  apiClient
-    .get<Vehicle[]>(`${BASE}/driver/${driverId}`)
-    .then((r) => r.data);
+  apiClient.get<Vehicle[]>(`${BASE}/driver/${driverId}`).then((r) => r.data);
 export const createVehicle = (body: CreateVehicleInput) =>
-  apiClient
-    .post<Vehicle>(BASE, body)
-    .then((r) => r.data);
+  apiClient.post<Vehicle>(BASE, body).then((r) => r.data);
 export const updateVehicle = (id: string, body: Partial<CreateVehicleInput>) =>
-  apiClient
-    .put<Vehicle>(`${BASE}/${id}`, body)
-    .then((r) => r.data);
+  apiClient.put<Vehicle>(`${BASE}/${id}`, body).then((r) => r.data);
 export const deleteVehicle = (id: string) => apiClient.delete(`${BASE}/${id}`);

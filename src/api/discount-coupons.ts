@@ -33,7 +33,9 @@ export const getDiscountCouponsPage = (
   filters: { search?: string } = {},
 ) =>
   apiClient
-    .get<CursorPage<DiscountCoupon>>(BASE, { params: pageParams(cursor, filters) })
+    .get<
+      CursorPage<DiscountCoupon>
+    >(BASE, { params: pageParams(cursor, filters) })
     .then((r) => r.data);
 
 export const getDiscountCouponById = (id: string) =>

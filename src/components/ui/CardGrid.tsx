@@ -61,7 +61,9 @@ export function CardField({
   return (
     <div className="flex items-start justify-between gap-3">
       <dt className="text-ink-3 shrink-0">{label}</dt>
-      <dd className="text-ink text-right min-w-0 wrap-break-word">{children}</dd>
+      <dd className="text-ink text-right min-w-0 wrap-break-word">
+        {children}
+      </dd>
     </div>
   );
 }

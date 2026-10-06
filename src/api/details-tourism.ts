@@ -39,7 +39,8 @@ export interface CreateDetailTourismInput {
   meeting_point_address?: string;
   meeting_point_lat?: number | null;
   meeting_point_lng?: number | null;
-  prices?: TourismPrices;
+  /** null borra las tarifas al editar. */
+  prices?: TourismPrices | null;
 }
 
 const BASE = "/detail-tourism";

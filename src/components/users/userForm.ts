@@ -49,7 +49,9 @@ export function formValues(user: User | null): CreateFormData {
 }
 
 /** Quita los campos vacíos y recorta espacios antes de enviar. */
-export function sanitize(data: Record<string, unknown>): Record<string, unknown> {
+export function sanitize(
+  data: Record<string, unknown>,
+): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(data)) {
     if (v !== undefined && v !== null && v !== "") {

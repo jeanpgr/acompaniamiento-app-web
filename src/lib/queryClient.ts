@@ -40,7 +40,9 @@ export const queryClient: QueryClient = new QueryClient({
       // Se devuelve la promesa: la mutación sigue "pendiente" hasta que las
       // vistas tienen los datos nuevos (sin parpadeo de datos viejos).
       const resources = ([] as Resource[]).concat(invalidates);
-      return Promise.all(resources.map((r) => invalidateResource(queryClient, r)));
+      return Promise.all(
+        resources.map((r) => invalidateResource(queryClient, r)),
+      );
     },
     onError: (error, _variables, _result, mutation) => {
       const fallback = mutation.meta?.errorMessage;

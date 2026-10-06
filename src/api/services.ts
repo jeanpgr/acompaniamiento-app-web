@@ -38,7 +38,9 @@ export const getServicesPage = (
   filters: { active?: boolean; search?: string } = {},
 ) =>
   apiClient
-    .get<CursorPage<Service, ActiveCounts>>(BASE, { params: pageParams(cursor, filters) })
+    .get<
+      CursorPage<Service, ActiveCounts>
+    >(BASE, { params: pageParams(cursor, filters) })
     .then((r) => r.data);
 export const getServiceById = (id: string) =>
   apiClient.get<Service>(`${BASE}/${id}`).then((r) => r.data);

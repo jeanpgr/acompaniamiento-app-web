@@ -63,7 +63,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
           </>
         }
       >
-        <p className="text-sm text-ink-2 leading-relaxed">
+        <p className="text-sm text-ink-2 leading-relaxed whitespace-pre-line">
           {shown?.message ?? "Esta acción no se puede deshacer."}
         </p>
       </Modal>

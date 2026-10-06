@@ -16,7 +16,12 @@ import {
   type Column,
 } from "@/components/ui/DataTable";
 import type { ViewMode } from "@/hooks/useViewMode";
-import { formatDate } from "./tourismForm";
+import {
+  formatDate,
+  formatDateRange,
+  formatMoney,
+  formatTripMeta,
+} from "./tourismForm";
 
 interface Props {
   items: DetailTourism[];
@@ -41,26 +46,65 @@ const COLUMNS: Column[] = [
   "Acciones",
 ];
 
+/** Tarifas definidas, en el orden en que se muestran. */
+function priceRows(prices: DetailTourism["prices"]) {
+  return (
+    [
+      { label: "Adulto", value: prices?.adult },
+      { label: "Niño", value: prices?.child },
+      { label: "3ra edad", value: prices?.senior },
+    ]
+      // Puede llegar como texto ("20") si se guardó así.
+      .filter((r) => r.value != null && String(r.value).trim() !== "")
+      .map((r) => ({ label: r.label, value: Number(r.value) }))
+      .filter((r) => !Number.isNaN(r.value))
+  );
+}
+
+/**
+ * Tarifas en dos líneas para la tabla: el precio más bajo destacado y el
+ * desglose abreviado debajo (antes ocupaban una línea por categoría).
+ */
+function PricesCompact({ prices }: { prices: DetailTourism["prices"] }) {
+  const rows = priceRows(prices);
+  if (rows.length === 0) return <EmptyCell />;
+  const min = Math.min(...rows.map((r) => r.value));
+  const detail = rows
+    .map((r) => `${r.label} ${formatMoney(r.value)}`)
+    .join(" · ");
+  return (
+    <div className="whitespace-nowrap" title={detail}>
+      <p className="text-sm font-medium text-ink">
+        {rows.length > 1 && (
+          <span className="text-xs font-normal text-ink-3">Desde </span>
+        )}
+        {formatMoney(min)}
+      </p>
+      <p className="text-xs text-ink-3">{detail}</p>
+    </div>
+  );
+}
+
 function Prices({ prices }: { prices: DetailTourism["prices"] }) {
-  const rows = [
-    { label: "Adulto", value: prices?.adult },
-    { label: "Niño", value: prices?.child },
-    { label: "3ra edad", value: prices?.senior },
-  ].filter((r) => r.value !== undefined);
+  const rows = priceRows(prices);
   if (rows.length === 0) return <span className="text-ink-3 italic">—</span>;
   return (
     <div className="space-y-0.5">
       {rows.map((r) => (
         <div key={r.label}>
           <span className="text-ink-3">{r.label}:</span>{" "}
-          <span className="font-medium">${r.value!.toFixed(2)}</span>
+          <span className="font-medium">${r.value.toFixed(2)}</span>
         </div>
       ))}
     </div>
   );
 }
 
-function Itinerary({ stops }: { stops: NonNullable<DetailTourism["itinerary"]> }) {
+function Itinerary({
+  stops,
+}: {
+  stops: NonNullable<DetailTourism["itinerary"]>;
+}) {
   return (
     <>
       <p className="text-xs font-semibold text-ink-3 uppercase tracking-wide mb-3">
@@ -94,6 +138,16 @@ function Itinerary({ stops }: { stops: NonNullable<DetailTourism["itinerary"]> }
   );
 }
 
+/** Ya salió: la app móvil no la muestra. */
+function DepartedTag({ item, now }: { item: DetailTourism; now: number }) {
+  if (new Date(item.date_output).getTime() > now) return null;
+  return (
+    <span className="ml-2 inline-block text-[11px] px-1.5 py-0.5 rounded bg-surface-2 text-ink-3 font-medium">
+      Finalizada
+    </span>
+  );
+}
+
 /** Excursiones en tabla o tarjetas, con el itinerario desplegable. */
 export default function TourismList({
   items,
@@ -103,6 +157,8 @@ export default function TourismList({
 }: Props) {
   // Solo esta lista sabe qué itinerario está abierto.
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  // Hora de referencia fija por montaje (render puro).
+  const [now] = useState(Date.now);
 
   const toggle = (item: DetailTourism) => {
     const stops = item.itinerary?.length ?? 0;
@@ -131,15 +187,22 @@ export default function TourismList({
           const stops = expandedStops(item);
           return (
             <GridCard key={item.id}>
-              <h2 className="font-medium text-ink text-sm">{item.name}</h2>
+              <h2 className="font-medium text-ink text-sm">
+                {item.name}
+                <DepartedTag item={item} now={now} />
+              </h2>
               {item.description && (
                 <p className="text-sm text-ink-3 line-clamp-3">
                   {item.description}
                 </p>
               )}
               <CardFields>
-                <CardField label="Salida">{formatDate(item.date_output)}</CardField>
-                <CardField label="Llegada">{formatDate(item.date_arrival)}</CardField>
+                <CardField label="Salida">
+                  {formatDate(item.date_output)}
+                </CardField>
+                <CardField label="Llegada">
+                  {formatDate(item.date_arrival)}
+                </CardField>
                 <CardField label="Cupos">
                   <span className="font-medium">{item.quotas_available}</span>
                   <span className="text-ink-3"> / {item.quotas}</span>
@@ -175,23 +238,33 @@ export default function TourismList({
             <Fragment key={item.id}>
               <TableRow>
                 <td className="px-5 py-3.5">
-                  <p className="font-medium text-ink text-sm">{item.name}</p>
+                  <p className="font-medium text-ink text-sm">
+                    {item.name}
+                    <DepartedTag item={item} now={now} />
+                  </p>
                   {item.description && (
                     <p className="text-xs text-ink-3 truncate max-w-52">
                       {item.description}
                     </p>
                   )}
                 </td>
-                <td className="px-5 py-3.5 text-xs text-ink-3">
-                  <div>Salida: {formatDate(item.date_output)}</div>
-                  <div>Llegada: {formatDate(item.date_arrival)}</div>
+                <td
+                  className="px-5 py-3.5 whitespace-nowrap"
+                  title={`Salida: ${formatDate(item.date_output)} · Llegada: ${formatDate(item.date_arrival)}`}
+                >
+                  <p className="text-sm text-ink-2">
+                    {formatDateRange(item.date_output, item.date_arrival)}
+                  </p>
+                  <p className="text-xs text-ink-3">
+                    {formatTripMeta(item.date_output, item.date_arrival)}
+                  </p>
                 </td>
-                <td className="px-5 py-3.5 text-sm text-ink-2">
+                <td className="px-5 py-3.5 text-sm text-ink-2 whitespace-nowrap">
                   <span className="font-medium">{item.quotas_available}</span>
                   <span className="text-ink-3"> / {item.quotas}</span>
                 </td>
-                <td className="px-5 py-3.5 text-xs text-ink-2">
-                  <Prices prices={item.prices} />
+                <td className="px-5 py-3.5">
+                  <PricesCompact prices={item.prices} />
                 </td>
                 <td className="px-5 py-3.5 text-sm text-ink-3 max-w-40 truncate">
                   {item.meeting_point_address ?? <EmptyCell />}
