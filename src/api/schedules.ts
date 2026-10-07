@@ -154,8 +154,28 @@ export interface ScheduleTraining extends RefundFields {
   detail?: { id: string; topic: string; date_time: string; link_meet: string };
 }
 
+/** Inscripción con la cuenta que la hizo (listado por taller). */
+export interface ScheduleTrainingWithUser extends ScheduleTraining {
+  user: { name: string; lastname: string; phone: string; email: string } | null;
+}
+
 export const getSchedulesTraining = () =>
   apiClient.get<ScheduleTraining[]>("/schedule-training").then((r) => r.data);
+/** Inscripciones de una capacitación. */
+export const getSchedulesTrainingByDetail = (idDetail: string) =>
+  apiClient
+    .get<ScheduleTrainingWithUser[]>(`/schedule-training/detail/${idDetail}`)
+    .then((r) => r.data);
+/** Pago verificado: PENDIENTE → EN CURSO; la app muestra "Unirse". */
+export const confirmScheduleTraining = (id: string) =>
+  apiClient
+    .put<ScheduleTraining>(`/schedule-training/${id}/confirm`)
+    .then((r) => r.data);
+/** Deshace una confirmación: EN CURSO → PENDIENTE. */
+export const unconfirmScheduleTraining = (id: string) =>
+  apiClient
+    .put<ScheduleTraining>(`/schedule-training/${id}/unconfirm`)
+    .then((r) => r.data);
 export const updateScheduleTraining = (
   id: string,
   body: Partial<ScheduleTraining>,

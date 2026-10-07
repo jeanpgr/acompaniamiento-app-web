@@ -31,6 +31,8 @@ const RELATED = {
   "schedules-acompan": ["schedules-acompan"],
   // Las excursiones muestran cuántas reservas esperan confirmación.
   "schedules-tourism": ["schedules-tourism", "detail-tourism"],
+  // Los talleres muestran cuántas inscripciones esperan confirmación.
+  "schedules-training": ["schedules-training", "detail-training"],
   schedules: [
     "schedules-acompan",
     "schedules-tourism",

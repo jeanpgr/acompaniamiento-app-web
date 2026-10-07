@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, Percent } from "lucide-react";
+import { Plus, Pencil, Trash2, Percent, Dices } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -41,6 +41,25 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 const isExpired = (date: string) => new Date(date) < new Date();
+
+// Sin 0/O ni 1/I para que el código no se confunda al dictarlo o digitarlo.
+const CODE_LETTERS = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+const CODE_DIGITS = "23456789";
+const CODE_CHARS = CODE_LETTERS + CODE_DIGITS;
+const CODE_LENGTH = 5;
+
+// Código aleatorio de 5 caracteres con al menos una letra y un número.
+const generateCouponCode = () => {
+  const bytes = new Uint32Array(CODE_LENGTH);
+  for (;;) {
+    crypto.getRandomValues(bytes);
+    const code = Array.from(
+      bytes,
+      (b) => CODE_CHARS[b % CODE_CHARS.length],
+    ).join("");
+    if (/[A-Z]/.test(code) && /\d/.test(code)) return code;
+  }
+};
 
 export default function DiscountCouponsPage() {
   const confirm = useConfirm();
@@ -94,6 +113,7 @@ export default function DiscountCouponsPage() {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
@@ -316,13 +336,31 @@ export default function DiscountCouponsPage() {
             >
               Código <span className="text-danger-fg">*</span>
             </label>
-            <input
-              id="discountcoupons-coupon"
-              className="field font-mono uppercase"
-              aria-invalid={!!errors.coupon}
-              placeholder="VERANO20"
-              {...register("coupon")}
-            />
+            <div className="relative">
+              <input
+                id="discountcoupons-coupon"
+                className={`field font-mono uppercase ${editTarget ? "" : "pr-11"}`}
+                aria-invalid={!!errors.coupon}
+                placeholder="VERANO20"
+                {...register("coupon")}
+              />
+              {!editTarget && (
+                <button
+                  type="button"
+                  aria-label="Generar código aleatorio"
+                  title="Generar código aleatorio"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 inline-flex items-center justify-center rounded-md text-ink-3 hover:text-ink hover:bg-surface-2"
+                  onClick={() =>
+                    setValue("coupon", generateCouponCode(), {
+                      shouldValidate: true,
+                      shouldDirty: true,
+                    })
+                  }
+                >
+                  <Dices size={16} aria-hidden="true" />
+                </button>
+              )}
+            </div>
             {errors.coupon && (
               <p className="text-danger-fg text-xs mt-1">
                 {errors.coupon.message}

@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, ArrowLeft } from "lucide-react";
+import { Plus, Pencil, Trash2, ArrowLeft, Users } from "lucide-react";
 import {
   getDetailsTrainingPage,
   createDetailTraining,
@@ -11,6 +11,8 @@ import {
   type CreateDetailTrainingInput,
 } from "@/api/details-training";
 import { getServices } from "@/api/services";
+import { getSchedulesTraining } from "@/api/schedules";
+import { LIVE_REFETCH_MS } from "@/lib/invalidate";
 import Button from "@/components/ui/Button";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import TableSkeleton from "@/components/ui/TableSkeleton";
@@ -26,6 +28,38 @@ import {
   toPayload,
   type TrainingFormValues,
 } from "@/components/training/trainingForm";
+
+/** Botón a las inscripciones del taller, con cuántas esperan confirmar el pago. */
+function EnrollmentsLink({
+  trainingId,
+  pending,
+}: {
+  trainingId: string;
+  pending: number;
+}) {
+  return (
+    <Link
+      to={`${trainingId}/inscripciones`}
+      className={`inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+        pending > 0
+          ? "bg-warning-bg text-warning-fg hover:brightness-95"
+          : "bg-surface border border-line text-ink-2 hover:bg-surface-2 hover:border-line-strong"
+      }`}
+      aria-label={
+        pending > 0
+          ? `Inscripciones: ${pending} por confirmar`
+          : "Ver inscripciones de la capacitación"
+      }
+    >
+      <Users size={12} aria-hidden="true" /> Inscripciones
+      {pending > 0 && (
+        <span className="min-w-5 h-5 px-1.5 rounded-full bg-warning-fg text-white text-[11px] font-semibold inline-flex items-center justify-center tabular-nums">
+          {pending}
+        </span>
+      )}
+    </Link>
+  );
+}
 
 export default function TrainingDetailPage() {
   const confirm = useConfirm();
@@ -59,6 +93,21 @@ export default function TrainingDetailPage() {
   const currentService = serviceId
     ? services.find((s) => s.id === serviceId)
     : null;
+
+  // Inscripciones que esperan confirmar el pago, por taller (aviso en "Inscripciones").
+  const { data: enrollments = [] } = useQuery({
+    queryKey: ["schedules-training"],
+    queryFn: getSchedulesTraining,
+    refetchInterval: LIVE_REFETCH_MS,
+  });
+  const pendingByTraining = new Map<string, number>();
+  for (const r of enrollments) {
+    if (r.status && r.status !== "PENDIENTE") continue;
+    pendingByTraining.set(
+      r.id_detail_training,
+      (pendingByTraining.get(r.id_detail_training) ?? 0) + 1,
+    );
+  }
 
   // ── Mutaciones (refresco y avisos: lib/queryClient) ──────────
   const createMut = useMutation({
@@ -166,6 +215,10 @@ export default function TrainingDetailPage() {
             emptyText={emptyText}
             renderActions={(item) => (
               <>
+                <EnrollmentsLink
+                  trainingId={item.id}
+                  pending={pendingByTraining.get(item.id) ?? 0}
+                />
                 <Button
                   size="sm"
                   variant="secondary"

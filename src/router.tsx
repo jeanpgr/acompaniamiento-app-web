@@ -64,7 +64,17 @@ export const router = createBrowserRouter([
       },
       {
         path: "training-details",
-        lazy: page(() => import("@/pages/TrainingDetailPage")),
+        children: [
+          {
+            index: true,
+            lazy: page(() => import("@/pages/TrainingDetailPage")),
+          },
+          // Página hija: inscripciones de un taller para confirmar pagos.
+          {
+            path: ":trainingId/inscripciones",
+            lazy: page(() => import("@/pages/TrainingEnrollmentsPage")),
+          },
+        ],
       },
       {
         path: "daycare-details",
