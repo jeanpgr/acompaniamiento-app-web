@@ -9,7 +9,9 @@ interface Props {
   onMarkRefunded: (s: Unified) => void;
 }
 
-const isRefundPending = (s: Unified) => s.refundStatus !== "REALIZADO";
+// Las canceladas antes de confirmar el pago no tienen reembolso (null).
+const isRefundPending = (s: Unified) => s.refundStatus === "EN_PROCESO";
+const hasRefund = (s: Unified) => s.refundStatus != null;
 
 /**
  * Citas canceladas con los datos para devolver el dinero, agrupadas por
@@ -21,15 +23,16 @@ export default function RefundsPanel({
   savingId,
   onMarkRefunded,
 }: Props) {
-  if (cancelled.length === 0) return null;
-  const pendingCount = cancelled.filter(isRefundPending).length;
+  const refunds = cancelled.filter(hasRefund);
+  if (refunds.length === 0) return null;
+  const pendingCount = refunds.filter(isRefundPending).length;
 
   return (
     <div className="bg-surface rounded-xl shadow-sm border border-line overflow-hidden">
       <div className="h-12 px-4 border-b border-line flex items-center gap-2">
         <Landmark size={14} className="text-danger-fg" />
         <span className="font-semibold text-ink text-sm">
-          Reembolsos ({cancelled.length})
+          Reembolsos ({refunds.length})
         </span>
         {pendingCount > 0 && (
           <span className="ml-auto text-xs text-warning-fg font-medium">
@@ -39,7 +42,7 @@ export default function RefundsPanel({
       </div>
       <div className="max-h-[50vh] overflow-y-auto">
         <ServiceSections
-          items={cancelled}
+          items={refunds}
           idPrefix="refunds"
           emptyText="Sin reembolsos"
           countOf={(list) => list.filter(isRefundPending).length}

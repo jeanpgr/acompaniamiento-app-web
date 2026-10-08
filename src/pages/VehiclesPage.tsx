@@ -128,17 +128,23 @@ export default function VehiclesPage() {
 
   const renderActions = (v: Vehicle) => (
     <>
-      <Button size="sm" variant="secondary" onClick={() => openEdit(v)}>
-        <Pencil size={12} /> Editar
+      <Button
+        size="icon"
+        aria-label={`Editar ${v.name}`}
+        title="Editar"
+        variant="secondary"
+        onClick={() => openEdit(v)}
+      >
+        <Pencil size={14} aria-hidden="true" />
       </Button>
       <Button
-        size="sm"
+        size="icon"
         variant="danger-soft"
         onClick={() => deleteMut.mutate(v.id)}
         aria-label={`Eliminar ${v.name}`}
         title="Eliminar"
       >
-        <Trash2 size={12} />
+        <Trash2 size={14} aria-hidden="true" />
       </Button>
     </>
   );

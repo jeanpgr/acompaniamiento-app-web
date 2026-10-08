@@ -92,8 +92,11 @@ function StatusBadge({ r }: { r: Reservation }) {
         <div className="flex flex-col items-start gap-1">
           <Badge variant="danger">Cancelada</Badge>
           <span className="text-[11px] text-ink-3">
-            Reembolso{" "}
-            {r.refund_status === "REALIZADO" ? "realizado" : "por hacer"}
+            {!r.refund_status
+              ? "Sin pago · sin reembolso"
+              : r.refund_status === "REALIZADO"
+                ? "Reembolso realizado"
+                : "Reembolso por hacer"}
           </span>
         </div>
       );
@@ -246,7 +249,7 @@ export default function TourismReservationsPage() {
           <Undo2 size={13} /> Deshacer
         </Button>
       );
-    if (group === "cancelled" && r.refund_status !== "REALIZADO")
+    if (group === "cancelled" && r.refund_status === "EN_PROCESO")
       return (
         <Button
           size="sm"

@@ -176,12 +176,13 @@ export const STATUS_LABEL: Record<ScheduleStatus, string> = {
 };
 
 /**
- * Etiqueta del estado de una cita concreta. En turismo "EN CURSO" significa
- * que el pago se confirmó (página Reservas de la excursión), no "En ruta".
+ * Etiqueta del estado de una cita concreta. "En ruta" solo aplica a
+ * acompañamiento; en turismo, capacitación y guardería "EN CURSO" significa
+ * que el pago se confirmó (páginas Reservas / Inscripciones / Solicitudes).
  */
 export function statusLabelOf(s: Pick<Unified, "status" | "originalType">) {
   const status = s.status ?? "PENDIENTE";
-  if (s.originalType === "tourism" && status === "EN CURSO")
+  if (s.originalType !== "acompan" && status === "EN CURSO")
     return "Confirmada";
   return STATUS_LABEL[status];
 }

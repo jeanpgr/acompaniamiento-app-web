@@ -233,19 +233,23 @@ export default function UsersPage() {
             renderActions={(u) => (
               <>
                 <Button
-                  size="sm"
+                  size="icon"
+                  aria-label={`Editar ${u.name}`}
+                  title="Editar"
                   variant="secondary"
                   onClick={() => openForm(u)}
                 >
-                  <Pencil size={12} /> Editar
+                  <Pencil size={14} aria-hidden="true" />
                 </Button>
                 <Button
-                  size="sm"
+                  size="icon"
+                  aria-label={`Desactivar a ${u.name}`}
+                  title="Desactivar"
                   variant="danger-soft"
                   loading={deleteMut.isPending && deleteMut.variables === u.id}
                   onClick={() => confirmDelete(u)}
                 >
-                  <Trash2 size={12} /> Eliminar
+                  <Trash2 size={14} aria-hidden="true" />
                 </Button>
               </>
             )}

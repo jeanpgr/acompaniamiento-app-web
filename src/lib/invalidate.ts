@@ -33,6 +33,8 @@ const RELATED = {
   "schedules-tourism": ["schedules-tourism", "detail-tourism"],
   // Los talleres muestran cuántas inscripciones esperan confirmación.
   "schedules-training": ["schedules-training", "detail-training"],
+  // Los planes muestran cuántas solicitudes esperan confirmación.
+  "schedules-daycare": ["schedules-daycare", "detail-daycare"],
   schedules: [
     "schedules-acompan",
     "schedules-tourism",

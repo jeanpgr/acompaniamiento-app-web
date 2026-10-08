@@ -220,21 +220,25 @@ export default function TrainingDetailPage() {
                   pending={pendingByTraining.get(item.id) ?? 0}
                 />
                 <Button
-                  size="sm"
+                  size="icon"
+                  aria-label={`Editar ${item.topic}`}
+                  title="Editar"
                   variant="secondary"
                   onClick={() => openForm(item)}
                 >
-                  <Pencil size={12} /> Editar
+                  <Pencil size={14} aria-hidden="true" />
                 </Button>
                 <Button
-                  size="sm"
+                  size="icon"
+                  aria-label={`Eliminar ${item.topic}`}
+                  title="Eliminar"
                   variant="danger-soft"
                   loading={
                     deleteMut.isPending && deleteMut.variables === item.id
                   }
                   onClick={() => confirmDelete(item)}
                 >
-                  <Trash2 size={12} /> Eliminar
+                  <Trash2 size={14} aria-hidden="true" />
                 </Button>
               </>
             )}

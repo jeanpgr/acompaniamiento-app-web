@@ -209,8 +209,47 @@ export interface ScheduleDaycare extends RefundFields {
   vehicle?: { id: string; name: string; license_plate: string };
 }
 
+/** Solicitud con la cuenta que la hizo y su vehículo (listado por plan). */
+export interface ScheduleDaycareWithUser
+  extends Omit<ScheduleDaycare, "vehicle"> {
+  vehicle: { id: string; name: string; license_plate: string } | null;
+  user: { name: string; lastname: string; phone: string; email: string } | null;
+}
+
 export const getSchedulesDaycare = () =>
   apiClient.get<ScheduleDaycare[]>("/schedule-daycare").then((r) => r.data);
+/** Solicitudes de un plan de guardería. */
+export const getSchedulesDaycareByDetail = (idDetail: string) =>
+  apiClient
+    .get<ScheduleDaycareWithUser[]>(`/schedule-daycare/detail/${idDetail}`)
+    .then((r) => r.data);
+/**
+ * Pago verificado: PENDIENTE → EN CURSO. Con recogida a domicilio hace falta
+ * vehículo (`id_vehicle`) si la solicitud aún no tiene uno.
+ */
+export const confirmScheduleDaycare = ({
+  id,
+  id_vehicle,
+}: {
+  id: string;
+  id_vehicle?: string;
+}) =>
+  apiClient
+    .put<ScheduleDaycare>(
+      `/schedule-daycare/${id}/confirm`,
+      id_vehicle ? { id_vehicle } : {},
+    )
+    .then((r) => r.data);
+/** Deshace una confirmación: EN CURSO → PENDIENTE. */
+export const unconfirmScheduleDaycare = (id: string) =>
+  apiClient
+    .put<ScheduleDaycare>(`/schedule-daycare/${id}/unconfirm`)
+    .then((r) => r.data);
+/** Finaliza el servicio (continuo, sin fecha de fin): EN CURSO → COMPLETADO. */
+export const completeScheduleDaycare = (id: string) =>
+  apiClient
+    .put<ScheduleDaycare>(`/schedule-daycare/${id}/complete`)
+    .then((r) => r.data);
 export const updateScheduleDaycare = (
   id: string,
   body: Partial<ScheduleDaycare>,

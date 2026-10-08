@@ -356,7 +356,11 @@ export default function ServiceStatusPage() {
                         </span>
                       </div>
                     )}
-                    {item.refundStatus === "REALIZADO" ? (
+                    {!item.refundStatus ? (
+                      <p className="text-xs text-ink-3">
+                        Cancelada antes del pago · sin reembolso
+                      </p>
+                    ) : item.refundStatus === "REALIZADO" ? (
                       <div className="flex items-center gap-1.5 text-xs font-medium text-success-fg bg-success-bg rounded-lg py-1.5 px-2">
                         <CheckCircle size={12} /> Reembolso realizado
                       </div>

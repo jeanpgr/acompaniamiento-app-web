@@ -2,7 +2,11 @@ import type { ButtonHTMLAttributes } from "react";
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "danger" | "danger-soft" | "ghost";
-  size?: "sm" | "md";
+  /**
+   * "icon": cuadrado de 32 px solo con icono (acciones de fila). Exige
+   * `aria-label` y `title` para que tenga nombre accesible y tooltip.
+   */
+  size?: "sm" | "md" | "icon";
   loading?: boolean;
 }
 
@@ -19,6 +23,7 @@ const VARIANTS = {
 const SIZES = {
   sm: "h-8 px-3 text-xs",
   md: "h-10 px-4 text-sm",
+  icon: "h-8 w-8 shrink-0",
 };
 
 export default function Button({
@@ -61,7 +66,8 @@ export default function Button({
           />
         </svg>
       )}
-      {children}
+      {/* En el botón de solo icono, el spinner ocupa el lugar del icono. */}
+      {!(loading && size === "icon") && children}
     </button>
   );
 }

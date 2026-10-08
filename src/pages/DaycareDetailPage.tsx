@@ -1,7 +1,15 @@
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, MapPin, ArrowLeft, X } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  MapPin,
+  ArrowLeft,
+  X,
+  ClipboardList,
+} from "lucide-react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -18,6 +26,8 @@ import {
   type ServiceMode,
 } from "@/api/details-daycare";
 import { getServices } from "@/api/services";
+import { getSchedulesDaycare } from "@/api/schedules";
+import { LIVE_REFETCH_MS } from "@/lib/invalidate";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import MapPickButton from "@/components/ui/MapPickButton";
@@ -105,6 +115,38 @@ function formValues(
   };
 }
 
+/** Botón a las solicitudes del plan, con cuántas esperan confirmar el pago. */
+function RequestsLink({
+  planId,
+  pending,
+}: {
+  planId: string;
+  pending: number;
+}) {
+  return (
+    <Link
+      to={`${planId}/solicitudes`}
+      className={`inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+        pending > 0
+          ? "bg-warning-bg text-warning-fg hover:brightness-95"
+          : "bg-surface border border-line text-ink-2 hover:bg-surface-2 hover:border-line-strong"
+      }`}
+      aria-label={
+        pending > 0
+          ? `Solicitudes: ${pending} por confirmar`
+          : "Ver solicitudes del plan"
+      }
+    >
+      <ClipboardList size={12} aria-hidden="true" /> Solicitudes
+      {pending > 0 && (
+        <span className="min-w-5 h-5 px-1.5 rounded-full bg-warning-fg text-white text-[11px] font-semibold inline-flex items-center justify-center tabular-nums">
+          {pending}
+        </span>
+      )}
+    </Link>
+  );
+}
+
 export default function DaycareDetailPage() {
   const confirm = useConfirm();
   const navigate = useNavigate();
@@ -138,6 +180,21 @@ export default function DaycareDetailPage() {
   const currentService = serviceId
     ? services.find((s) => s.id === serviceId)
     : null;
+
+  // Solicitudes que esperan confirmar el pago, por plan (aviso en "Solicitudes").
+  const { data: requests = [] } = useQuery({
+    queryKey: ["schedules-daycare"],
+    queryFn: getSchedulesDaycare,
+    refetchInterval: LIVE_REFETCH_MS,
+  });
+  const pendingByPlan = new Map<string, number>();
+  for (const r of requests) {
+    if (r.status && r.status !== "PENDIENTE") continue;
+    pendingByPlan.set(
+      r.id_detail_daycare,
+      (pendingByPlan.get(r.id_detail_daycare) ?? 0) + 1,
+    );
+  }
 
   const createMut = useMutation({
     mutationFn: createDetailDaycare,
@@ -259,11 +316,23 @@ export default function DaycareDetailPage() {
     : "No hay modalidades de guardería registradas";
   const renderActions = (item: DetailDaycare) => (
     <>
-      <Button size="sm" variant="secondary" onClick={() => openEdit(item)}>
-        <Pencil size={12} /> Editar
+      <RequestsLink
+        planId={item.id}
+        pending={pendingByPlan.get(item.id) ?? 0}
+      />
+      <Button
+        size="icon"
+        aria-label={`Editar ${item.service_mode?.name ?? "modalidad"}`}
+        title="Editar"
+        variant="secondary"
+        onClick={() => openEdit(item)}
+      >
+        <Pencil size={14} aria-hidden="true" />
       </Button>
       <Button
-        size="sm"
+        size="icon"
+        aria-label={`Eliminar ${item.service_mode?.name ?? "modalidad"}`}
+        title="Eliminar"
         variant="danger-soft"
         loading={deleteMut.isPending && deleteMut.variables === item.id}
         onClick={async () => {
@@ -273,7 +342,7 @@ export default function DaycareDetailPage() {
             deleteMut.mutate(item.id);
         }}
       >
-        <Trash2 size={12} /> Eliminar
+        <Trash2 size={14} aria-hidden="true" />
       </Button>
     </>
   );

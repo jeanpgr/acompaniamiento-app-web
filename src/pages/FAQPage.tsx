@@ -194,14 +194,18 @@ export default function FAQPage() {
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <Button
-                    size="sm"
+                    size="icon"
+                    aria-label={"Editar pregunta"}
+                    title="Editar"
                     variant="secondary"
                     onClick={() => openEdit(faq)}
                   >
-                    <Pencil size={12} /> Editar
+                    <Pencil size={14} aria-hidden="true" />
                   </Button>
                   <Button
-                    size="sm"
+                    size="icon"
+                    aria-label={"Eliminar pregunta"}
+                    title="Eliminar"
                     variant="danger-soft"
                     loading={
                       deleteMut.isPending && deleteMut.variables === faq.id
@@ -211,7 +215,7 @@ export default function FAQPage() {
                         deleteMut.mutate(faq.id);
                     }}
                   >
-                    <Trash2 size={12} /> Eliminar
+                    <Trash2 size={14} aria-hidden="true" />
                   </Button>
                 </div>
               </div>

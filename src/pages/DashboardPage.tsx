@@ -1,326 +1,336 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import {
+  BadgeCheck,
+  CalendarPlus,
+  RefreshCw,
+  Star,
+  UserPlus,
+  XCircle,
+} from "lucide-react";
+import { getDashboard, type DashboardDays } from "@/api/dashboard";
 import { LIVE_REFETCH_MS } from "@/lib/invalidate";
-import { Briefcase, Star, Clock, Truck } from "lucide-react";
-import StatCard from "@/components/ui/StatCard";
-import { getReviews } from "@/api/reviews";
-import { getServices } from "@/api/services";
-import { getSchedulesAcompan } from "@/api/schedules";
+import Button from "@/components/ui/Button";
+import Panel from "@/components/dashboard/Panel";
+import KpiTile, { Delta } from "@/components/dashboard/KpiTile";
+import StackedColumns from "@/components/dashboard/StackedColumns";
+import AttentionStrip from "@/components/dashboard/AttentionStrip";
+import ServicePerformanceTable from "@/components/dashboard/ServicePerformanceTable";
+import RatingsPanel from "@/components/dashboard/RatingsPanel";
+import TopProducts from "@/components/dashboard/TopProducts";
+import {
+  KIND_META,
+  KIND_ORDER,
+  formatInt,
+  formatMoney,
+  longBucket,
+  shortDay,
+} from "@/components/dashboard/format";
 
-function getISOWeek(date: Date): string {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() + 4 - (d.getDay() || 7));
-  const yearStart = new Date(d.getFullYear(), 0, 1);
-  const week = Math.ceil(
-    ((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7,
-  );
-  return `${d.getFullYear()}-W${String(week).padStart(2, "0")}`;
-}
+const RANGES: { days: DashboardDays; label: string }[] = [
+  { days: 7, label: "7 días" },
+  { days: 30, label: "30 días" },
+  { days: 90, label: "90 días" },
+];
 
-function Stars({ grade }: { grade: number }) {
+const dec1 = new Intl.NumberFormat("es-EC", { maximumFractionDigits: 1 });
+
+// Ingresos: servicios en el tono de marca, tienda en el acento (validado
+// para daltonismo; el naranja lleva tabla y leyenda por su bajo contraste).
+const REVENUE_SERIES = [
+  { name: "Servicios", color: "var(--color-brand-mark)" },
+  { name: "Tienda", color: "var(--color-accent)" },
+];
+const REQUEST_SERIES = KIND_ORDER.map((k) => ({
+  name: KIND_META[k].label,
+  color: KIND_META[k].color,
+}));
+
+function DashboardSkeleton() {
   return (
-    <span
-      className="flex items-center gap-0.5"
-      aria-label={`${grade} de 5 estrellas`}
-      role="img"
-    >
-      {[1, 2, 3, 4, 5].map((n) => (
-        <Star
-          key={n}
-          size={13}
-          aria-hidden="true"
-          className={
-            n <= grade ? "fill-warning text-warning" : "text-line-strong"
-          }
-        />
-      ))}
-    </span>
-  );
-}
-
-function ReviewsChart({
-  reviews,
-}: {
-  reviews: { grade: number; created_at: string }[];
-}) {
-  const weekMap: Record<string, number[]> = {};
-  reviews.forEach((r) => {
-    const key = getISOWeek(new Date(r.created_at));
-    if (!weekMap[key]) weekMap[key] = [];
-    weekMap[key].push(r.grade);
-  });
-
-  const weekly = Object.entries(weekMap)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .slice(-8)
-    .map(([key, grades]) => ({
-      label: key.replace(/\d{4}-/, ""),
-      value: grades.reduce((s, g) => s + g, 0) / grades.length,
-    }));
-
-  if (weekly.length === 0) {
-    return (
-      <div className="h-44 flex items-center justify-center text-ink-3 text-sm">
-        Sin datos de calificaciones aún
+    <div aria-busy="true" aria-label="Cargando métricas">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 mb-6">
+        {Array.from({ length: 5 }, (_, i) => (
+          <div key={i} className="skeleton h-24" />
+        ))}
       </div>
-    );
-  }
-
-  const MAX_VAL = 5;
-  return (
-    <div className="flex items-end gap-3 h-44 px-2">
-      {weekly.map(({ label, value }, i) => {
-        const isLast = i === weekly.length - 1;
-        const height = (value / MAX_VAL) * 100;
-        return (
-          <div key={label} className="flex flex-col items-center gap-1 flex-1">
-            <span className="text-xs text-ink-3">{value.toFixed(1)}</span>
-            <div
-              className={`w-full rounded-t-md min-h-2 ${isLast ? "bg-primary" : "bg-primary/25"}`}
-              style={{ height: `${height}%` }}
-            />
-            <span className="text-xs text-ink-3 whitespace-nowrap">
-              {label}
-            </span>
-          </div>
-        );
-      })}
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+        <div className="skeleton h-36 col-span-2" />
+        {Array.from({ length: 6 }, (_, i) => (
+          <div key={i} className="skeleton h-36" />
+        ))}
+      </div>
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+        <div className="skeleton h-72" />
+        <div className="skeleton h-72" />
+      </div>
     </div>
   );
 }
 
+/**
+ * Dashboard del administrador: lo que requiere acción hoy, los indicadores
+ * del periodo comparados con el periodo anterior, la evolución de
+ * solicitudes e ingresos, el rendimiento por servicio, la satisfacción y la
+ * tienda. Un solo filtro de periodo arriba gobierna todo lo de abajo.
+ */
 export default function DashboardPage() {
-  const { data: reviews = [] } = useQuery({
-    queryKey: ["reviews"],
-    queryFn: getReviews,
+  const [days, setDays] = useState<DashboardDays>(30);
+  const query = useQuery({
+    queryKey: ["dashboard", days],
+    queryFn: () => getDashboard(days),
+    // Al cambiar de periodo se conserva lo anterior (atenuado) sin saltos.
+    placeholderData: keepPreviousData,
     refetchInterval: LIVE_REFETCH_MS,
   });
-  const { data: services = [] } = useQuery({
-    queryKey: ["services"],
-    queryFn: getServices,
-  });
-  const { data: schedules = [] } = useQuery({
-    queryKey: ["schedules-acompan"],
-    queryFn: getSchedulesAcompan,
-    refetchInterval: LIVE_REFETCH_MS,
-  });
+  const data = query.data;
+  const previousLabel = `los ${days} días anteriores`;
 
-  const avgGrade =
-    reviews.length > 0
-      ? (reviews.reduce((s, r) => s + r.grade, 0) / reviews.length).toFixed(1)
-      : "—";
+  const header = (
+    <div className="flex flex-wrap items-end justify-between gap-3 mb-6">
+      <div>
+        <h1 className="text-xl font-semibold text-ink">Dashboard</h1>
+        <p className="text-sm text-ink-3 mt-0.5">
+          Pendientes del día y rendimiento de la plataforma
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        {data && (
+          <span className="text-xs text-ink-3">
+            Actualizado{" "}
+            {new Date(query.dataUpdatedAt).toLocaleTimeString("es-EC", {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </span>
+        )}
+        <div
+          className="inline-flex rounded-lg border border-line bg-surface p-0.5"
+          role="group"
+          aria-label="Periodo"
+        >
+          {RANGES.map((r) => (
+            <button
+              key={r.days}
+              type="button"
+              onClick={() => setDays(r.days)}
+              aria-pressed={days === r.days}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                days === r.days
+                  ? "bg-primary text-white"
+                  : "text-ink-2 hover:text-ink hover:bg-surface-2"
+              }`}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 
-  const pending = schedules.filter((s) => s.status === "PENDIENTE").length;
-  const inRoute = schedules.filter((s) => s.status === "EN CURSO").length;
-  const completed = schedules.filter((s) => s.status === "COMPLETADO").length;
+  if (!data) {
+    return (
+      <div>
+        {header}
+        {query.isError ? (
+          <div className="bg-surface rounded-xl border border-line p-10 text-center">
+            <p className="text-sm text-ink-2 mb-4">
+              No se pudieron cargar las métricas.
+            </p>
+            <Button variant="secondary" onClick={() => query.refetch()}>
+              <RefreshCw size={14} /> Reintentar
+            </Button>
+          </div>
+        ) : (
+          <DashboardSkeleton />
+        )}
+      </div>
+    );
+  }
 
-  const gradeDistribution = [5, 4, 3, 2, 1].map((g) => ({
-    stars: g,
-    count: reviews.filter((r) => r.grade === g).length,
-  }));
-  const maxCount = Math.max(...gradeDistribution.map((g) => g.count), 1);
-  const recentReviews = reviews.slice(0, 3);
-
-  const typeCount = (type: string) =>
-    services.filter((s) => s.type === type).length;
+  const { kpis, range } = data;
+  const totalRevenue = kpis.serviceRevenue.current + kpis.storeRevenue.current;
+  const previousRevenue =
+    kpis.serviceRevenue.previous + kpis.storeRevenue.previous;
+  const columnLabel = (date: string) => shortDay(date);
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <div>
-          <h1 className="text-xl font-semibold text-ink">
-            Métricas y satisfacción
-          </h1>
-          <p className="text-sm text-ink-3 mt-0.5">
-            Analiza resultados, tendencias y encuestas de satisfacción
-          </p>
-        </div>
-      </div>
+      {header}
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-        <StatCard
-          icon={Briefcase}
-          tone="info"
-          value={services.filter((s) => s.active).length}
-          label="Servicios activos"
-        />
-        <StatCard
-          icon={Clock}
-          tone="warning"
-          value={pending}
-          label="Pendientes"
-        />
-        <StatCard icon={Truck} tone="success" value={inRoute} label="En ruta" />
-        <StatCard
-          icon={Star}
-          tone="accent"
-          value={avgGrade}
-          label="Calificación promedio"
-        />
-      </div>
+      {/* Mientras llega el nuevo periodo, lo anterior se atenúa (sin saltos). */}
+      <div
+        className={`transition-opacity ${query.isPlaceholderData ? "opacity-60" : ""}`}
+        aria-busy={query.isPlaceholderData}
+      >
+        <AttentionStrip attention={data.attention} lowStock={data.lowStock} />
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 mb-6">
-        {/* Calificación semanal */}
-        <div className="xl:col-span-2 bg-surface rounded-xl shadow-[0_1px_2px_rgb(23_38_58/0.06)] border border-line p-5">
-          <h2 className="text-sm font-semibold text-ink mb-4">
-            Calificación semanal promedio
-          </h2>
-          <ReviewsChart reviews={reviews} />
-        </div>
-
-        {/* Servicios por tipo */}
-        <div className="bg-surface rounded-xl shadow-[0_1px_2px_rgb(23_38_58/0.06)] border border-line p-5">
-          <h2 className="text-sm font-semibold text-ink mb-4">
-            Servicios por tipo
-          </h2>
-          <div className="space-y-3">
-            {[
-              {
-                key: "ACOMPAÑAMIENTO",
-                label: "Acompañamiento",
-                color: "var(--color-svc-acompanamiento)",
-              },
-              {
-                key: "TURISMO",
-                label: "Turismo",
-                color: "var(--color-svc-turismo)",
-              },
-              {
-                key: "CAPACITACION",
-                label: "Capacitación",
-                color: "var(--color-svc-capacitacion)",
-              },
-              {
-                key: "GUARDERIA",
-                label: "Guardería",
-                color: "var(--color-svc-guarderia)",
-              },
-            ].map(({ key, label, color }) => {
-              const count = typeCount(key);
-              const pct =
-                services.length > 0 ? (count / services.length) * 100 : 0;
-              return (
-                <div key={key}>
-                  <div className="flex justify-between text-xs text-ink-2 mb-1">
-                    <span>{label}</span>
-                    <span>{count}</span>
-                  </div>
-                  <div className="h-2 bg-line rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full"
-                      style={{ width: `${pct}%`, backgroundColor: color }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-            {services.length === 0 && (
-              <p className="text-xs text-ink-3 text-center py-4">
-                Sin servicios registrados
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-        {/* Distribución de notas */}
-        <div className="bg-surface rounded-xl shadow-[0_1px_2px_rgb(23_38_58/0.06)] border border-line p-5">
-          <h2 className="text-sm font-semibold text-ink mb-4">
-            Distribución de calificaciones
-          </h2>
-          <div className="space-y-2">
-            {gradeDistribution.map(({ stars, count }) => (
-              <div key={stars} className="flex items-center gap-2">
-                <span className="flex items-center gap-0.5 text-xs text-ink-2 w-7 tabular-nums">
-                  {stars}
-                  <Star
-                    size={11}
-                    className="fill-warning text-warning"
-                    aria-hidden="true"
-                  />
-                </span>
-                <div className="flex-1 h-2 bg-line rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-warning"
-                    style={{ width: `${(count / maxCount) * 100}%` }}
-                  />
-                </div>
-                <span className="text-xs text-ink-3 w-4 text-right">
-                  {count}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Reseñas recientes */}
-        <div className="xl:col-span-2 bg-surface rounded-xl shadow-[0_1px_2px_rgb(23_38_58/0.06)] border border-line p-5">
-          <h2 className="text-sm font-semibold text-ink mb-4">
-            Reseñas recientes
-          </h2>
-          {recentReviews.length === 0 ? (
-            <p className="text-sm text-ink-3 text-center py-6">
-              Sin reseñas registradas aún
+        <h2 className="text-sm font-semibold text-ink mb-3">
+          Últimos {days} días
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+          {/* Cifra principal: ingresos del periodo */}
+          <div className="sm:col-span-2 bg-primary text-white rounded-xl p-5 shadow-[0_1px_2px_rgb(23_38_58/0.06)] min-w-0">
+            <p className="text-sm text-white/80">Ingresos del periodo</p>
+            <p className="text-5xl font-semibold mt-2 leading-none">
+              {formatMoney(totalRevenue)}
             </p>
-          ) : (
-            <div className="space-y-3">
-              {recentReviews.map((r) => (
-                <div
-                  key={r.id}
-                  className="flex items-start gap-3 p-3 rounded-lg bg-surface-2"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Stars grade={r.grade} />
-                      <span className="text-xs text-ink-3">
-                        {new Date(r.created_at).toLocaleDateString("es-CO")}
-                      </span>
-                    </div>
-                    <p className="text-sm text-ink-2 line-clamp-2">
-                      {r.comment}
-                    </p>
-                  </div>
-                </div>
-              ))}
+            <div className="flex flex-wrap gap-x-6 gap-y-1 mt-3 text-sm text-white/85">
+              <span>
+                Servicios{" "}
+                <strong className="text-white">
+                  {formatMoney(kpis.serviceRevenue.current)}
+                </strong>
+              </span>
+              <span>
+                Tienda{" "}
+                <strong className="text-white">
+                  {formatMoney(kpis.storeRevenue.current)}
+                </strong>{" "}
+                · {formatInt(kpis.storeOrders.current)}{" "}
+                {kpis.storeOrders.current === 1 ? "pedido" : "pedidos"}
+              </span>
             </div>
-          )}
+            <div className="[&_p]:text-white/80 [&_.text-success-fg]:text-white [&_.text-danger-fg]:text-white">
+              <Delta
+                current={totalRevenue}
+                previous={previousRevenue}
+                periodLabel={previousLabel}
+              />
+            </div>
+          </div>
+
+          <KpiTile
+            icon={CalendarPlus}
+            label="Solicitudes de servicio"
+            value={formatInt(kpis.requests.current)}
+            delta={{ ...kpis.requests, periodLabel: previousLabel }}
+          />
+          <KpiTile
+            icon={BadgeCheck}
+            label="Confirmación de pago"
+            value={
+              kpis.confirmationRate.current == null
+                ? "—"
+                : `${dec1.format(kpis.confirmationRate.current)} %`
+            }
+            hint="Pagadas sobre las ya resueltas"
+            delta={{
+              ...kpis.confirmationRate,
+              mode: "points",
+              periodLabel: previousLabel,
+            }}
+          />
+          <KpiTile
+            icon={XCircle}
+            label="Cancelaciones"
+            value={formatInt(kpis.cancellations.current)}
+            delta={{
+              ...kpis.cancellations,
+              upIsGood: false,
+              periodLabel: previousLabel,
+            }}
+          />
+          <KpiTile
+            icon={Star}
+            label="Calificación promedio"
+            value={
+              kpis.rating.current == null
+                ? "—"
+                : `${dec1.format(kpis.rating.current)} / 5`
+            }
+            hint={`${kpis.rating.count} ${kpis.rating.count === 1 ? "reseña" : "reseñas"}`}
+            delta={{
+              ...kpis.rating,
+              mode: "value",
+              periodLabel: previousLabel,
+            }}
+          />
+          <KpiTile
+            icon={UserPlus}
+            label="Usuarios nuevos"
+            value={formatInt(kpis.newUsers.current)}
+            delta={{ ...kpis.newUsers, periodLabel: previousLabel }}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-6">
+          <Panel
+            title="Solicitudes por servicio"
+            subtitle={
+              range.bucket === "week"
+                ? "Nuevas solicitudes por semana"
+                : "Nuevas solicitudes por día"
+            }
+          >
+            <StackedColumns
+              title="Solicitudes de servicio por fecha y tipo"
+              series={REQUEST_SERIES}
+              columns={data.timeline.map((p) => ({
+                label: columnLabel(p.date),
+                longLabel: longBucket(p.date, range.bucket),
+                values: KIND_ORDER.map((k) => p.requests[k]),
+              }))}
+              format={formatInt}
+              integer
+              emptyText="Sin solicitudes en este periodo"
+            />
+          </Panel>
+          <Panel
+            title="Ingresos"
+            subtitle="Servicios con pago confirmado y ventas de la tienda (sin canceladas)"
+          >
+            <StackedColumns
+              title="Ingresos por fecha: servicios y tienda"
+              series={REVENUE_SERIES}
+              columns={data.timeline.map((p) => ({
+                label: columnLabel(p.date),
+                longLabel: longBucket(p.date, range.bucket),
+                values: [p.serviceRevenue, p.storeRevenue],
+              }))}
+              format={formatMoney}
+              emptyText="Sin ingresos en este periodo"
+            />
+          </Panel>
+        </div>
+
+        <Panel
+          title="Rendimiento por servicio"
+          subtitle="Solicitudes creadas en el periodo y en qué terminaron"
+          className="mb-6"
+        >
+          <ServicePerformanceTable
+            rows={data.byService}
+            overallRate={kpis.confirmationRate.current}
+          />
+          <p className="text-xs text-ink-3 mt-3">
+            Confirmación de pago = pagadas ÷ (pagadas + canceladas sin pagar +
+            no asistidas). Las que aún esperan pago no cuentan. Los ingresos
+            excluyen las canceladas (se reembolsan).
+          </p>
+        </Panel>
+
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+          <Panel
+            title="Satisfacción"
+            subtitle={`Calificaciones de los últimos ${days} días`}
+            className="xl:col-span-2"
+          >
+            <RatingsPanel
+              rating={kpis.rating}
+              distribution={data.ratingDistribution}
+              recent={data.recentReviews}
+            />
+          </Panel>
+          <Panel
+            title="Tienda: más vendidos"
+            subtitle="Por unidades en el periodo"
+          >
+            <TopProducts products={data.topProducts} />
+          </Panel>
         </div>
       </div>
-
-      {/* Resumen de agendamientos */}
-      {schedules.length > 0 && (
-        <div className="mt-5 bg-surface rounded-xl shadow-[0_1px_2px_rgb(23_38_58/0.06)] border border-line p-5">
-          <h2 className="text-sm font-semibold text-ink mb-4">
-            Resumen de agendamientos (Acompañamiento)
-          </h2>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            {[
-              {
-                label: "Pendientes",
-                value: pending,
-                tone: "bg-warning-bg text-warning-fg",
-              },
-              {
-                label: "En ruta",
-                value: inRoute,
-                tone: "bg-info-bg text-info-fg",
-              },
-              {
-                label: "Completados",
-                value: completed,
-                tone: "bg-success-bg text-success-fg",
-              },
-            ].map(({ label, value, tone }) => (
-              <div key={label} className={`rounded-lg p-4 ${tone}`}>
-                <p className="text-2xl font-bold tabular-nums">{value}</p>
-                <p className="text-xs font-medium mt-1">{label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

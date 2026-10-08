@@ -128,11 +128,19 @@ export default function CategoriesPage() {
 
   const renderActions = (c: Category) => (
     <>
-      <Button size="sm" variant="secondary" onClick={() => openEdit(c)}>
-        <Pencil size={12} /> Editar
+      <Button
+        size="icon"
+        aria-label={`Editar ${c.name}`}
+        title="Editar"
+        variant="secondary"
+        onClick={() => openEdit(c)}
+      >
+        <Pencil size={14} aria-hidden="true" />
       </Button>
       <Button
-        size="sm"
+        size="icon"
+        aria-label={`Eliminar ${c.name}`}
+        title="Eliminar"
         variant="danger-soft"
         loading={deleteMut.isPending && deleteMut.variables === c.id}
         onClick={async () => {
@@ -140,7 +148,7 @@ export default function CategoriesPage() {
             deleteMut.mutate(c.id);
         }}
       >
-        <Trash2 size={12} /> Eliminar
+        <Trash2 size={14} aria-hidden="true" />
       </Button>
     </>
   );

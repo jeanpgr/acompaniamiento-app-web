@@ -43,10 +43,6 @@ export const router = createBrowserRouter([
         path: "acompanamiento",
         lazy: page(() => import("@/pages/ServiceStatusPage")),
       },
-      {
-        path: "assign-staff",
-        lazy: page(() => import("@/pages/AssignStaffPage")),
-      },
       { path: "vehicles", lazy: page(() => import("@/pages/VehiclesPage")) },
       {
         path: "tourism-details",
@@ -78,7 +74,17 @@ export const router = createBrowserRouter([
       },
       {
         path: "daycare-details",
-        lazy: page(() => import("@/pages/DaycareDetailPage")),
+        children: [
+          {
+            index: true,
+            lazy: page(() => import("@/pages/DaycareDetailPage")),
+          },
+          // Página hija: solicitudes de un plan para confirmar pagos.
+          {
+            path: ":planId/solicitudes",
+            lazy: page(() => import("@/pages/DaycareRequestsPage")),
+          },
+        ],
       },
       { path: "faqs", lazy: page(() => import("@/pages/FAQPage")) },
       {

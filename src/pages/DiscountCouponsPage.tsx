@@ -170,11 +170,19 @@ export default function DiscountCouponsPage() {
 
   const renderActions = (c: DiscountCoupon) => (
     <>
-      <Button size="sm" variant="secondary" onClick={() => openEdit(c)}>
-        <Pencil size={12} /> Editar
+      <Button
+        size="icon"
+        aria-label={`Editar cupón ${c.coupon}`}
+        title="Editar"
+        variant="secondary"
+        onClick={() => openEdit(c)}
+      >
+        <Pencil size={14} aria-hidden="true" />
       </Button>
       <Button
-        size="sm"
+        size="icon"
+        aria-label={`Eliminar cupón ${c.coupon}`}
+        title="Eliminar"
         variant="danger-soft"
         loading={deleteMut.isPending && deleteMut.variables === c.id}
         onClick={async () => {
@@ -182,7 +190,7 @@ export default function DiscountCouponsPage() {
             deleteMut.mutate(c.id);
         }}
       >
-        <Trash2 size={12} /> Eliminar
+        <Trash2 size={14} aria-hidden="true" />
       </Button>
     </>
   );

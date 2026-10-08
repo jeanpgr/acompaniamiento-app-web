@@ -84,6 +84,8 @@ function StatusBadge({ s }: { s: Unified }) {
 
 function RefundBadge({ s }: { s: Unified }) {
   if (s.status !== "CANCELADA") return <EmptyCell />;
+  // Cancelada antes de confirmar el pago: no hubo cobro.
+  if (!s.refundStatus) return <Badge>Sin cobro</Badge>;
   return s.refundStatus === "REALIZADO" ? (
     <Badge variant="success">Realizado</Badge>
   ) : (
@@ -230,7 +232,13 @@ export default function DistributionServicesPage() {
               aria-pressed={status === f}
               className={chipClass(status === f)}
             >
-              {f === "all" ? "Todos" : STATUS_LABEL[f]}{" "}
+              {/* EN CURSO mezcla servicios: "En ruta" (acompañamiento) y
+                  "Confirmada" (el resto). */}
+              {f === "all"
+                ? "Todos"
+                : f === "EN CURSO"
+                  ? "En ruta / Confirmada"
+                  : STATUS_LABEL[f]}{" "}
               <span className="tabular-nums opacity-70">
                 ({countByStatus(f)})
               </span>

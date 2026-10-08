@@ -32,6 +32,7 @@ import CursorPagination from "@/components/ui/CursorPagination";
 
 // Deben coincidir con los módulos de `authorizePermission("<módulo>")` en el backend.
 const ALL_PERMISSIONS = [
+  "dashboard",
   "users",
   "roles",
   "services",
@@ -54,6 +55,7 @@ const ALL_PERMISSIONS = [
 ];
 
 const PERM_LABELS: Record<string, string> = {
+  dashboard: "Dashboard (métricas)",
   users: "Gestión de usuarios",
   roles: "Gestión de roles",
   services: "Gestión servicios",
@@ -190,17 +192,20 @@ export default function RolesPage() {
   const renderActions = (role: Role) => (
     <>
       <Button
-        size="sm"
+        size="icon"
+        aria-label={`Editar rol ${role.name}`}
+        title="Editar"
         variant="secondary"
         onClick={(e) => {
           e.stopPropagation();
           openEdit(role);
         }}
       >
-        <Pencil size={12} /> Editar
+        <Pencil size={14} aria-hidden="true" />
       </Button>
       <Button
-        size="sm"
+        size="icon"
+        title="Eliminar"
         variant="danger-soft"
         loading={deleteMut.isPending && deleteMut.variables === role.id}
         aria-label={`Eliminar rol ${role.name}`}
@@ -209,7 +214,7 @@ export default function RolesPage() {
           onDelete(role);
         }}
       >
-        <Trash2 size={12} />
+        <Trash2 size={14} aria-hidden="true" />
       </Button>
     </>
   );

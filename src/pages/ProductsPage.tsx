@@ -192,19 +192,23 @@ export default function ProductsPage() {
             renderActions={(p) => (
               <>
                 <Button
-                  size="sm"
+                  size="icon"
+                  aria-label={`Editar ${p.name}`}
+                  title="Editar"
                   variant="secondary"
                   onClick={() => openForm(p)}
                 >
-                  <Pencil size={12} /> Editar
+                  <Pencil size={14} aria-hidden="true" />
                 </Button>
                 <Button
-                  size="sm"
+                  size="icon"
+                  aria-label={`Eliminar ${p.name}`}
+                  title="Eliminar"
                   variant="danger-soft"
                   loading={deleteMut.isPending && deleteMut.variables === p.id}
                   onClick={() => confirmDelete(p)}
                 >
-                  <Trash2 size={12} /> Eliminar
+                  <Trash2 size={14} aria-hidden="true" />
                 </Button>
               </>
             )}

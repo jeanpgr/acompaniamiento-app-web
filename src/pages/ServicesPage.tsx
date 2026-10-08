@@ -211,11 +211,19 @@ export default function ServicesPage() {
           <ChevronRight size={12} /> Gestionar
         </Button>
       )}
-      <Button size="sm" variant="secondary" onClick={() => openEdit(s)}>
-        <Pencil size={12} /> Editar
+      <Button
+        size="icon"
+        aria-label={`Editar ${s.name}`}
+        title="Editar"
+        variant="secondary"
+        onClick={() => openEdit(s)}
+      >
+        <Pencil size={14} aria-hidden="true" />
       </Button>
       <Button
-        size="sm"
+        size="icon"
+        aria-label={`Eliminar ${s.name}`}
+        title="Eliminar"
         variant="danger-soft"
         loading={deleteMut.isPending && deleteMut.variables === s.id}
         onClick={async () => {
@@ -223,7 +231,7 @@ export default function ServicesPage() {
             deleteMut.mutate(s.id);
         }}
       >
-        <Trash2 size={12} /> Eliminar
+        <Trash2 size={14} aria-hidden="true" />
       </Button>
     </>
   );
