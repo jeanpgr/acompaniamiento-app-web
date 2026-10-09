@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
-  ArrowLeft,
   BadgeCheck,
   Clock,
   MessageCircle,
@@ -11,6 +10,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { getDetailTourism } from "@/api/details-tourism";
+import { getServices } from "@/api/services";
 import {
   confirmScheduleTourism,
   getSchedulesTourismByDetail,
@@ -19,6 +19,7 @@ import {
   type ScheduleStatus,
   type ScheduleTourismWithUser,
 } from "@/api/schedules";
+import Breadcrumb from "@/components/ui/Breadcrumb";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import StatCard from "@/components/ui/StatCard";
@@ -122,6 +123,13 @@ export default function TourismReservationsPage() {
     queryKey: ["detail-tourism", tripId],
     queryFn: () => getDetailTourism(tripId),
   });
+  const { data: services = [] } = useQuery({
+    queryKey: ["services"],
+    queryFn: getServices,
+  });
+  const serviceName = services.find(
+    (s) => s.id === trip.data?.id_service,
+  )?.name;
   const reservations = useQuery({
     queryKey: ["schedules-tourism", "detail", tripId],
     queryFn: () => getSchedulesTourismByDetail(tripId),
@@ -294,16 +302,18 @@ export default function TourismReservationsPage() {
     <div>
       {/* Encabezado */}
       <div className="mb-6">
-        <Link
-          to={
-            trip.data
-              ? `/tourism-details?service=${trip.data.id_service}`
-              : "/tourism-details"
-          }
-          className="inline-flex items-center gap-1 text-xs text-ink-3 hover:text-ink-2 mb-1 transition-colors"
-        >
-          <ArrowLeft size={12} /> Volver a excursiones
-        </Link>
+        <Breadcrumb
+          items={[
+            { label: "Gestión servicios", to: "/services" },
+            {
+              label: serviceName ?? "Turismo",
+              to: trip.data
+                ? `/tourism-details?service=${trip.data.id_service}`
+                : "/tourism-details",
+            },
+            { label: "Reservas" },
+          ]}
+        />
         <h1 className="text-xl font-semibold text-ink">
           Reservas · {trip.data?.name ?? "…"}
         </h1>

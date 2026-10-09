@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, ArrowLeft, Ticket } from "lucide-react";
+import { Plus, Pencil, Trash2, Ticket } from "lucide-react";
 import {
   getDetailsTourismPage,
   createDetailTourism,
@@ -13,6 +13,7 @@ import {
 import { getServices } from "@/api/services";
 import { getSchedulesTourism } from "@/api/schedules";
 import { LIVE_REFETCH_MS } from "@/lib/invalidate";
+import Breadcrumb from "@/components/ui/Breadcrumb";
 import Button from "@/components/ui/Button";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import TableSkeleton from "@/components/ui/TableSkeleton";
@@ -63,7 +64,6 @@ function ReservationsLink({
 
 export default function TourismDetailPage() {
   const confirm = useConfirm();
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const serviceId = searchParams.get("service");
   const [search, setSearch] = useState("");
@@ -170,15 +170,12 @@ export default function TourismDetailPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          {serviceId && (
-            <button
-              type="button"
-              onClick={() => navigate("/services")}
-              className="flex items-center gap-1 text-xs text-ink-3 hover:text-ink-2 mb-1 transition-colors"
-            >
-              <ArrowLeft size={12} /> Volver a servicios
-            </button>
-          )}
+          <Breadcrumb
+            items={[
+              { label: "Gestión servicios", to: "/services" },
+              { label: currentService?.name ?? "Turismo" },
+            ]}
+          />
           <h1 className="text-xl font-semibold text-ink">
             {currentService
               ? `Turismo · ${currentService.name}`

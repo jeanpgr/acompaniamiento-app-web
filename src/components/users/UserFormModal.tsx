@@ -6,6 +6,7 @@ import type { Role } from "@/api/roles";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import FormField from "@/components/ui/FormField";
+import { ID_PHONE_MAX_DIGITS, onlyDigits, sanitized } from "@/lib/digits";
 import PhotoPicker from "./PhotoPicker";
 import {
   createSchema,
@@ -165,7 +166,11 @@ export default function UserFormModal({
 
         <div className="grid grid-cols-2 gap-3">
           <FormField htmlFor="users-id_role" label="Rol">
-            <select id="users-id_role" className="field" {...register("id_role")}>
+            <select
+              id="users-id_role"
+              className="field"
+              {...register("id_role")}
+            >
               <option value="">Sin rol</option>
               {roles
                 .filter((r) => r.active)
@@ -187,7 +192,10 @@ export default function UserFormModal({
               className="field"
               aria-invalid={!!errors.cedula}
               placeholder="Cédula"
-              {...register("cedula")}
+              inputMode="numeric"
+              autoComplete="off"
+              maxLength={ID_PHONE_MAX_DIGITS}
+              {...sanitized(register("cedula"), onlyDigits)}
             />
           </FormField>
         </div>
@@ -202,10 +210,13 @@ export default function UserFormModal({
             <input
               id="users-phone"
               className="field"
+              type="tel"
               aria-invalid={!!errors.phone}
               placeholder="Teléfono"
               inputMode="numeric"
-              {...register("phone")}
+              autoComplete="tel-national"
+              maxLength={ID_PHONE_MAX_DIGITS}
+              {...sanitized(register("phone"), onlyDigits)}
             />
           </FormField>
           <FormField

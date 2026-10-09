@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
-  ArrowLeft,
   BadgeCheck,
   Car,
   Clock,
@@ -13,6 +12,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { getDetailDaycare, type PricePeriod } from "@/api/details-daycare";
+import { getServices } from "@/api/services";
 import {
   confirmScheduleDaycare,
   getSchedulesDaycareByDetail,
@@ -23,6 +23,7 @@ import {
   type ScheduleDaycareWithUser,
 } from "@/api/schedules";
 import { getVehicles } from "@/api/vehicles";
+import Breadcrumb from "@/components/ui/Breadcrumb";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
@@ -65,6 +66,7 @@ const TABS: { key: Group | "all"; label: string }[] = [
 
 const COLUMNS: Column[] = [
   "Solicitó",
+  "Beneficiario",
   "Traslado",
   "Contacto",
   "Precio",
@@ -87,6 +89,16 @@ const formatCreated = (iso: string) =>
   });
 
 const isPickup = (r: Request) => r.transfer === "PICK_HOME";
+
+/** Cuenta (perfil) que hizo la solicitud desde la app. */
+function requesterName(r: Request) {
+  return r.user ? `${r.user.name} ${r.user.lastname}` : "Cuenta eliminada";
+}
+
+/** Adulto mayor que irá a la guardería, tal como se escribió al solicitar. */
+function beneficiaryName(r: Request) {
+  return [r.name, r.lastname].filter(Boolean).join(" ") || null;
+}
 
 /** Persona que irá a la guardería (o la cuenta, si no se escribió). */
 function attendeeName(r: Request) {
@@ -137,6 +149,13 @@ export default function DaycareRequestsPage() {
     queryKey: ["detail-daycare", planId],
     queryFn: () => getDetailDaycare(planId),
   });
+  const { data: services = [] } = useQuery({
+    queryKey: ["services"],
+    queryFn: getServices,
+  });
+  const serviceName = services.find(
+    (s) => s.id === plan.data?.id_service,
+  )?.name;
   const requests = useQuery({
     queryKey: ["schedules-daycare", "detail", planId],
     queryFn: () => getSchedulesDaycareByDetail(planId),
@@ -391,16 +410,18 @@ export default function DaycareRequestsPage() {
     <div>
       {/* Encabezado */}
       <div className="mb-6">
-        <Link
-          to={
-            plan.data
-              ? `/daycare-details?service=${plan.data.id_service}`
-              : "/daycare-details"
-          }
-          className="inline-flex items-center gap-1 text-xs text-ink-3 hover:text-ink-2 mb-1 transition-colors"
-        >
-          <ArrowLeft size={12} /> Volver a planes de guardería
-        </Link>
+        <Breadcrumb
+          items={[
+            { label: "Gestión servicios", to: "/services" },
+            {
+              label: serviceName ?? "Guardería",
+              to: plan.data
+                ? `/daycare-details?service=${plan.data.id_service}`
+                : "/daycare-details",
+            },
+            { label: "Solicitudes" },
+          ]}
+        />
         <h1 className="text-xl font-semibold text-ink">
           Solicitudes · {plan.data ? planName : "…"}
         </h1>
@@ -468,7 +489,7 @@ export default function DaycareRequestsPage() {
         {requests.isLoading ? (
           <TableSkeleton label="Cargando solicitudes…" />
         ) : (
-          <table className="w-full min-w-200">
+          <table className="w-full min-w-240">
             <TableHead columns={COLUMNS} />
             <tbody>
               {shown.map((r) => {
@@ -477,11 +498,14 @@ export default function DaycareRequestsPage() {
                   <TableRow key={r.id}>
                     <td className="px-5 py-3.5">
                       <p className="font-medium text-ink text-sm whitespace-nowrap">
-                        {attendeeName(r)}
+                        {requesterName(r)}
                       </p>
                       <p className="text-xs text-ink-3 whitespace-nowrap">
                         {formatCreated(r.created_at)}
                       </p>
+                    </td>
+                    <td className="px-5 py-3.5 text-sm text-ink whitespace-nowrap">
+                      {beneficiaryName(r) ?? <EmptyCell />}
                     </td>
                     <td className="px-5 py-3.5">{transfer(r)}</td>
                     <td className="px-5 py-3.5">{contact(r)}</td>

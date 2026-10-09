@@ -168,7 +168,7 @@ export default function DistributionPage() {
         <div className="w-full xl:w-72 shrink-0 grid items-start gap-3 md:grid-cols-2 xl:grid-cols-1">
           <PendingQueue
             pending={pending}
-            vehicles={vehicles}
+            vehicles={vehicles.filter((v) => v.active)}
             isLoading={isLoading}
             assigning={assignMut.isPending}
             leaving={leaving}

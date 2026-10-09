@@ -1,10 +1,9 @@
 import { useDeferredValue, useState } from "react";
-import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
 import type { ScheduleStatus } from "@/api/schedules";
 import { getVehicles } from "@/api/vehicles";
 import { serviceTypeStyle } from "@/lib/serviceTypes";
+import Breadcrumb from "@/components/ui/Breadcrumb";
 import Badge from "@/components/ui/Badge";
 import SearchInput from "@/components/ui/SearchInput";
 import ViewToggle from "@/components/ui/ViewToggle";
@@ -178,13 +177,12 @@ export default function DistributionServicesPage() {
   return (
     <div>
       <div className="mb-6">
-        <Link
-          to=".."
-          relative="path"
-          className="inline-flex items-center gap-1 text-xs text-ink-3 hover:text-ink-2 mb-1 transition-colors"
-        >
-          <ArrowLeft size={12} aria-hidden="true" /> Volver a distribución
-        </Link>
+        <Breadcrumb
+          items={[
+            { label: "Distribución", to: "/distribution" },
+            { label: "Servicios y estados" },
+          ]}
+        />
         <h1 className="text-xl font-semibold text-ink">Servicios y estados</h1>
         <p className="text-sm text-ink-3 mt-0.5">
           Todas las citas agendadas con su estado, vehículo y reembolso

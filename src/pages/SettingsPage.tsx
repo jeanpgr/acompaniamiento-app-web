@@ -17,6 +17,7 @@ import {
   type SettingsResponse,
   type SettingKey,
 } from "@/api/settings";
+import { onlyDigits, sanitized } from "@/lib/digits";
 import Button from "@/components/ui/Button";
 
 // Reglas dentro de las del backend (features/settings/settings.registry.ts),
@@ -46,10 +47,6 @@ const bankSchema = z.object({
     .regex(/^\d{10}$/, "La cédula debe tener 10 dígitos"),
 });
 
-/** Deja solo dígitos (y como máximo `max`) en lo que se escribe o pega. */
-const onlyDigits = (value: string, max: number) =>
-  value.replace(/\D/g, "").slice(0, max);
-
 /**
  * Número local de Ecuador a partir de lo escrito o pegado: quita el código
  * de país (593) y el 0 inicial, p. ej. "+593 99 123 4567" o "0991234567".
@@ -60,25 +57,6 @@ function toLocalMobile(value: string) {
     digits = digits.slice(EC_PREFIX.length);
   }
   return digits.replace(/^0+/, "").slice(0, EC_MOBILE_DIGITS);
-}
-
-type ChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => unknown;
-
-/**
- * register() que limpia el valor antes de que react-hook-form lo lea: el
- * campo nunca muestra letras ni símbolos, ni siquiera al pegar.
- */
-function sanitized<T extends { onChange: ChangeHandler }>(
-  registration: T,
-  clean: (value: string) => string,
-): T {
-  return {
-    ...registration,
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-      e.target.value = clean(e.target.value);
-      return registration.onChange(e);
-    },
-  };
 }
 
 type WhatsappForm = z.infer<typeof whatsappSchema>;

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, Truck, AlertTriangle } from "lucide-react";
 import {
@@ -9,7 +10,7 @@ import {
   type Vehicle,
   type CreateVehicleInput,
 } from "@/api/vehicles";
-import { getUsers } from "@/api/users";
+import { getUsers, type User } from "@/api/users";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
@@ -31,6 +32,11 @@ import {
 import CursorPagination from "@/components/ui/CursorPagination";
 
 const REVIEW_THRESHOLD = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+/** Solo los usuarios con este rol pueden conducir (el backend lo valida). */
+const DRIVER_ROLE_NAME = "conductor";
+const isDriver = (u: User) =>
+  u.active && u.role_name?.trim().toLowerCase() === DRIVER_ROLE_NAME;
 
 export default function VehiclesPage() {
   const [modalOpen, setModalOpen] = useState(false);
@@ -81,7 +87,12 @@ export default function VehiclesPage() {
     },
   });
 
-  const { register, handleSubmit, reset } = useForm<CreateVehicleInput>();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<CreateVehicleInput>();
 
   const openCreate = () => {
     setEditTarget(null);
@@ -107,6 +118,15 @@ export default function VehiclesPage() {
   const userMap = Object.fromEntries(
     users.map((u) => [u.id, `${u.name} ${u.lastname}`]),
   );
+
+  // Opciones del selector: usuarios activos con rol Conductor. Al editar un
+  // vehículo cuyo conductor actual no lo es, se muestra para poder
+  // conservarlo, pero no se puede elegir a otro que no sea conductor.
+  const drivers = users.filter(isDriver);
+  const keptDriver =
+    editTarget && !drivers.some((u) => u.id === editTarget.id_driver)
+      ? users.find((u) => u.id === editTarget.id_driver)
+      : undefined;
 
   const [view, setView] = useViewMode();
   const emptyText = debouncedSearch
@@ -354,6 +374,7 @@ export default function VehiclesPage() {
             <input
               id="vehicles-name"
               className="field"
+              placeholder="Ej. Furgoneta 1"
               {...register("name", { required: true })}
             />
           </div>
@@ -367,6 +388,7 @@ export default function VehiclesPage() {
             <input
               id="vehicles-model"
               className="field"
+              placeholder="Ej. Hyundai H1 2022"
               {...register("model", { required: true })}
             />
           </div>
@@ -380,6 +402,7 @@ export default function VehiclesPage() {
             <input
               id="vehicles-license_plate"
               className="field"
+              placeholder="Ej. PBA-1234"
               {...register("license_plate", { required: true })}
             />
           </div>
@@ -394,6 +417,7 @@ export default function VehiclesPage() {
               id="vehicles-capacity"
               type="number"
               className="field"
+              placeholder="Ej. 8 (pasajeros)"
               {...register("capacity", { valueAsNumber: true })}
             />
           </div>
@@ -407,15 +431,43 @@ export default function VehiclesPage() {
             <select
               id="vehicles-id_driver"
               className="field"
-              {...register("id_driver", { required: true })}
+              aria-invalid={!!errors.id_driver}
+              aria-describedby="vehicles-id_driver-help"
+              {...register("id_driver", {
+                required: "Selecciona un conductor",
+              })}
             >
               <option value="">Seleccionar conductor</option>
-              {users.map((u) => (
+              {keptDriver && (
+                <option value={keptDriver.id}>
+                  {keptDriver.name} {keptDriver.lastname} (actual, sin rol
+                  Conductor)
+                </option>
+              )}
+              {drivers.map((u) => (
                 <option key={u.id} value={u.id}>
                   {u.name} {u.lastname}
                 </option>
               ))}
             </select>
+            {errors.id_driver && (
+              <p className="text-danger-fg text-xs mt-1">
+                {errors.id_driver.message}
+              </p>
+            )}
+            <p id="vehicles-id_driver-help" className="text-xs text-ink-3 mt-1">
+              {drivers.length === 0 ? (
+                <>
+                  No hay usuarios con el rol Conductor. Asígnalo en{" "}
+                  <Link to="/users" className="text-primary hover:underline">
+                    Usuarios y roles
+                  </Link>
+                  .
+                </>
+              ) : (
+                "Solo aparecen usuarios activos con el rol Conductor."
+              )}
+            </p>
           </div>
           <div>
             <label

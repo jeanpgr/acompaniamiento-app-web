@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
-  ArrowLeft,
   BadgeCheck,
   Clock,
   MessageCircle,
@@ -12,6 +11,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { getDetailTraining } from "@/api/details-training";
+import { getServices } from "@/api/services";
 import {
   confirmScheduleTraining,
   getSchedulesTrainingByDetail,
@@ -20,6 +20,7 @@ import {
   type ScheduleStatus,
   type ScheduleTrainingWithUser,
 } from "@/api/schedules";
+import Breadcrumb from "@/components/ui/Breadcrumb";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import StatCard from "@/components/ui/StatCard";
@@ -122,6 +123,13 @@ export default function TrainingEnrollmentsPage() {
     queryKey: ["detail-training", trainingId],
     queryFn: () => getDetailTraining(trainingId),
   });
+  const { data: services = [] } = useQuery({
+    queryKey: ["services"],
+    queryFn: getServices,
+  });
+  const serviceName = services.find(
+    (s) => s.id === training.data?.id_service,
+  )?.name;
   const enrollments = useQuery({
     queryKey: ["schedules-training", "detail", trainingId],
     queryFn: () => getSchedulesTrainingByDetail(trainingId),
@@ -292,16 +300,18 @@ export default function TrainingEnrollmentsPage() {
     <div>
       {/* Encabezado */}
       <div className="mb-6">
-        <Link
-          to={
-            training.data
-              ? `/training-details?service=${training.data.id_service}`
-              : "/training-details"
-          }
-          className="inline-flex items-center gap-1 text-xs text-ink-3 hover:text-ink-2 mb-1 transition-colors"
-        >
-          <ArrowLeft size={12} /> Volver a capacitaciones
-        </Link>
+        <Breadcrumb
+          items={[
+            { label: "Gestión servicios", to: "/services" },
+            {
+              label: serviceName ?? "Capacitación",
+              to: training.data
+                ? `/training-details?service=${training.data.id_service}`
+                : "/training-details",
+            },
+            { label: "Inscripciones" },
+          ]}
+        />
         <h1 className="text-xl font-semibold text-ink">
           Inscripciones · {training.data?.topic ?? "…"}
         </h1>

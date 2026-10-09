@@ -6,12 +6,19 @@ const baseSchema = z.object({
   lastname: z.string().min(2, "Mínimo 2 caracteres").max(50),
   email: z.string().email("Email inválido").max(100),
   id_role: z.string().uuid().optional().or(z.literal("")),
+  // Al editar pueden quedar vacíos; si se escriben, solo dígitos.
   cedula: z
     .string()
-    .max(10, "Máximo 10 caracteres")
+    .trim()
+    .regex(/^\d{6,10}$/, "Entre 6 y 10 dígitos")
     .optional()
     .or(z.literal("")),
-  phone: z.string().max(10).optional().or(z.literal("")),
+  phone: z
+    .string()
+    .trim()
+    .regex(/^\d{7,10}$/, "Entre 7 y 10 dígitos")
+    .optional()
+    .or(z.literal("")),
   address: z.string().max(250).optional().or(z.literal("")),
 });
 
