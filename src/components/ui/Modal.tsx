@@ -55,28 +55,28 @@ export default function Modal({
       onTransitionEnd={(e) => {
         if (!open && e.target === e.currentTarget) setLingering(false);
       }}
-      className={`m-auto p-0 bg-surface rounded-xl shadow-[0_24px_48px_-12px_rgb(11_35_59/0.35)] w-[calc(100%-2rem)] ${size === "lg" ? "max-w-2xl" : "max-w-md"} max-h-[calc(100dvh-2rem)] text-ink open:flex flex-col`}
+      className={`m-auto p-0 bg-surface rounded-2xl shadow-[0_24px_48px_-12px_rgb(11_35_59/0.35)] w-[calc(100%-2rem)] ${size === "lg" ? "max-w-2xl" : "max-w-md"} max-h-[calc(100dvh-2rem)] text-ink open:flex flex-col`}
     >
       {(open || lingering) && (
         <>
-          <div className="flex items-center justify-between px-6 py-4 border-b border-line shrink-0">
-            <h3 id={titleId} className="font-semibold text-ink truncate pr-4">
+          <div className="flex items-center justify-between px-6 py-5 border-b border-line shrink-0">
+            <h3 id={titleId} className="text-lg font-bold text-ink truncate pr-4">
               {title}
             </h3>
             <button
               type="button"
               onClick={onClose}
               aria-label="Cerrar"
-              className="-mr-2 w-9 h-9 inline-flex items-center justify-center rounded-lg text-ink-3 hover:text-ink hover:bg-surface-2 transition-colors shrink-0"
+              className="-mr-2 w-10 h-10 inline-flex items-center justify-center rounded-full text-ink-3 hover:text-ink hover:bg-surface-2 transition-colors shrink-0"
             >
-              <X size={18} />
+              <X size={20} />
             </button>
           </div>
           <div className="px-6 py-4 overflow-y-auto flex-1 min-h-0">
             {children}
           </div>
           {footer && (
-            <div className="px-6 py-4 border-t border-line flex justify-end gap-3 shrink-0">
+            <div className="px-6 py-4 border-t border-line bg-surface-2/60 flex justify-end gap-3 shrink-0">
               {footer}
             </div>
           )}

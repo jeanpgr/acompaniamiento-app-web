@@ -201,7 +201,7 @@ export default function RolesPage() {
           openEdit(role);
         }}
       >
-        <Pencil size={14} aria-hidden="true" />
+        <Pencil size={16} aria-hidden="true" />
       </Button>
       <Button
         size="icon"
@@ -214,7 +214,7 @@ export default function RolesPage() {
           onDelete(role);
         }}
       >
-        <Trash2 size={14} aria-hidden="true" />
+        <Trash2 size={16} aria-hidden="true" />
       </Button>
     </>
   );
@@ -223,13 +223,13 @@ export default function RolesPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-ink">Roles y permisos</h1>
-          <p className="text-sm text-ink-3 mt-0.5">
+          <h1 className="text-xl sm:text-2xl font-bold text-ink">Roles y permisos</h1>
+          <p className="text-[15px] text-ink-3 mt-1">
             Configura los roles del sistema y sus permisos de acceso
           </p>
         </div>
         <Button onClick={openCreate}>
-          <Plus size={14} /> Nuevo rol
+          <Plus size={16} /> Nuevo rol
         </Button>
       </div>
 
@@ -241,18 +241,14 @@ export default function RolesPage() {
           placeholder="Buscar por nombre o descripción"
           label="Buscar roles"
         />
-        <span className="text-xs text-ink-3 bg-line rounded-full px-3 py-1">
+        <span className="text-xs font-semibold text-ink-2 bg-surface-2 ring-1 ring-line rounded-full px-3 py-1">
           {(counts?.active ?? 0) + (counts?.inactive ?? 0)} roles
         </span>
         {(["all", "active", "inactive"] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-4 py-1.5 rounded-full text-sm transition-colors ${
-              filter === f
-                ? "bg-primary text-white"
-                : "bg-surface text-ink-2 ring-1 ring-inset ring-line hover:bg-surface-2"
-            }`}
+            className="chip"
             aria-pressed={filter === f}
           >
             {f === "all" ? "Todos" : f === "active" ? "Activos" : "Inactivos"}
@@ -264,9 +260,9 @@ export default function RolesPage() {
       </div>
 
       {/* En pantallas angostas el panel de permisos pasa debajo del listado */}
-      <div className="flex flex-col lg:flex-row gap-5">
+      <div className="flex flex-col xl:flex-row gap-5">
         {/* Table */}
-        <div className="flex-1 bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
+        <div className="flex-1 card overflow-x-auto">
           {isLoading ? (
             <TableSkeleton label="Cargando roles…" />
           ) : view === "grid" ? (
@@ -278,7 +274,7 @@ export default function RolesPage() {
                   onClick={() => setSelectedId(role.id)}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <h2 className="font-medium text-ink text-sm">
+                    <h2 className="font-bold text-ink text-base">
                       {role.name}
                     </h2>
                     <Badge variant={role.active ? "success" : "default"}>
@@ -290,7 +286,7 @@ export default function RolesPage() {
                   </p>
                   <CardFields>
                     <CardField label="Usuarios">
-                      <span className="text-xs bg-info-bg text-info-fg px-2 py-0.5 rounded-full">
+                      <span className="text-xs font-semibold bg-info-bg text-info-fg px-2.5 py-0.5 rounded-full">
                         {usersLabel(role.users_count ?? 0)}
                       </span>
                     </CardField>
@@ -305,7 +301,7 @@ export default function RolesPage() {
                         setSelectedId(role.id);
                       }}
                     >
-                      <Shield size={12} /> Permisos
+                      <Shield size={14} /> Permisos
                     </Button>
                     {renderActions(role)}
                   </CardActions>
@@ -316,19 +312,19 @@ export default function RolesPage() {
             <table className="w-full min-w-160">
               <thead>
                 <tr className="border-b border-line bg-surface-2">
-                  <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                  <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                     Rol
                   </th>
-                  <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                  <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                     Descripción
                   </th>
-                  <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                  <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                     Usuarios
                   </th>
-                  <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                  <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                     Estado
                   </th>
-                  <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                  <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                     Acciones
                   </th>
                 </tr>
@@ -339,30 +335,30 @@ export default function RolesPage() {
                     key={role.id}
                     className={`border-b border-line/70 cursor-pointer ${
                       role.id === displayRole?.id
-                        ? "bg-info-bg"
-                        : "hover:bg-surface-2"
+                        ? "bg-primary-soft"
+                        : "hover:bg-primary-soft/50"
                     }`}
                     onClick={() => setSelectedId(role.id)}
                     aria-selected={role.id === displayRole?.id}
                     title="Ver permisos de este rol"
                   >
-                    <td className="px-5 py-3.5 font-medium text-ink text-sm">
+                    <td className="px-4 py-3.5 font-semibold text-ink text-sm">
                       {role.name}
                     </td>
-                    <td className="px-5 py-3.5 text-sm text-ink-3">
+                    <td className="px-4 py-3.5 text-sm text-ink-3">
                       {role.description ?? "—"}
                     </td>
-                    <td className="px-5 py-3.5">
-                      <span className="text-xs bg-info-bg text-info-fg px-2 py-0.5 rounded-full">
+                    <td className="px-4 py-3.5">
+                      <span className="text-xs font-semibold bg-info-bg text-info-fg px-2.5 py-0.5 rounded-full">
                         {usersLabel(role.users_count ?? 0)}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5">
+                    <td className="px-4 py-3.5">
                       <Badge variant={role.active ? "success" : "default"}>
                         {role.active ? "Activo" : "Inactivo"}
                       </Badge>
                     </td>
-                    <td className="px-5 py-3.5">
+                    <td className="px-4 py-3.5">
                       <div className="flex gap-2">{renderActions(role)}</div>
                     </td>
                   </tr>
@@ -371,7 +367,7 @@ export default function RolesPage() {
                   <tr>
                     <td
                       colSpan={5}
-                      className="px-5 py-8 text-center text-ink-3 text-sm"
+                      className="px-4 py-10 text-center text-ink-3 text-[15px]"
                     >
                       {emptyText}
                     </td>
@@ -385,9 +381,9 @@ export default function RolesPage() {
 
         {/* Permissions panel */}
         {displayRole && (
-          <div className="w-full lg:w-64 shrink-0 bg-surface rounded-xl p-5 shadow-sm border border-line h-fit">
+          <div className="w-full xl:w-64 shrink-0 card p-5 h-fit">
             <div className="flex items-center gap-2 mb-4">
-              <Shield size={15} className="text-warning-fg" />
+              <Shield size={18} className="text-primary" />
               <h3 className="font-semibold text-ink text-sm">
                 Permisos · {displayRole.name}
               </h3>
@@ -396,7 +392,7 @@ export default function RolesPage() {
               Módulos a los que puede acceder este rol. Haz clic en otro rol
               para ver sus permisos.
             </p>
-            <div className="space-y-2">
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-1">
               {ALL_PERMISSIONS.map((p) => {
                 const has = !!(
                   displayRole.permissions as Record<string, boolean> | null
@@ -456,7 +452,7 @@ export default function RolesPage() {
           <div>
             <label
               htmlFor="roles-name"
-              className="block text-sm font-medium text-ink mb-1"
+              className="block text-sm font-semibold text-ink mb-1.5"
             >
               Nombre
             </label>
@@ -469,7 +465,7 @@ export default function RolesPage() {
           <div>
             <label
               htmlFor="roles-description"
-              className="block text-sm font-medium text-ink mb-1"
+              className="block text-sm font-semibold text-ink mb-1.5"
             >
               Descripción
             </label>
@@ -482,7 +478,7 @@ export default function RolesPage() {
           <div>
             <p
               id="roles-permisos"
-              className="block text-sm font-medium text-ink mb-2"
+              className="block text-sm font-semibold text-ink mb-2"
             >
               Permisos
             </p>
@@ -494,7 +490,7 @@ export default function RolesPage() {
               {ALL_PERMISSIONS.map((p) => (
                 <label
                   key={p}
-                  className="flex items-center gap-2 text-sm cursor-pointer"
+                  className="flex items-center gap-2.5 text-sm cursor-pointer py-0.5"
                 >
                   <input
                     type="checkbox"
@@ -505,7 +501,7 @@ export default function RolesPage() {
                         [p]: e.target.checked,
                       });
                     }}
-                    className="rounded accent-primary w-4 h-4"
+                    className="rounded accent-primary w-5 h-5"
                   />
                   <span className="text-ink">{PERM_LABELS[p]}</span>
                 </label>

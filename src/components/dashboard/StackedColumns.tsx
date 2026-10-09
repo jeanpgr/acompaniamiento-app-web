@@ -67,7 +67,7 @@ export default function StackedColumns({
 
   const toggle = (
     <div
-      className="inline-flex rounded-lg border border-line p-0.5"
+      className="segmented p-0.5"
       role="group"
       aria-label="Vista"
     >
@@ -82,13 +82,9 @@ export default function StackedColumns({
           type="button"
           onClick={() => setView(key)}
           aria-pressed={view === key}
-          className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-colors ${
-            view === key
-              ? "bg-primary-soft text-primary"
-              : "text-ink-3 hover:text-ink"
-          }`}
+          className="segment min-h-7 px-2.5 text-[13px]"
         >
-          <Icon size={13} aria-hidden="true" /> {label}
+          <Icon size={15} aria-hidden="true" /> {label}
         </button>
       ))}
     </div>
@@ -128,15 +124,15 @@ export default function StackedColumns({
           <table className="w-full text-sm">
             <caption className="sr-only">{title}</caption>
             <thead className="sticky top-0 bg-surface">
-              <tr className="border-b border-line text-xs text-ink-3">
-                <th className="text-left font-medium py-2 pr-3">Fecha</th>
+              <tr className="border-b border-line text-[13px] text-ink-2">
+                <th className="text-left font-semibold py-2 pr-3">Fecha</th>
                 {series.map((s) => (
-                  <th key={s.name} className="text-right font-medium py-2 px-2">
+                  <th key={s.name} className="text-right font-semibold py-2 px-2">
                     {s.name}
                   </th>
                 ))}
                 {series.length > 1 && (
-                  <th className="text-right font-medium py-2 pl-2">Total</th>
+                  <th className="text-right font-semibold py-2 pl-2">Total</th>
                 )}
               </tr>
             </thead>
@@ -228,7 +224,7 @@ export default function StackedColumns({
                       onFocus={() => setActive(i)}
                       onBlur={() => setActive(null)}
                       className={`flex-1 h-full flex flex-col justify-end items-center rounded-md outline-none transition-colors focus-visible:ring-2 focus-visible:ring-focus ${
-                        isActive ? "bg-surface-2" : ""
+                        isActive ? "bg-primary-soft/60" : ""
                       }`}
                     >
                       <div
@@ -263,7 +259,7 @@ export default function StackedColumns({
                 <div
                   id={tooltipId}
                   role="tooltip"
-                  className="absolute z-10 -translate-x-1/2 -translate-y-full pointer-events-none bg-surface border border-line rounded-lg shadow-lg px-3 py-2 min-w-36"
+                  className="absolute z-10 -translate-x-1/2 -translate-y-full pointer-events-none bg-surface rounded-xl shadow-lg px-3 py-2 min-w-36"
                   style={{
                     top: 0,
                     left: `clamp(72px, ${((active + 0.5) / columns.length) * 100}%, calc(100% - 72px))`,

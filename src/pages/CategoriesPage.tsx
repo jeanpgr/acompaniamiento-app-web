@@ -135,7 +135,7 @@ export default function CategoriesPage() {
         variant="secondary"
         onClick={() => openEdit(c)}
       >
-        <Pencil size={14} aria-hidden="true" />
+        <Pencil size={16} aria-hidden="true" />
       </Button>
       <Button
         size="icon"
@@ -148,7 +148,7 @@ export default function CategoriesPage() {
             deleteMut.mutate(c.id);
         }}
       >
-        <Trash2 size={14} aria-hidden="true" />
+        <Trash2 size={16} aria-hidden="true" />
       </Button>
     </>
   );
@@ -157,16 +157,16 @@ export default function CategoriesPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-ink">
+          <h1 className="text-xl sm:text-2xl font-bold text-ink">
             Categorías de productos
           </h1>
-          <p className="text-sm text-ink-3 mt-0.5">
+          <p className="text-[15px] text-ink-3 mt-1">
             {pager.counts?.active ?? 0} activas · {pager.counts?.inactive ?? 0}{" "}
             inactivas
           </p>
         </div>
         <Button onClick={openCreate}>
-          <Plus size={14} /> Nueva categoría
+          <Plus size={16} /> Nueva categoría
         </Button>
       </div>
 
@@ -180,7 +180,7 @@ export default function CategoriesPage() {
         <ViewToggle view={view} onChange={setView} />
       </div>
 
-      <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
+      <div className="card overflow-x-auto">
         {isLoading ? (
           <TableSkeleton label="Cargando categorías…" />
         ) : view === "grid" ? (
@@ -188,7 +188,7 @@ export default function CategoriesPage() {
             {categories.map((c) => (
               <GridCard key={c.id}>
                 <div className="flex items-start justify-between gap-3">
-                  <h2 className="font-medium text-ink text-sm">{c.name}</h2>
+                  <h2 className="font-bold text-ink text-base">{c.name}</h2>
                   <Badge variant={c.active ? "success" : "danger"}>
                     {c.active ? "Activa" : "Inactiva"}
                   </Badge>
@@ -209,19 +209,19 @@ export default function CategoriesPage() {
           <table className="w-full min-w-160">
             <thead>
               <tr className="border-b border-line bg-surface-2">
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Nombre
                 </th>
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Descripción
                 </th>
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Estado
                 </th>
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Creación
                 </th>
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Acciones
                 </th>
               </tr>
@@ -230,25 +230,25 @@ export default function CategoriesPage() {
               {categories.map((c) => (
                 <tr
                   key={c.id}
-                  className="border-b border-line/70 hover:bg-surface-2"
+                  className="border-b border-line/70 transition-colors hover:bg-primary-soft/50"
                 >
-                  <td className="px-5 py-3.5 font-medium text-ink text-sm">
+                  <td className="px-4 py-3.5 font-semibold text-ink text-sm">
                     {c.name}
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-ink-3 max-w-50 truncate">
+                  <td className="px-4 py-3.5 text-sm text-ink-3 max-w-50 truncate">
                     {c.description ?? (
-                      <span className="text-ink-3 italic text-xs">—</span>
+                      <span className="text-ink-3 text-xs">—</span>
                     )}
                   </td>
-                  <td className="px-5 py-3.5">
+                  <td className="px-4 py-3.5">
                     <Badge variant={c.active ? "success" : "danger"}>
                       {c.active ? "Activa" : "Inactiva"}
                     </Badge>
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-ink-3">
+                  <td className="px-4 py-3.5 text-sm text-ink-3">
                     {new Date(c.created_at).toLocaleDateString("es-CO")}
                   </td>
-                  <td className="px-5 py-3.5">
+                  <td className="px-4 py-3.5">
                     <div className="flex gap-2">{renderActions(c)}</div>
                   </td>
                 </tr>
@@ -257,7 +257,7 @@ export default function CategoriesPage() {
                 <tr>
                   <td
                     colSpan={5}
-                    className="px-5 py-8 text-center text-ink-3 text-sm"
+                    className="px-4 py-10 text-center text-ink-3 text-[15px]"
                   >
                     {emptyText}
                   </td>
@@ -292,7 +292,7 @@ export default function CategoriesPage() {
           <div>
             <label
               htmlFor="categories-name"
-              className="block text-sm font-medium text-ink mb-1"
+              className="block text-sm font-semibold text-ink mb-1.5"
             >
               Nombre <span className="text-danger-fg">*</span>
             </label>
@@ -304,7 +304,7 @@ export default function CategoriesPage() {
               {...register("name")}
             />
             {errors.name && (
-              <p className="text-danger-fg text-xs mt-1">
+              <p className="text-danger-fg text-xs font-semibold mt-1">
                 {errors.name.message}
               </p>
             )}
@@ -313,7 +313,7 @@ export default function CategoriesPage() {
           <div>
             <label
               htmlFor="categories-description"
-              className="block text-sm font-medium text-ink mb-1"
+              className="block text-sm font-semibold text-ink mb-1.5"
             >
               Descripción
             </label>
@@ -329,7 +329,7 @@ export default function CategoriesPage() {
           {editTarget && (
             <div className="flex items-center justify-between rounded-lg border border-line px-4 py-3">
               <div>
-                <p className="text-sm font-medium text-ink">Estado activo</p>
+                <p className="text-sm font-semibold text-ink">Estado activo</p>
                 <p className="text-xs text-ink-3">
                   La categoría aparece disponible en la app
                 </p>

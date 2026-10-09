@@ -39,10 +39,10 @@ const withIcon = (icon: ReactNode, text: string) => (
 const COLUMNS: Column[] = [
   "Excursión",
   "Fechas",
-  { label: withIcon(<Users size={12} />, "Cupos") },
+  { label: withIcon(<Users size={14} />, "Cupos") },
   "Tarifas",
-  { label: withIcon(<MapPin size={12} />, "Punto encuentro") },
-  { label: withIcon(<Clock size={12} />, "Itinerario") },
+  { label: withIcon(<MapPin size={14} />, "Punto encuentro") },
+  { label: withIcon(<Clock size={14} />, "Itinerario") },
   "Acciones",
 ];
 
@@ -73,8 +73,8 @@ function PricesCompact({ prices }: { prices: DetailTourism["prices"] }) {
     .map((r) => `${r.label} ${formatMoney(r.value)}`)
     .join(" · ");
   return (
-    <div className="whitespace-nowrap" title={detail}>
-      <p className="text-sm font-medium text-ink">
+    <div className="min-w-28 max-w-44" title={detail}>
+      <p className="text-sm font-semibold text-ink">
         {rows.length > 1 && (
           <span className="text-xs font-normal text-ink-3">Desde </span>
         )}
@@ -87,7 +87,7 @@ function PricesCompact({ prices }: { prices: DetailTourism["prices"] }) {
 
 function Prices({ prices }: { prices: DetailTourism["prices"] }) {
   const rows = priceRows(prices);
-  if (rows.length === 0) return <span className="text-ink-3 italic">—</span>;
+  if (rows.length === 0) return <span className="text-ink-3">—</span>;
   return (
     <div className="space-y-0.5">
       {rows.map((r) => (
@@ -107,7 +107,7 @@ function Itinerary({
 }) {
   return (
     <>
-      <p className="text-xs font-semibold text-ink-3 uppercase tracking-wide mb-3">
+      <p className="text-sm font-bold text-ink mb-3">
         Itinerario
       </p>
       <ol className="flex flex-col gap-0">
@@ -115,7 +115,7 @@ function Itinerary({
           <li key={i} className="flex items-start gap-3">
             {/* Línea de tiempo */}
             <div className="flex flex-col items-center">
-              <div className="w-2 h-2 rounded-full mt-1 shrink-0 bg-primary" />
+              <div className="w-2.5 h-2.5 rounded-full mt-1 shrink-0 bg-primary ring-4 ring-primary-soft" />
               {i < stops.length - 1 && (
                 <div
                   className="w-px flex-1 bg-line-strong my-1"
@@ -142,7 +142,7 @@ function Itinerary({
 function DepartedTag({ item, now }: { item: DetailTourism; now: number }) {
   if (new Date(item.date_output).getTime() > now) return null;
   return (
-    <span className="ml-2 inline-block text-[11px] px-1.5 py-0.5 rounded bg-surface-2 text-ink-3 font-medium">
+    <span className="ml-2 inline-block text-xs px-2.5 py-0.5 rounded-full bg-surface-2 text-ink-3 font-semibold ring-1 ring-inset ring-line">
       Finalizada
     </span>
   );
@@ -169,9 +169,9 @@ export default function TourismList({
         type="button"
         onClick={() => setExpandedId(isExpanded ? null : item.id)}
         aria-expanded={isExpanded}
-        className="flex items-center gap-1 text-xs font-medium text-info-fg hover:text-info-fg transition-colors"
+        className="flex items-center gap-1 text-[13px] font-semibold text-primary hover:text-primary-hover hover:underline transition-colors"
       >
-        {isExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+        {isExpanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
         {stops} parada{stops !== 1 ? "s" : ""}
       </button>
     );
@@ -187,7 +187,7 @@ export default function TourismList({
           const stops = expandedStops(item);
           return (
             <GridCard key={item.id}>
-              <h2 className="font-medium text-ink text-sm">
+              <h2 className="font-bold text-ink text-base">
                 {item.name}
                 <DepartedTag item={item} now={now} />
               </h2>
@@ -216,7 +216,7 @@ export default function TourismList({
                 <CardField label="Itinerario">{toggle(item)}</CardField>
               </CardFields>
               {stops && (
-                <div className="rounded-lg bg-surface-2 px-4 py-3">
+                <div className="rounded-xl bg-surface-2 px-4 py-3">
                   <Itinerary stops={stops} />
                 </div>
               )}
@@ -237,8 +237,8 @@ export default function TourismList({
           return (
             <Fragment key={item.id}>
               <TableRow>
-                <td className="px-5 py-3.5">
-                  <p className="font-medium text-ink text-sm">
+                <td className="px-4 py-3.5">
+                  <p className="font-semibold text-ink text-sm">
                     {item.name}
                     <DepartedTag item={item} now={now} />
                   </p>
@@ -249,7 +249,7 @@ export default function TourismList({
                   )}
                 </td>
                 <td
-                  className="px-5 py-3.5 whitespace-nowrap"
+                  className="px-4 py-3.5 whitespace-nowrap"
                   title={`Salida: ${formatDate(item.date_output)} · Llegada: ${formatDate(item.date_arrival)}`}
                 >
                   <p className="text-sm text-ink-2">
@@ -259,18 +259,18 @@ export default function TourismList({
                     {formatTripMeta(item.date_output, item.date_arrival)}
                   </p>
                 </td>
-                <td className="px-5 py-3.5 text-sm text-ink-2 whitespace-nowrap">
+                <td className="px-4 py-3.5 text-sm text-ink-2 whitespace-nowrap">
                   <span className="font-medium">{item.quotas_available}</span>
                   <span className="text-ink-3"> / {item.quotas}</span>
                 </td>
-                <td className="px-5 py-3.5">
+                <td className="px-4 py-3.5">
                   <PricesCompact prices={item.prices} />
                 </td>
-                <td className="px-5 py-3.5 text-sm text-ink-3 max-w-40 truncate">
+                <td className="px-4 py-3.5 text-sm text-ink-3 max-w-40 truncate">
                   {item.meeting_point_address ?? <EmptyCell />}
                 </td>
-                <td className="px-5 py-3.5">{toggle(item)}</td>
-                <td className="px-5 py-3.5">
+                <td className="px-4 py-3.5">{toggle(item)}</td>
+                <td className="px-4 py-3.5">
                   <div className="flex gap-2">{renderActions(item)}</div>
                 </td>
               </TableRow>

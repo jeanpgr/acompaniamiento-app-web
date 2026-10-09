@@ -56,7 +56,7 @@ export function Delta({
   const sign = flat ? "" : diff > 0 ? "+" : "−";
   return (
     <p className={`flex items-center gap-1 text-xs mt-2 ${tone}`}>
-      <Icon size={14} aria-hidden="true" />
+      <Icon size={16} aria-hidden="true" />
       <span className="font-semibold">
         {flat ? "Sin cambios" : `${sign}${text}`}
       </span>
@@ -80,12 +80,17 @@ export default function KpiTile({
   delta: DeltaProps;
 }) {
   return (
-    <div className="bg-surface rounded-xl p-5 shadow-[0_1px_2px_rgb(23_38_58/0.06)] border border-line min-w-0">
-      <div className="flex items-center gap-2 text-ink-3">
-        <Icon size={16} aria-hidden="true" />
-        <p className="text-sm">{label}</p>
+    <div className="card p-5 min-w-0">
+      <div className="flex items-center gap-2.5 text-ink-3">
+        <span
+          className="w-8 h-8 shrink-0 rounded-lg bg-primary-soft text-primary flex items-center justify-center"
+          aria-hidden="true"
+        >
+          <Icon size={17} />
+        </span>
+        <p className="text-sm font-medium">{label}</p>
       </div>
-      <p className="text-3xl font-semibold text-ink mt-2">{value}</p>
+      <p className="text-3xl font-bold text-ink mt-2">{value}</p>
       {hint && <p className="text-xs text-ink-3 mt-0.5">{hint}</p>}
       <Delta {...delta} />
     </div>

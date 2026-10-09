@@ -73,7 +73,7 @@ export default function ProductsList({
             />
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <h2 className="font-medium text-ink text-sm truncate">
+                <h2 className="font-bold text-ink text-base line-clamp-2 wrap-break-word">
                   {p.name}
                 </h2>
                 <p className="text-xs text-ink-3">
@@ -106,11 +106,11 @@ export default function ProductsList({
       <tbody>
         {products.map((p) => (
           <TableRow key={p.id}>
-            <td className="px-5 py-3">
+            <td className="px-4 py-3">
               <div className="flex items-center gap-3">
                 <ProductThumbnail photo={p.photo} name={p.name} />
                 <div className="min-w-0">
-                  <p className="font-medium text-ink text-sm truncate">
+                  <p className="font-semibold text-ink text-sm truncate">
                     {p.name}
                   </p>
                   {p.description && (
@@ -121,19 +121,19 @@ export default function ProductsList({
                 </div>
               </div>
             </td>
-            <td className="px-5 py-3 text-sm text-ink-3">
+            <td className="px-4 py-3 text-sm text-ink-3">
               {categoryName(p.id_category)}
             </td>
-            <td className="px-5 py-3 text-sm font-medium text-ink">
+            <td className="px-4 py-3 text-sm font-medium text-ink">
               {formatPrice(p.price)}
             </td>
-            <td className="px-5 py-3">
+            <td className="px-4 py-3">
               <Stock n={p.stock} />
             </td>
-            <td className="px-5 py-3">
+            <td className="px-4 py-3">
               <StatusBadge active={p.active} />
             </td>
-            <td className="px-5 py-3">
+            <td className="px-4 py-3">
               <div className="flex gap-2">{renderActions(p)}</div>
             </td>
           </TableRow>

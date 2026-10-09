@@ -48,7 +48,7 @@ export default function RatingsPanel({
           <p className="text-sm text-ink-3">Sin calificaciones en el periodo</p>
         ) : (
           <div className="flex items-end gap-3 mb-4">
-            <p className="text-4xl font-semibold text-ink leading-none">
+            <p className="text-4xl font-bold text-ink leading-none">
               {dec1.format(rating.current)}
             </p>
             <div>
@@ -68,7 +68,7 @@ export default function RatingsPanel({
                 <span className="flex items-center gap-0.5 w-7 text-ink-2 tabular-nums">
                   {g}
                   <Star
-                    size={11}
+                    size={13}
                     className="fill-warning text-warning"
                     aria-hidden="true"
                   />
@@ -92,7 +92,7 @@ export default function RatingsPanel({
       </div>
 
       <div className="min-w-0">
-        <h3 className="text-xs font-medium text-ink-3 mb-2">Últimas reseñas</h3>
+        <h3 className="text-sm font-bold text-ink mb-2">Últimas reseñas</h3>
         {recent.length === 0 ? (
           <p className="text-sm text-ink-3 py-6 text-center">
             Aún no hay reseñas
@@ -102,12 +102,12 @@ export default function RatingsPanel({
             {recent.map((r) => {
               const st = serviceTypeStyle(r.serviceType);
               return (
-                <li key={r.id} className="p-3 rounded-lg bg-surface-2">
+                <li key={r.id} className="p-3.5 rounded-xl bg-surface-2">
                   <div className="flex flex-wrap items-center gap-2 mb-1">
                     <Stars grade={r.grade} />
                     {r.serviceName && (
                       <span
-                        className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${st.badge}`}
+                        className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${st.badge}`}
                       >
                         {r.serviceName}
                       </span>

@@ -27,14 +27,14 @@ export default function FormField({
     <div className={className}>
       <label
         htmlFor={htmlFor}
-        className="block text-sm font-medium text-ink mb-1"
+        className="block text-sm font-semibold text-ink mb-1.5"
       >
         {label}
         {required && <span className="text-danger-fg"> *</span>}
       </label>
       {children}
       {error ? (
-        <p className="text-danger-fg text-xs mt-1">{error}</p>
+        <p className="text-danger-fg text-xs font-semibold mt-1">{error}</p>
       ) : (
         hint && <p className="text-xs text-ink-3 mt-1">{hint}</p>
       )}

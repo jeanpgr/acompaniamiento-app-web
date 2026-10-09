@@ -151,7 +151,7 @@ export default function ProductFormModal({
           />
         </FormField>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <FormField
             htmlFor="products-price"
             label="Precio"
@@ -192,7 +192,7 @@ export default function ProductFormModal({
         {isEdit && (
           <div className="flex items-center justify-between rounded-lg border border-line px-4 py-3">
             <div>
-              <p className="text-sm font-medium text-ink">Producto activo</p>
+              <p className="text-sm font-semibold text-ink">Producto activo</p>
               <p className="text-xs text-ink-3">
                 Visible y disponible para compra en la app
               </p>

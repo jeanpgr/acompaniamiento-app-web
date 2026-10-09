@@ -119,10 +119,10 @@ function RequestsLink({
   return (
     <Link
       to={`${planId}/solicitudes`}
-      className={`inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+      className={`inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-lg text-[13px] font-semibold whitespace-nowrap transition-colors ${
         pending > 0
           ? "bg-warning-bg text-warning-fg hover:brightness-95"
-          : "bg-surface border border-line text-ink-2 hover:bg-surface-2 hover:border-line-strong"
+          : "bg-surface border-[1.5px] border-line-strong text-primary hover:bg-primary-soft hover:border-primary/40"
       }`}
       aria-label={
         pending > 0
@@ -130,9 +130,9 @@ function RequestsLink({
           : "Ver solicitudes del plan"
       }
     >
-      <ClipboardList size={12} aria-hidden="true" /> Solicitudes
+      <ClipboardList size={14} aria-hidden="true" /> Solicitudes
       {pending > 0 && (
-        <span className="min-w-5 h-5 px-1.5 rounded-full bg-warning-fg text-white text-[11px] font-semibold inline-flex items-center justify-center tabular-nums">
+        <span className="min-w-5 h-5 px-1.5 rounded-full bg-warning-fg text-white text-xs font-semibold inline-flex items-center justify-center tabular-nums">
           {pending}
         </span>
       )}
@@ -319,7 +319,7 @@ export default function DaycareDetailPage() {
         variant="secondary"
         onClick={() => openEdit(item)}
       >
-        <Pencil size={14} aria-hidden="true" />
+        <Pencil size={16} aria-hidden="true" />
       </Button>
       <Button
         size="icon"
@@ -334,7 +334,7 @@ export default function DaycareDetailPage() {
             deleteMut.mutate(item.id);
         }}
       >
-        <Trash2 size={14} aria-hidden="true" />
+        <Trash2 size={16} aria-hidden="true" />
       </Button>
     </>
   );
@@ -353,19 +353,19 @@ export default function DaycareDetailPage() {
               { label: currentService?.name ?? "Guardería" },
             ]}
           />
-          <h1 className="text-xl font-semibold text-ink">
+          <h1 className="text-xl sm:text-2xl font-bold text-ink">
             {currentService
               ? `Guardería · ${currentService.name}`
               : "Detalles de guardería"}
           </h1>
-          <p className="text-sm text-ink-3 mt-0.5">
+          <p className="text-[15px] text-ink-3 mt-1">
             {serviceId
               ? "Modalidades y planes de este servicio de guardería"
               : "Gestiona planes y modalidades del servicio de guardería"}
           </p>
         </div>
         <Button onClick={openCreate}>
-          <Plus size={14} /> Nueva modalidad
+          <Plus size={16} /> Nueva modalidad
         </Button>
       </div>
 
@@ -380,7 +380,7 @@ export default function DaycareDetailPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
+      <div className="card overflow-x-auto">
         {isLoading ? (
           <TableSkeleton label="Cargando modalidades…" />
         ) : view === "grid" ? (
@@ -388,7 +388,7 @@ export default function DaycareDetailPage() {
             {items.map((item) => (
               <GridCard key={item.id}>
                 <div className="flex items-start justify-between gap-3">
-                  <h2 className="font-medium text-ink text-sm">
+                  <h2 className="font-bold text-ink text-base">
                     {item.service_mode?.name ?? "Modalidad sin nombre"}
                   </h2>
                   <Badge variant={item.active ? "success" : "danger"}>
@@ -419,27 +419,27 @@ export default function DaycareDetailPage() {
           <table className="w-full min-w-160">
             <thead>
               <tr className="border-b border-line bg-surface-2">
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Modalidad
                 </th>
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Horas / día
                 </th>
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Precio recogida
                 </th>
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Precio entrega
                 </th>
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   <div className="flex items-center gap-1">
-                    <MapPin size={12} /> Dirección
+                    <MapPin size={14} /> Dirección
                   </div>
                 </th>
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Estado
                 </th>
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Acciones
                 </th>
               </tr>
@@ -448,41 +448,41 @@ export default function DaycareDetailPage() {
               {items.map((item) => (
                 <tr
                   key={item.id}
-                  className="border-b border-line/70 hover:bg-surface-2"
+                  className="border-b border-line/70 transition-colors hover:bg-primary-soft/50"
                 >
-                  <td className="px-5 py-3.5 font-medium text-ink text-sm">
+                  <td className="px-4 py-3.5 font-semibold text-ink text-sm">
                     {item.service_mode?.name ?? (
-                      <span className="text-ink-3 italic text-xs">—</span>
+                      <span className="text-ink-3 text-xs">—</span>
                     )}
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-ink-3">
+                  <td className="px-4 py-3.5 text-sm text-ink-3">
                     {item.service_mode?.hours != null ? (
                       `${item.service_mode.hours} h`
                     ) : (
-                      <span className="text-ink-3 italic text-xs">—</span>
+                      <span className="text-ink-3 text-xs">—</span>
                     )}
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-ink-3">
+                  <td className="px-4 py-3.5 text-sm text-ink-3">
                     {formatPrice(item.service_mode?.price_pickup) ?? (
-                      <span className="text-ink-3 italic text-xs">—</span>
+                      <span className="text-ink-3 text-xs">—</span>
                     )}
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-ink-3">
+                  <td className="px-4 py-3.5 text-sm text-ink-3">
                     {formatPrice(item.service_mode?.price_dropoff) ?? (
-                      <span className="text-ink-3 italic text-xs">—</span>
+                      <span className="text-ink-3 text-xs">—</span>
                     )}
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-ink-3 max-w-44 truncate">
+                  <td className="px-4 py-3.5 text-sm text-ink-3 max-w-44 truncate">
                     {item.address_point ?? (
-                      <span className="text-ink-3 italic text-xs">—</span>
+                      <span className="text-ink-3 text-xs">—</span>
                     )}
                   </td>
-                  <td className="px-5 py-3.5">
+                  <td className="px-4 py-3.5">
                     <Badge variant={item.active ? "success" : "danger"}>
                       {item.active ? "Activo" : "Inactivo"}
                     </Badge>
                   </td>
-                  <td className="px-5 py-3.5">
+                  <td className="px-4 py-3.5">
                     <div className="flex gap-2">{renderActions(item)}</div>
                   </td>
                 </tr>
@@ -491,7 +491,7 @@ export default function DaycareDetailPage() {
                 <tr>
                   <td
                     colSpan={7}
-                    className="px-5 py-8 text-center text-ink-3 text-sm"
+                    className="px-4 py-10 text-center text-ink-3 text-[15px]"
                   >
                     {emptyText}
                   </td>
@@ -529,7 +529,7 @@ export default function DaycareDetailPage() {
             <div>
               <label
                 htmlFor="daycaredetail-id_service"
-                className="block text-sm font-medium text-ink mb-1"
+                className="block text-sm font-semibold text-ink mb-1.5"
               >
                 Servicio <span className="text-danger-fg">*</span>
               </label>
@@ -547,7 +547,7 @@ export default function DaycareDetailPage() {
                 ))}
               </select>
               {errors.id_service && (
-                <p className="text-danger-fg text-xs mt-1">
+                <p className="text-danger-fg text-xs font-semibold mt-1">
                   {errors.id_service.message}
                 </p>
               )}
@@ -558,7 +558,7 @@ export default function DaycareDetailPage() {
           <div>
             <label
               htmlFor="daycaredetail-mode_name"
-              className="block text-sm font-medium text-ink mb-1"
+              className="block text-sm font-semibold text-ink mb-1.5"
             >
               Nombre de modalidad <span className="text-danger-fg">*</span>
             </label>
@@ -570,18 +570,18 @@ export default function DaycareDetailPage() {
               {...register("mode_name")}
             />
             {errors.mode_name && (
-              <p className="text-danger-fg text-xs mt-1">
+              <p className="text-danger-fg text-xs font-semibold mt-1">
                 {errors.mode_name.message}
               </p>
             )}
           </div>
 
           {/* Horas */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label
                 htmlFor="daycaredetail-mode_hours"
-                className="block text-sm font-medium text-ink mb-1"
+                className="block text-sm font-semibold text-ink mb-1.5"
               >
                 Horas por día <span className="text-danger-fg">*</span>
               </label>
@@ -594,7 +594,7 @@ export default function DaycareDetailPage() {
                 {...register("mode_hours", { valueAsNumber: true })}
               />
               {errors.mode_hours && (
-                <p className="text-danger-fg text-xs mt-1">
+                <p className="text-danger-fg text-xs font-semibold mt-1">
                   {errors.mode_hours.message}
                 </p>
               )}
@@ -605,7 +605,7 @@ export default function DaycareDetailPage() {
           <div>
             <label
               htmlFor="daycaredetail-address_point"
-              className="block text-sm font-medium text-ink mb-1"
+              className="block text-sm font-semibold text-ink mb-1.5"
             >
               Dirección de la sede <span className="text-danger-fg">*</span>
             </label>
@@ -634,7 +634,7 @@ export default function DaycareDetailPage() {
               />
             </div>
             {errors.address_point ? (
-              <p className="text-danger-fg text-xs mt-1">
+              <p className="text-danger-fg text-xs font-semibold mt-1">
                 {errors.address_point.message}
               </p>
             ) : (
@@ -648,14 +648,14 @@ export default function DaycareDetailPage() {
 
           {/* Precios */}
           <div>
-            <p className="text-sm font-medium text-ink mb-2">
+            <p className="text-base font-bold text-ink mb-2">
               Precios del servicio
             </p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label
                   htmlFor="daycaredetail-mode_price_pickup"
-                  className="block text-xs text-ink-2 mb-1"
+                  className="block text-[13px] font-semibold text-ink-2 mb-1"
                 >
                   Precio por recogida (nosotros vamos al cliente)
                 </label>
@@ -675,7 +675,7 @@ export default function DaycareDetailPage() {
                   />
                 </div>
                 {errors.mode_price_pickup && (
-                  <p className="text-danger-fg text-xs mt-1">
+                  <p className="text-danger-fg text-xs font-semibold mt-1">
                     {errors.mode_price_pickup.message}
                   </p>
                 )}
@@ -683,7 +683,7 @@ export default function DaycareDetailPage() {
               <div>
                 <label
                   htmlFor="daycaredetail-mode_price_dropoff"
-                  className="block text-xs text-ink-2 mb-1"
+                  className="block text-[13px] font-semibold text-ink-2 mb-1"
                 >
                   Precio por entrega (el cliente nos trae al adulto)
                 </label>
@@ -703,7 +703,7 @@ export default function DaycareDetailPage() {
                   />
                 </div>
                 {errors.mode_price_dropoff && (
-                  <p className="text-danger-fg text-xs mt-1">
+                  <p className="text-danger-fg text-xs font-semibold mt-1">
                     {errors.mode_price_dropoff.message}
                   </p>
                 )}
@@ -712,7 +712,7 @@ export default function DaycareDetailPage() {
             <div className="mt-3">
               <label
                 htmlFor="daycaredetail-mode_price_period"
-                className="block text-xs text-ink-2 mb-1"
+                className="block text-[13px] font-semibold text-ink-2 mb-1"
               >
                 Los precios son por
               </label>
@@ -731,14 +731,14 @@ export default function DaycareDetailPage() {
 
           {/* ── Detalle que ve el cliente en la app ── */}
           <div className="border-t border-line pt-4">
-            <p className="text-sm font-medium text-ink">Detalle del plan</p>
+            <p className="text-base font-bold text-ink">Detalle del plan</p>
             <p className="text-xs text-ink-3 mb-3">
               Opcional. La app muestra esta información en la tarjeta del plan.
             </p>
 
             <label
               htmlFor="daycaredetail-mode_description"
-              className="block text-xs text-ink-2 mb-1"
+              className="block text-[13px] font-semibold text-ink-2 mb-1"
             >
               Descripción
             </label>
@@ -752,20 +752,20 @@ export default function DaycareDetailPage() {
               {...register("mode_description")}
             />
             {errors.mode_description && (
-              <p className="text-danger-fg text-xs mt-1">
+              <p className="text-danger-fg text-xs font-semibold mt-1">
                 {errors.mode_description.message}
               </p>
             )}
 
             <fieldset className="mt-3">
-              <legend className="block text-xs text-ink-2 mb-1">
+              <legend className="block text-[13px] font-semibold text-ink-2 mb-1">
                 Días de atención
               </legend>
               <div className="flex flex-wrap gap-2">
                 {DAYCARE_DAYS.map((d) => (
                   <label
                     key={d.code}
-                    className="inline-flex items-center gap-1.5 px-3 h-8 rounded-full border border-line text-xs font-medium text-ink-2 cursor-pointer has-checked:bg-primary has-checked:text-white has-checked:border-primary has-focus-visible:outline-2 has-focus-visible:outline-focus"
+                    className="inline-flex items-center gap-1.5 px-3.5 h-9 rounded-full border border-line bg-surface-2 text-sm font-semibold text-ink-3 cursor-pointer hover:border-line-strong has-checked:bg-primary has-checked:text-white has-checked:border-primary has-focus-visible:outline-2 has-focus-visible:outline-focus"
                   >
                     <input
                       type="checkbox"
@@ -779,11 +779,11 @@ export default function DaycareDetailPage() {
               </div>
             </fieldset>
 
-            <div className="grid grid-cols-2 gap-3 mt-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
               <div>
                 <label
                   htmlFor="daycaredetail-mode_start_time"
-                  className="block text-xs text-ink-2 mb-1"
+                  className="block text-[13px] font-semibold text-ink-2 mb-1"
                 >
                   Hora de inicio
                 </label>
@@ -797,7 +797,7 @@ export default function DaycareDetailPage() {
               <div>
                 <label
                   htmlFor="daycaredetail-mode_end_time"
-                  className="block text-xs text-ink-2 mb-1"
+                  className="block text-[13px] font-semibold text-ink-2 mb-1"
                 >
                   Hora de fin
                 </label>
@@ -809,7 +809,7 @@ export default function DaycareDetailPage() {
                   {...register("mode_end_time")}
                 />
                 {errors.mode_end_time && (
-                  <p className="text-danger-fg text-xs mt-1">
+                  <p className="text-danger-fg text-xs font-semibold mt-1">
                     {errors.mode_end_time.message}
                   </p>
                 )}
@@ -818,7 +818,7 @@ export default function DaycareDetailPage() {
 
             <fieldset className="mt-3">
               <div className="flex items-center justify-between mb-1">
-                <legend className="block text-xs text-ink-2">
+                <legend className="block text-[13px] font-semibold text-ink-2">
                   Qué incluye
                 </legend>
                 <button
@@ -826,11 +826,11 @@ export default function DaycareDetailPage() {
                   onClick={() => includes.append({ value: "" })}
                   className="flex items-center gap-1 text-xs text-info-fg font-medium"
                 >
-                  <Plus size={12} /> Agregar
+                  <Plus size={14} /> Agregar
                 </button>
               </div>
               {includes.fields.length === 0 ? (
-                <p className="text-xs text-ink-3 italic">
+                <p className="text-xs text-ink-3">
                   Ej: Desayuno y refrigerio, terapia ocupacional, control de
                   signos vitales…
                 </p>
@@ -852,11 +852,11 @@ export default function DaycareDetailPage() {
                           aria-label={`Quitar elemento ${i + 1}`}
                           className="text-ink-3 hover:text-danger-fg transition-colors"
                         >
-                          <X size={14} />
+                          <X size={16} />
                         </button>
                       </div>
                       {errors.mode_includes?.[i]?.value && (
-                        <p className="text-danger-fg text-xs mt-1">
+                        <p className="text-danger-fg text-xs font-semibold mt-1">
                           {errors.mode_includes[i]?.value?.message}
                         </p>
                       )}

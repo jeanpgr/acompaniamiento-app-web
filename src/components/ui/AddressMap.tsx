@@ -118,7 +118,7 @@ export default function AddressMap({ points }: { points: MapPoint[] }) {
     const latLngs = located.map((p) => L.latLng(p.coords!.lat, p.coords!.lng));
     if (latLngs.length > 1) {
       L.polyline(latLngs, {
-        color: "#1D3461",
+        color: "#1B5598",
         weight: 3,
         dashArray: "6 6",
       }).addTo(map);
@@ -193,7 +193,7 @@ export default function AddressMap({ points }: { points: MapPoint[] }) {
               rel="noopener noreferrer"
               className="shrink-0 inline-flex items-center gap-1 text-xs font-medium text-info-fg hover:underline"
             >
-              Google Maps <ExternalLink size={11} aria-hidden="true" />
+              Google Maps <ExternalLink size={13} aria-hidden="true" />
             </a>
           </li>
         ))}

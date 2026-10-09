@@ -59,7 +59,7 @@ export default function UsersList({
                   image={u.image}
                 />
                 <div className="min-w-0">
-                  <h2 className="font-medium text-ink text-sm truncate">
+                  <h2 className="font-bold text-ink text-base line-clamp-2 wrap-break-word">
                     {u.name} {u.lastname}
                   </h2>
                   <p className="text-xs text-ink-3 truncate">{u.email}</p>
@@ -85,7 +85,7 @@ export default function UsersList({
       <tbody>
         {users.map((u, i) => (
           <TableRow key={u.id}>
-            <td className="px-5 py-3.5">
+            <td className="px-4 py-3.5">
               <div className="flex items-center gap-3">
                 <UserAvatar
                   name={u.name}
@@ -94,24 +94,24 @@ export default function UsersList({
                   image={u.image}
                 />
                 <div>
-                  <p className="font-medium text-ink text-sm">
+                  <p className="font-semibold text-ink text-sm">
                     {u.name} {u.lastname}
                   </p>
                   <p className="text-xs text-ink-3">{u.email}</p>
                 </div>
               </div>
             </td>
-            <td className="px-5 py-3.5">{renderRole(u)}</td>
-            <td className="px-5 py-3.5 text-sm text-ink-3">
+            <td className="px-4 py-3.5">{renderRole(u)}</td>
+            <td className="px-4 py-3.5 text-sm text-ink-3">
               {u.cedula ?? <EmptyCell />}
             </td>
-            <td className="px-5 py-3.5 text-sm text-ink-3">
+            <td className="px-4 py-3.5 text-sm text-ink-3">
               {u.phone ?? <EmptyCell />}
             </td>
-            <td className="px-5 py-3.5">
+            <td className="px-4 py-3.5">
               <StatusBadge active={u.active} />
             </td>
-            <td className="px-5 py-3.5">
+            <td className="px-4 py-3.5">
               <div className="flex gap-2">{renderActions(u)}</div>
             </td>
           </TableRow>

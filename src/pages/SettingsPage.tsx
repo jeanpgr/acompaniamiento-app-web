@@ -64,9 +64,14 @@ type BankForm = z.infer<typeof bankSchema>;
 
 function LastChange({ data, k }: { data?: SettingsResponse; k: SettingKey }) {
   const m = data?.meta[k];
-  if (!m) return <p className="text-xs text-ink-3">Aún no configurado</p>;
+  if (!m)
+    return (
+      <p className="text-xs text-ink-3 sm:text-right sm:shrink-0">
+        Aún no configurado
+      </p>
+    );
   return (
-    <p className="text-xs text-ink-3">
+    <p className="text-xs text-ink-3 sm:text-right sm:max-w-56 wrap-break-word">
       Último cambio:{" "}
       {new Date(m.updated_at).toLocaleString("es-EC", {
         dateStyle: "medium",
@@ -92,12 +97,12 @@ function Field({
 }) {
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium text-ink mb-1">
+      <label htmlFor={id} className="block text-sm font-semibold text-ink mb-1.5">
         {label} <span className="text-danger-fg">*</span>
       </label>
       {children}
       {error ? (
-        <p className="text-danger-fg text-xs mt-1" role="alert">
+        <p className="text-danger-fg text-xs font-semibold mt-1" role="alert">
           {error}
         </p>
       ) : hint ? (
@@ -172,15 +177,15 @@ export default function SettingsPage() {
   return (
     <div className="max-w-5xl">
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-ink">Configuración</h1>
-        <p className="text-sm text-ink-3 mt-0.5">
+        <h1 className="text-xl sm:text-2xl font-bold text-ink">Configuración</h1>
+        <p className="text-[15px] text-ink-3 mt-1">
           Parámetros del sistema que usa la app móvil. Los cambios se aplican
           sin publicar otra versión.
         </p>
       </div>
 
       {isError ? (
-        <div className="bg-surface rounded-xl border border-line p-6 text-center">
+        <div className="card p-6 text-center">
           <p className="text-sm text-ink-2 mb-3">
             No se pudo cargar la configuración.
           </p>
@@ -198,14 +203,16 @@ export default function SettingsPage() {
         <div className="space-y-6">
           {/* ── WhatsApp ── */}
           <section
-            className="bg-surface rounded-xl shadow-sm border border-line p-5"
+            className="card p-5"
             aria-labelledby="set-wa"
           >
-            <div className="flex items-start justify-between gap-4 mb-4">
-              <div className="flex items-center gap-2">
-                <MessageCircle size={18} className="text-success-fg" />
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 mb-4">
+              <div className="flex items-start gap-3 min-w-0">
+                <span className="w-10 h-10 shrink-0 rounded-xl bg-success-bg text-success-fg flex items-center justify-center" aria-hidden="true">
+                  <MessageCircle size={20} />
+                </span>
                 <div>
-                  <h2 id="set-wa" className="font-semibold text-ink">
+                  <h2 id="set-wa" className="text-base font-bold text-ink">
                     WhatsApp de atención
                   </h2>
                   <p className="text-xs text-ink-3">
@@ -234,7 +241,7 @@ export default function SettingsPage() {
                 >
                   <div className="flex">
                     <span
-                      className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-line bg-surface-2 text-sm font-medium text-ink-2 select-none"
+                      className="inline-flex items-center px-3.5 rounded-l-lg border-[1.5px] border-r-0 border-line bg-surface-2 text-[15px] font-semibold text-ink-2 select-none"
                       aria-hidden="true"
                     >
                       +593
@@ -268,7 +275,7 @@ export default function SettingsPage() {
                     "whatsapp_number" in (saveMut.variables ?? {})
                   }
                 >
-                  <Save size={14} /> Guardar
+                  <Save size={16} /> Guardar
                 </Button>
                 <a
                   href={
@@ -277,13 +284,13 @@ export default function SettingsPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-disabled={!waReady}
-                  className={`inline-flex items-center gap-2 h-10 px-4 rounded-lg text-sm font-medium border border-line ${
+                  className={`inline-flex items-center gap-2 h-11 px-5 rounded-lg text-sm font-semibold border-[1.5px] border-line-strong ${
                     waReady
-                      ? "text-ink-2 hover:bg-surface-2"
+                      ? "text-primary hover:bg-primary-soft"
                       : "text-ink-3 opacity-50 pointer-events-none"
                   }`}
                 >
-                  <ExternalLink size={14} /> Probar enlace
+                  <ExternalLink size={16} /> Probar enlace
                 </a>
               </div>
             </form>
@@ -291,14 +298,16 @@ export default function SettingsPage() {
 
           {/* ── Cuenta bancaria ── */}
           <section
-            className="bg-surface rounded-xl shadow-sm border border-line p-5"
+            className="card p-5"
             aria-labelledby="set-bank"
           >
-            <div className="flex items-start justify-between gap-4 mb-4">
-              <div className="flex items-center gap-2">
-                <Landmark size={18} className="text-info-fg" />
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 mb-4">
+              <div className="flex items-start gap-3 min-w-0">
+                <span className="w-10 h-10 shrink-0 rounded-xl bg-primary-soft text-primary flex items-center justify-center" aria-hidden="true">
+                  <Landmark size={20} />
+                </span>
                 <div>
-                  <h2 id="set-bank" className="font-semibold text-ink">
+                  <h2 id="set-bank" className="text-base font-bold text-ink">
                     Cuenta para transferencias
                   </h2>
                   <p className="text-xs text-ink-3">
@@ -396,7 +405,7 @@ export default function SettingsPage() {
                       "bank_account" in (saveMut.variables ?? {})
                     }
                   >
-                    <Save size={14} /> Guardar cuenta
+                    <Save size={16} /> Guardar cuenta
                   </Button>
                 </div>
               </form>
@@ -404,10 +413,10 @@ export default function SettingsPage() {
               {/* Vista previa de lo que ve el cliente en la app */}
               <aside
                 aria-label="Vista previa en la app"
-                className="rounded-xl bg-surface-2 border border-line p-4 h-fit"
+                className="rounded-xl bg-primary-soft/60 ring-1 ring-line-strong p-5 h-fit"
               >
                 <p className="flex items-center gap-1.5 text-xs font-medium text-ink-3 mb-3">
-                  <Smartphone size={13} /> Así lo verá el cliente
+                  <Smartphone size={15} /> Así lo verá el cliente
                 </p>
                 <p className="font-semibold text-ink">
                   {preview.bank_name || "Banco"}

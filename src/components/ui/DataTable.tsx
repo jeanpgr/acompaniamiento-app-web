@@ -16,7 +16,7 @@ export function TableHead({ columns }: { columns: readonly Column[] }) {
               // Las columnas son fijas: el índice es una key estable.
               key={i}
               scope="col"
-              className={`text-left text-xs font-medium text-ink-3 px-5 py-3 ${className}`}
+              className={`text-left text-[13px] font-semibold text-ink-2 px-4 py-3 ${className}`}
             >
               {label}
             </th>
@@ -30,7 +30,9 @@ export function TableHead({ columns }: { columns: readonly Column[] }) {
 /** Fila de la tabla con hover. */
 export function TableRow({ children }: { children: ReactNode }) {
   return (
-    <tr className="border-b border-line/70 hover:bg-surface-2">{children}</tr>
+    <tr className="border-b border-line/70 transition-colors hover:bg-primary-soft/50">
+      {children}
+    </tr>
   );
 }
 
@@ -46,7 +48,7 @@ export function EmptyRow({
     <tr>
       <td
         colSpan={colSpan}
-        className="px-5 py-8 text-center text-ink-3 text-sm"
+        className="px-4 py-10 text-center text-ink-3 text-[15px]"
       >
         {children}
       </td>
@@ -56,5 +58,5 @@ export function EmptyRow({
 
 /** Valor vacío en una celda ("—"). */
 export function EmptyCell() {
-  return <span className="text-ink-3 italic text-xs">—</span>;
+  return <span className="text-ink-3 text-xs">—</span>;
 }

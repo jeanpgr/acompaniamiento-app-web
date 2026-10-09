@@ -54,13 +54,13 @@ export default function ImageZone({
 
   return (
     <div>
-      <p className="block text-sm font-medium text-ink mb-1.5">
+      <p className="block text-sm font-semibold text-ink mb-1.5">
         Imagen del producto
         {required && <span className="text-danger-fg"> *</span>}
       </p>
 
       {displayUrl ? (
-        <div className="relative group rounded-xl overflow-hidden border border-line bg-surface-2 h-44">
+        <div className="relative group rounded-xl overflow-hidden ring-1 ring-line bg-surface-2 h-44">
           <img
             src={displayUrl}
             alt="Vista previa del producto"
@@ -71,10 +71,10 @@ export default function ImageZone({
           />
           <label className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-sidebar/60 opacity-0 group-hover:opacity-100 focus-within:opacity-100 focus-within:outline-2 focus-within:outline-focus transition-opacity cursor-pointer">
             <ImagePlus size={22} className="text-white" />
-            <span className="text-white text-xs font-medium">
+            <span className="text-white text-xs font-semibold">
               Cambiar imagen
             </span>
-            <span className="text-white/80 text-[11px]">
+            <span className="text-white/80 text-xs">
               JPEG o PNG · máx. 5 MB
             </span>
             {fileInput}
@@ -87,7 +87,7 @@ export default function ImageZone({
             aria-label="Ver imagen ampliada"
             className="absolute top-2 left-2 z-10 w-7 h-7 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-colors"
           >
-            <Maximize2 size={13} className="text-white" aria-hidden="true" />
+            <Maximize2 size={15} className="text-white" aria-hidden="true" />
           </button>
           <ImageLightbox
             src={zoomed ? displayUrl : null}
@@ -102,7 +102,7 @@ export default function ImageZone({
               aria-label="Quitar imagen seleccionada"
               className="absolute top-2 right-2 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-colors"
             >
-              <X size={12} className="text-white" />
+              <X size={14} className="text-white" />
             </button>
           )}
         </div>
@@ -111,14 +111,14 @@ export default function ImageZone({
           className={`flex flex-col items-center justify-center w-full h-44 border-2 border-dashed rounded-xl cursor-pointer transition-colors focus-within:border-focus ${
             error
               ? "border-danger bg-danger-bg hover:border-danger"
-              : "border-line bg-surface-2 hover:border-info hover:bg-info-bg/40"
+              : "border-line-strong bg-surface-2 hover:border-primary hover:bg-primary-soft"
           }`}
         >
           <ImagePlus
             size={28}
-            className={error ? "text-danger-fg" : "text-ink-3"}
+            className={error ? "text-danger-fg" : "text-primary"}
           />
-          <p className="mt-2 text-sm font-medium text-ink-3">
+          <p className="mt-2 text-sm font-semibold text-primary">
             Haz clic para subir imagen
           </p>
           <p className="text-xs text-ink-3 mt-0.5">JPEG o PNG · máx. 5 MB</p>
@@ -127,7 +127,7 @@ export default function ImageZone({
       )}
 
       {error && (
-        <p className="text-danger-fg text-xs mt-1.5 flex items-center gap-1">
+        <p className="text-danger-fg text-xs font-semibold mt-1.5 flex items-center gap-1">
           {error}
         </p>
       )}

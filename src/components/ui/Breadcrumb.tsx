@@ -16,7 +16,7 @@ export interface Crumb {
 export default function Breadcrumb({ items }: { items: Crumb[] }) {
   return (
     <nav aria-label="Ruta de navegación" className="mb-2">
-      <ol className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-xs text-ink-3">
+      <ol className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-[13px] text-ink-3">
         {items.map((c, i) => {
           const last = i === items.length - 1;
           return (
@@ -28,7 +28,7 @@ export default function Breadcrumb({ items }: { items: Crumb[] }) {
                 <Link
                   to={c.to}
                   title={c.label}
-                  className="truncate max-w-48 rounded-sm hover:text-ink-2 hover:underline transition-colors outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                  className="truncate max-w-48 rounded-sm font-medium text-primary hover:text-primary-hover hover:underline transition-colors outline-none focus-visible:ring-2 focus-visible:ring-focus"
                 >
                   {c.label}
                 </Link>
@@ -36,14 +36,14 @@ export default function Breadcrumb({ items }: { items: Crumb[] }) {
                 <span
                   title={c.label}
                   aria-current={last ? "page" : undefined}
-                  className={`truncate max-w-64 ${last ? "text-ink-2 font-medium" : ""}`}
+                  className={`truncate max-w-64 ${last ? "text-ink-2 font-semibold" : ""}`}
                 >
                   {c.label}
                 </span>
               )}
               {!last && (
                 <ChevronRight
-                  size={12}
+                  size={14}
                   className="shrink-0"
                   aria-hidden="true"
                 />

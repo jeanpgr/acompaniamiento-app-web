@@ -130,15 +130,15 @@ export default function FAQPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-ink">
+          <h1 className="text-xl sm:text-2xl font-bold text-ink">
             Preguntas frecuentes
           </h1>
-          <p className="text-sm text-ink-3 mt-0.5">
+          <p className="text-[15px] text-ink-3 mt-1">
             Gestiona las FAQ que se muestran en la app móvil
           </p>
         </div>
         <Button onClick={openCreate}>
-          <Plus size={14} /> Nueva pregunta
+          <Plus size={16} /> Nueva pregunta
         </Button>
       </div>
 
@@ -152,21 +152,21 @@ export default function FAQPage() {
       </div>
 
       {isLoading ? (
-        <div className="bg-surface rounded-xl shadow-sm border border-line">
+        <div className="card">
           <TableSkeleton rows={4} label="Cargando preguntas…" />
         </div>
       ) : faqs.length === 0 ? (
-        <div className="bg-surface rounded-xl shadow-sm border border-line p-12 text-center">
+        <div className="card p-12 text-center">
           <HelpCircle size={36} className="text-line-strong mx-auto mb-3" />
           <p className="text-ink-3 text-sm">
             No hay preguntas frecuentes registradas
           </p>
           <Button className="mt-4" onClick={openCreate}>
-            <Plus size={14} /> Agregar primera pregunta
+            <Plus size={16} /> Agregar primera pregunta
           </Button>
         </div>
       ) : visible.length === 0 ? (
-        <div className="bg-surface rounded-xl shadow-sm border border-line p-12 text-center">
+        <div className="card p-12 text-center">
           <p className="text-ink-3 text-sm">
             Sin resultados para "{search.trim()}"
           </p>
@@ -176,18 +176,18 @@ export default function FAQPage() {
           {visible.map((faq, idx) => (
             <div
               key={faq.id}
-              className="bg-surface rounded-xl shadow-sm border border-line p-5"
+              className="card p-5"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <span className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white mt-0.5 bg-brand-mark">
+                  <span className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white bg-primary">
                     {idx + 1}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-ink text-sm mb-1">
+                    <p className="font-bold text-ink text-base mb-1">
                       {faq.question}
                     </p>
-                    <p className="text-ink-3 text-sm leading-relaxed">
+                    <p className="text-ink-3 text-[15px] leading-relaxed">
                       {displayResponse(faq)}
                     </p>
                   </div>
@@ -200,7 +200,7 @@ export default function FAQPage() {
                     variant="secondary"
                     onClick={() => openEdit(faq)}
                   >
-                    <Pencil size={14} aria-hidden="true" />
+                    <Pencil size={16} aria-hidden="true" />
                   </Button>
                   <Button
                     size="icon"
@@ -215,7 +215,7 @@ export default function FAQPage() {
                         deleteMut.mutate(faq.id);
                     }}
                   >
-                    <Trash2 size={14} aria-hidden="true" />
+                    <Trash2 size={16} aria-hidden="true" />
                   </Button>
                 </div>
               </div>
@@ -247,7 +247,7 @@ export default function FAQPage() {
           <div>
             <label
               htmlFor="faq-question"
-              className="block text-sm font-medium text-ink mb-1"
+              className="block text-sm font-semibold text-ink mb-1.5"
             >
               Pregunta <span className="text-danger-fg">*</span>
             </label>
@@ -259,7 +259,7 @@ export default function FAQPage() {
               {...register("question")}
             />
             {errors.question && (
-              <p className="text-danger-fg text-xs mt-1">
+              <p className="text-danger-fg text-xs font-semibold mt-1">
                 {errors.question.message}
               </p>
             )}
@@ -268,7 +268,7 @@ export default function FAQPage() {
           <div>
             <label
               htmlFor="faq-response"
-              className="block text-sm font-medium text-ink mb-1"
+              className="block text-sm font-semibold text-ink mb-1.5"
             >
               Respuesta <span className="text-danger-fg">*</span>
             </label>
@@ -281,7 +281,7 @@ export default function FAQPage() {
               {...register("response")}
             />
             {errors.response && (
-              <p className="text-danger-fg text-xs mt-1">
+              <p className="text-danger-fg text-xs font-semibold mt-1">
                 {errors.response.message}
               </p>
             )}

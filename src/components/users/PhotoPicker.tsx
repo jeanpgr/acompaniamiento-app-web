@@ -41,7 +41,7 @@ export default function PhotoPicker({
 
   return (
     <div className="flex items-center gap-4">
-      <div className="w-16 h-16 rounded-full overflow-hidden bg-line flex items-center justify-center shrink-0 ring-1 ring-line">
+      <div className="w-18 h-18 rounded-full overflow-hidden bg-primary-soft flex items-center justify-center shrink-0 ring-2 ring-line">
         {shown ? (
           <ZoomableImage
             src={shown}
@@ -50,13 +50,13 @@ export default function PhotoPicker({
             className="w-full h-full object-cover"
           />
         ) : (
-          <span className="text-lg font-semibold text-ink-3" aria-hidden="true">
+          <span className="text-xl font-bold text-primary" aria-hidden="true">
             {initials || "?"}
           </span>
         )}
       </div>
       <div className="min-w-0">
-        <p className="text-sm font-medium text-ink mb-1">Foto de perfil</p>
+        <p className="text-sm font-semibold text-ink mb-1">Foto de perfil</p>
         <div className="flex flex-wrap gap-2">
           <Button
             size="sm"
@@ -64,7 +64,7 @@ export default function PhotoPicker({
             disabled={disabled}
             onClick={() => inputRef.current?.click()}
           >
-            <ImagePlus size={12} /> {shown ? "Cambiar foto" : "Subir foto"}
+            <ImagePlus size={14} /> {shown ? "Cambiar foto" : "Subir foto"}
           </Button>
           {file && (
             <Button
@@ -73,7 +73,7 @@ export default function PhotoPicker({
               disabled={disabled}
               onClick={onClear}
             >
-              <X size={12} /> Descartar
+              <X size={14} /> Descartar
             </Button>
           )}
         </div>
@@ -92,7 +92,7 @@ export default function PhotoPicker({
           }}
         />
         {error ? (
-          <p className="text-danger-fg text-xs mt-1" role="alert">
+          <p className="text-danger-fg text-xs font-semibold mt-1" role="alert">
             {error}
           </p>
         ) : (

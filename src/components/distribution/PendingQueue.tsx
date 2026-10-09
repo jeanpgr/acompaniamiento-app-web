@@ -33,10 +33,10 @@ export default function PendingQueue({
   const activeVehicles = vehicles.filter((v) => v.active);
 
   return (
-    <div className="bg-surface rounded-xl shadow-sm border border-line overflow-hidden">
-      <div className="h-12 px-4 border-b border-line flex items-center gap-2">
-        <Clock size={14} className="text-warning-fg" />
-        <span className="font-semibold text-ink text-sm">
+    <div className="card overflow-hidden">
+      <div className="h-14 px-5 border-b border-line flex items-center gap-2.5">
+        <Clock size={16} className="text-warning-fg" />
+        <span className="font-bold text-ink text-base">
           Sin asignar ({pending.length})
         </span>
       </div>
@@ -94,18 +94,18 @@ function PendingCard({
       aria-hidden={leaving || undefined}
     >
       <div className="min-h-0 overflow-hidden">
-        <div className="bg-surface-2 rounded-lg p-3 border border-line">
+        <div className="bg-surface rounded-xl p-3.5 shadow-card">
           <p className="font-semibold text-ink text-sm leading-tight">
             {s.title}
           </p>
 
           <div className="mt-1.5 space-y-0.5">
             <div className="flex items-center gap-1.5 text-xs text-ink-3">
-              <User size={10} />
+              <User size={12} />
               <span className="truncate">{s.personName}</span>
             </div>
             <div className="flex items-center gap-1.5 text-xs text-ink-3">
-              <Clock size={10} />
+              <Clock size={12} />
               <span>
                 {new Date(s.dateTime).toLocaleDateString("es-CO", {
                   weekday: "short",
@@ -118,7 +118,7 @@ function PendingCard({
             </div>
             {s.address && (
               <div className="flex items-center gap-1.5 text-xs text-ink-3">
-                <MapPin size={10} />
+                <MapPin size={12} />
                 <span className="truncate">{s.address}</span>
               </div>
             )}
@@ -139,11 +139,11 @@ function PendingCard({
                     htmlFor={`vehicle-${s.id}`}
                     className="flex items-center gap-1.5 text-xs text-ink-3 mb-1 font-medium"
                   >
-                    <Car size={11} /> Asignar vehículo
+                    <Car size={13} /> Asignar vehículo
                   </label>
                   <select
                     id={`vehicle-${s.id}`}
-                    className="field text-xs px-2 py-1.5"
+                    className="field min-h-9 text-sm px-2.5 py-1.5"
                     defaultValue=""
                     disabled={busy}
                     onChange={(e) => {
@@ -162,7 +162,7 @@ function PendingCard({
                   </select>
                 </>
               ) : (
-                <p className="text-xs text-ink-3 italic">
+                <p className="text-xs text-ink-3">
                   {s.originalType === "training"
                     ? "Capacitación en línea — no requiere vehículo"
                     : "La familia lleva al adulto a la sede — no requiere vehículo"}
@@ -175,7 +175,7 @@ function PendingCard({
                     type="button"
                     onClick={() => onAssign("")}
                     disabled={busy}
-                    className="flex-1 py-1.5 rounded-lg text-xs font-medium disabled:opacity-50 bg-primary text-white hover:bg-primary-hover transition-colors"
+                    className="flex-1 min-h-9 rounded-lg text-[13px] font-semibold disabled:opacity-50 bg-primary text-white shadow-raised hover:bg-primary-hover transition-colors"
                   >
                     {busy
                       ? "Confirmando…"
@@ -187,7 +187,7 @@ function PendingCard({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-3 py-1.5 rounded-lg text-xs text-ink-3 hover:bg-line-strong border border-line"
+                  className="px-3.5 min-h-9 rounded-lg text-[13px] font-semibold text-primary border-[1.5px] border-line-strong hover:bg-primary-soft"
                 >
                   Cancelar
                 </button>
@@ -197,7 +197,7 @@ function PendingCard({
             <button
               type="button"
               onClick={onOpen}
-              className="mt-2.5 w-full py-1.5 rounded-lg text-xs font-medium bg-primary text-white hover:bg-primary-hover transition-colors"
+              className="mt-2.5 w-full min-h-9 rounded-lg text-[13px] font-semibold bg-primary text-white shadow-raised hover:bg-primary-hover transition-colors"
             >
               Asignar
             </button>

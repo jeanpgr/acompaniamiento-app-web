@@ -25,6 +25,13 @@ import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import StatCard from "@/components/ui/StatCard";
 import TableSkeleton from "@/components/ui/TableSkeleton";
+import {
+  CardGrid,
+  GridCard,
+  CardFields,
+  CardField,
+  CardActions,
+} from "@/components/ui/CardGrid";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import {
   EmptyRow,
@@ -92,7 +99,7 @@ function StatusBadge({ r }: { r: Enrollment }) {
       return (
         <div className="flex flex-col items-start gap-1">
           <Badge variant="danger">Cancelada</Badge>
-          <span className="text-[11px] text-ink-3">
+          <span className="text-xs text-ink-3">
             {!r.refund_status
               ? "Sin pago · sin reembolso"
               : r.refund_status === "REALIZADO"
@@ -144,6 +151,12 @@ export default function TrainingEnrollmentsPage() {
   const activeTab = tab ?? (pendingCount > 0 ? "pending" : "all");
   const shown =
     activeTab === "all" ? items : items.filter((r) => groupOf(r) === activeTab);
+  const emptyText =
+    items.length === 0
+      ? "Esta capacitación todavía no tiene inscripciones"
+      : activeTab === "pending"
+        ? "No hay inscripciones por confirmar"
+        : "No hay inscripciones en este estado";
   const countOf = (key: Group | "all") =>
     key === "all"
       ? items.length
@@ -241,7 +254,7 @@ export default function TrainingEnrollmentsPage() {
           loading={confirmMut.isPending && confirmMut.variables === r.id}
           onClick={() => askConfirm(r)}
         >
-          <BadgeCheck size={13} /> {isFree ? "Confirmar" : "Confirmar pago"}
+          <BadgeCheck size={15} /> {isFree ? "Confirmar" : "Confirmar pago"}
         </Button>
       );
     if (group === "confirmed" && r.status === "EN CURSO")
@@ -252,7 +265,7 @@ export default function TrainingEnrollmentsPage() {
           loading={unconfirmMut.isPending && unconfirmMut.variables === r.id}
           onClick={() => askUnconfirm(r)}
         >
-          <Undo2 size={13} /> Deshacer
+          <Undo2 size={15} /> Deshacer
         </Button>
       );
     if (group === "cancelled" && r.refund_status === "EN_PROCESO")
@@ -263,7 +276,7 @@ export default function TrainingEnrollmentsPage() {
           loading={refundMut.isPending && refundMut.variables === r.id}
           onClick={() => askRefund(r)}
         >
-          <Wallet size={13} /> Reembolso hecho
+          <Wallet size={15} /> Reembolso hecho
         </Button>
       );
     return null;
@@ -275,16 +288,16 @@ export default function TrainingEnrollmentsPage() {
       `Hola ${r.name}, te escribimos de ServiMayor por tu inscripción a "${topic}".`,
     );
     return (
-      <div className="whitespace-nowrap">
+      <div className="min-w-0">
         {url ? (
           <a
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-sm font-medium text-success-fg hover:underline"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-success-fg hover:underline"
             aria-label={`Escribir por WhatsApp a ${r.phone}`}
           >
-            <MessageCircle size={14} aria-hidden="true" /> {r.phone}
+            <MessageCircle size={16} aria-hidden="true" /> {r.phone}
           </a>
         ) : (
           <span className="text-sm text-ink-2">{r.phone}</span>
@@ -312,11 +325,11 @@ export default function TrainingEnrollmentsPage() {
             { label: "Inscripciones" },
           ]}
         />
-        <h1 className="text-xl font-semibold text-ink">
+        <h1 className="text-xl sm:text-2xl font-bold text-ink">
           Inscripciones · {training.data?.topic ?? "…"}
         </h1>
         {training.data && (
-          <p className="text-sm text-ink-3 mt-0.5">
+          <p className="text-[15px] text-ink-3 mt-1">
             {formatDateTime(training.data.date_time)} ·{" "}
             {formatDuration(training.data.duration)}
           </p>
@@ -334,7 +347,7 @@ export default function TrainingEnrollmentsPage() {
       {training.data && !training.data.link_meet && (
         <div
           role="status"
-          className="flex items-start gap-2 mb-6 p-3 rounded-lg bg-warning-bg text-warning-fg text-sm"
+          className="flex items-start gap-2 mb-6 p-4 rounded-xl bg-warning-bg text-warning-fg text-sm font-medium"
         >
           <AlertTriangle size={16} className="shrink-0 mt-0.5" />
           <p>
@@ -347,7 +360,7 @@ export default function TrainingEnrollmentsPage() {
       )}
 
       {/* Resumen */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-6">
         <StatCard
           icon={Clock}
           tone="warning"
@@ -396,11 +409,7 @@ export default function TrainingEnrollmentsPage() {
               type="button"
               onClick={() => setTab(key)}
               aria-pressed={selected}
-              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                selected
-                  ? "bg-primary text-white border-primary"
-                  : "bg-surface text-ink-2 border-line hover:border-line-strong hover:text-ink"
-              }`}
+              className="chip"
             >
               {label} ({count})
             </button>
@@ -408,21 +417,47 @@ export default function TrainingEnrollmentsPage() {
         })}
       </div>
 
-      {/* Tabla */}
-      <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
+      {/* Tarjetas bajo xl (área angosta); tabla desde xl */}
+      <div className="card overflow-hidden">
         {enrollments.isLoading ? (
           <TableSkeleton label="Cargando inscripciones…" />
         ) : (
-          <table className="w-full min-w-160">
+          <>
+          <div className="xl:hidden">
+            <CardGrid empty={shown.length === 0 && emptyText}>
+              {shown.map((r) => (
+                <GridCard key={r.id}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h2 className="font-bold text-ink text-base wrap-break-word">
+                        {attendeeName(r)}
+                      </h2>
+                      <p className="text-xs text-ink-3">
+                        {formatCreated(r.created_at)}
+                      </p>
+                    </div>
+                    <StatusBadge r={r} />
+                  </div>
+                  <CardFields>
+                    <CardField label="Contacto">{contact(r)}</CardField>
+                  </CardFields>
+                  {renderActions(r) && (
+                    <CardActions>{renderActions(r)}</CardActions>
+                  )}
+                </GridCard>
+              ))}
+            </CardGrid>
+          </div>
+          <table className="hidden xl:table w-full">
             <TableHead columns={COLUMNS} />
             <tbody>
               {shown.map((r) => (
                 <TableRow key={r.id}>
-                  <td className="px-5 py-3.5">
-                    <p className="font-medium text-ink text-sm whitespace-nowrap">
+                  <td className="px-4 py-3.5">
+                    <p className="font-semibold text-ink text-sm">
                       {attendeeName(r)}
                     </p>
-                    <p className="text-xs text-ink-3 whitespace-nowrap">
+                    <p className="text-xs text-ink-3">
                       {formatCreated(r.created_at)}
                       {r.user &&
                         `${r.user.name} ${r.user.lastname}` !==
@@ -430,24 +465,19 @@ export default function TrainingEnrollmentsPage() {
                         ` · Cuenta: ${r.user.name} ${r.user.lastname}`}
                     </p>
                   </td>
-                  <td className="px-5 py-3.5">{contact(r)}</td>
-                  <td className="px-5 py-3.5">
+                  <td className="px-4 py-3.5">{contact(r)}</td>
+                  <td className="px-4 py-3.5">
                     <StatusBadge r={r} />
                   </td>
-                  <td className="px-5 py-3.5 text-right">{renderActions(r)}</td>
+                  <td className="px-4 py-3.5 text-right">{renderActions(r)}</td>
                 </TableRow>
               ))}
               {shown.length === 0 && (
-                <EmptyRow colSpan={COLUMNS.length}>
-                  {items.length === 0
-                    ? "Esta capacitación todavía no tiene inscripciones"
-                    : activeTab === "pending"
-                      ? "No hay inscripciones por confirmar"
-                      : "No hay inscripciones en este estado"}
-                </EmptyRow>
+                <EmptyRow colSpan={COLUMNS.length}>{emptyText}</EmptyRow>
               )}
             </tbody>
           </table>
+          </>
         )}
       </div>
     </div>

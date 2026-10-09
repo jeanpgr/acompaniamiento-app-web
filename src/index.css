@@ -1,46 +1,51 @@
 @import "tailwindcss";
 
 @theme {
-  /* Marca (Penpot) */
-  --color-sidebar: #17263A;
-  --color-sidebar-hover: #1F3451;
-  --color-sidebar-active: #253F62;
-  --color-brand-mark: #2A5298;
-  --color-primary: #1D3461;
-  --color-primary-hover: #162A52;
-  --color-primary-soft: #E8EEF8;
-  --color-accent: #F07340;
-  --color-accent-fg: #B2461A;
+  /* Marca — la misma línea de diseño que la app móvil (ServiMayor,
+     acompaniamiento-app/src/theme/colors.ts). Los nombres de token del
+     panel se conservan; solo cambian sus valores. */
+  --color-sidebar: #0B233B; /* darkNavy */
+  --color-sidebar-hover: #15334F;
+  --color-sidebar-active: #1B5598; /* trustBlue */
+  --color-brand-mark: #1B5598; /* tono de marca en barras y gráficos */
+  --color-gold: #FCC976; /* goldenAccent: logo y detalles sobre navy */
+  --color-sage: #3A8049; /* sageGreen: avatares y confirmaciones */
+  --color-on-dark: #C5D8EF; /* texto secundario sobre navy */
+  --color-primary: #1B5598; /* trustBlue */
+  --color-primary-hover: #164A86;
+  --color-primary-soft: #EBF2FB; /* selectedBg */
+  --color-accent: #E54E25; /* warmCoral */
+  --color-accent-fg: #C8401C; /* coralDeep */
 
   /* Superficies y líneas */
-  --color-app-bg: #EEF1F8;
+  --color-app-bg: #FAF8F6; /* bgCream */
   --color-surface: #FFFFFF;
-  --color-surface-2: #F6F8FB;
-  --color-line: #E1E7F0;
-  --color-line-strong: #CBD5E3;
+  --color-surface-2: #F5F7FA; /* bgLight */
+  --color-line: #D8E2F0; /* borderLight */
+  --color-line-strong: #C5D8EF; /* borderBlue */
 
-  /* Texto (tintado hacia el navy de la marca; todos ≥ 4.5:1 sobre blanco) */
-  --color-ink: #17263A;
-  --color-ink-2: #3F4F66;
-  --color-ink-3: #5B6B82;
+  /* Texto (todos ≥ 4.5:1 sobre blanco y sobre el crema) */
+  --color-ink: #0B233B; /* textPrimary */
+  --color-ink-2: #34475D;
+  --color-ink-3: #5A6878; /* textSecondary */
 
   /* Foco */
-  --color-focus: #2F5DB5;
+  --color-focus: #1B5598;
 
   /* Estados: `*-fg` es el tono para texto (AA sobre blanco y sobre su `*-bg`) */
-  --color-success: #16A34A;
-  --color-success-fg: #166534;
-  --color-success-bg: #DCFCE7;
+  --color-success: #3A8049; /* sageGreen */
+  --color-success-fg: #065F46;
+  --color-success-bg: #D1FAE5; /* cardGreen */
   --color-warning: #F59E0B;
-  --color-warning-fg: #92400E;
-  --color-warning-bg: #FEF3C7;
-  --color-danger: #DC2626;
-  --color-danger-hover: #B91C1C;
-  --color-danger-fg: #B91C1C;
-  --color-danger-bg: #FEE2E2;
+  --color-warning-fg: #B45309;
+  --color-warning-bg: #FEF3C7; /* cardAmber */
+  --color-danger: #C8401C; /* coralDeep: fondo para texto blanco */
+  --color-danger-hover: #A9361A;
+  --color-danger-fg: #B71C1C;
+  --color-danger-bg: #FEE2E2; /* cardRed */
   --color-info: #3B82F6;
-  --color-info-fg: #1D4ED8;
-  --color-info-bg: #DBEAFE;
+  --color-info-fg: #1E40AF;
+  --color-info-bg: #DBEAFE; /* cardBlue */
 
   /* Tipos de servicio (usados en gráficos y etiquetas) */
   --color-svc-acompanamiento: #3B82F6;
@@ -49,12 +54,32 @@
   --color-svc-guarderia: #DB2777;
   --color-svc-acompanamiento-bg: #DBEAFE;
   --color-svc-acompanamiento-fg: #1E40AF;
-  --color-svc-turismo-bg: #DCFCE7;
-  --color-svc-turismo-fg: #166534;
+  --color-svc-turismo-bg: #D1FAE5;
+  --color-svc-turismo-fg: #065F46;
   --color-svc-capacitacion-bg: #FEF3C7;
   --color-svc-capacitacion-fg: #92400E;
   --color-svc-guarderia-bg: #FCE7F3;
   --color-svc-guarderia-fg: #9D174D;
+
+  /* Radios de la app móvil: lg 12 (botones y campos), xl 16 (tarjetas),
+     2xl 24 (diálogos y tarjetas destacadas). */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+
+  /* Sombras tintadas de navy, suaves como las tarjetas de la app */
+  --shadow-sm: 0 1px 4px rgb(11 35 59 / 0.06);
+  --shadow-md: 0 4px 12px rgb(11 35 59 / 0.1);
+  --shadow-lg: 0 10px 28px -6px rgb(11 35 59 / 0.18);
+  --shadow-card: 0 2px 8px rgb(11 35 59 / 0.07), 0 0 0 1px rgb(11 35 59 / 0.04);
+  --shadow-raised: 0 4px 8px -2px rgb(11 35 59 / 0.25);
+  --shadow-hero: 0 12px 28px -8px rgb(11 35 59 / 0.45);
+
+  /* Nada de lectura por debajo de 13 px (insignias de la app móvil) */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.125rem;
 
   --font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
 
@@ -143,15 +168,17 @@
 
 }
 
-/* Campo de formulario compartido: el mismo aspecto en todos los módulos */
+/* Campo de formulario compartido: el mismo aspecto en todos los módulos.
+   Como el Input de la app móvil: borde de 1.5 px, radio 12, foco azul. */
 @utility field {
   width: 100%;
-  border: 1px solid var(--color-line);
-  border-radius: 0.5rem;
+  min-height: 2.75rem;
+  border: 1.5px solid var(--color-line);
+  border-radius: var(--radius-lg);
   background-color: var(--color-surface);
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-  line-height: 1.25rem;
+  padding: 0.5625rem 0.875rem;
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
   color: var(--color-ink);
   transition: border-color 150ms var(--ease-out-quart),
     box-shadow 150ms var(--ease-out-quart);
@@ -162,7 +189,7 @@
   &:focus-visible {
     outline: none;
     border-color: var(--color-focus);
-    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-focus) 22%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-focus) 20%, transparent);
   }
   &:disabled {
     background-color: var(--color-surface-2);
@@ -173,6 +200,110 @@
     border-color: var(--color-danger);
     background-color: color-mix(in oklab, var(--color-danger-bg) 45%, white);
   }
+}
+
+/* Chip de filtro (FilterChips de la app): píldora gris, activa en azul.
+   El estado sale de `aria-pressed`, así no hay clases condicionales. */
+@utility chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-height: 2.25rem;
+  padding: 0 0.875rem;
+  border-radius: 9999px;
+  border: 1px solid var(--color-line);
+  background-color: var(--color-surface-2);
+  color: var(--color-ink-3);
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background-color 150ms var(--ease-out-quart),
+    border-color 150ms var(--ease-out-quart), color 150ms var(--ease-out-quart);
+
+  &:hover {
+    border-color: var(--color-line-strong);
+    color: var(--color-ink);
+  }
+  &[aria-pressed="true"],
+  &[aria-selected="true"] {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+  }
+}
+
+/* Control segmentado (periodo, vista): píldora gris con la opción activa
+   en azul. `segmented` es el contenedor y `segment` cada opción. */
+@utility segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.125rem;
+  padding: 0.25rem;
+  border-radius: 9999px;
+  border: 1px solid var(--color-line);
+  background-color: var(--color-surface-2);
+}
+@utility segment {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-height: 2rem;
+  padding: 0 0.875rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--color-ink-3);
+  transition: background-color 150ms var(--ease-out-quart),
+    color 150ms var(--ease-out-quart);
+
+  &:hover {
+    color: var(--color-ink);
+    background-color: var(--color-surface);
+  }
+  &[aria-pressed="true"] {
+    background-color: var(--color-primary);
+    color: white;
+    box-shadow: var(--shadow-raised);
+  }
+}
+
+/* Tarjeta: superficie blanca con sombra suave (Card de la app móvil) */
+@utility card {
+  background-color: var(--color-surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+}
+
+/* Toasts (sonner) con el aspecto del Toast de la app móvil: tarjeta de
+   radio 16, franja lateral del color del tipo y texto de 15 px. El `html`
+   extra gana a los estilos que sonner inyecta al cargar. */
+html [data-sonner-toaster][data-sonner-theme="light"] {
+  --border-radius: 16px;
+  --success-bg: #ECFDF5;
+  --success-border: #A7F3D0;
+  --success-text: #065F46;
+  --error-bg: #FFF5F5;
+  --error-border: #F5C6C6;
+  --error-text: #B71C1C;
+  --warning-bg: #FFF8F0;
+  --warning-border: #FCD9A8;
+  --warning-text: #B45309;
+  --info-bg: #EBF2FB;
+  --info-border: #C5D8EF;
+  --info-text: #1E40AF;
+}
+html [data-sonner-toaster] [data-sonner-toast] {
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  padding: 14px 16px 14px 20px;
+  /* Franja lateral con sombra interior (sonner ya usa ::before/::after) */
+  box-shadow: inset 5px 0 0 currentColor, 0 6px 14px rgb(11 35 59 / 0.16);
+}
+html [data-sonner-toaster] [data-sonner-toast] [data-title] {
+  font-weight: 700;
 }
 
 /* Esqueleto de carga */

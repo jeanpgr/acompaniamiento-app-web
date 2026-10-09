@@ -131,7 +131,7 @@ export default function SalesPage() {
   ) as Record<SalesStatus, number>;
   const totalOrders = STATUSES.reduce((sum, s) => sum + counts[s], 0);
 
-  const [view, setView] = useViewMode();
+  const [view, setView] = useViewMode("2xl");
   const emptyText =
     filter === "all" && !debouncedSearch
       ? "No hay ventas registradas"
@@ -161,7 +161,7 @@ export default function SalesPage() {
     return (
       <>
         <Button size="sm" variant="secondary" onClick={() => setDetail(o)}>
-          <Eye size={12} /> Detalle
+          <Eye size={14} /> Detalle
         </Button>
         <Button
           size="sm"
@@ -170,7 +170,7 @@ export default function SalesPage() {
           title={final ? "Estado final: no se puede cambiar" : undefined}
           onClick={() => openStatus(o)}
         >
-          <Pencil size={12} /> Estado
+          <Pencil size={14} /> Estado
         </Button>
       </>
     );
@@ -183,14 +183,14 @@ export default function SalesPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-ink">Ventas</h1>
-        <p className="text-sm text-ink-3 mt-0.5">
+        <h1 className="text-xl sm:text-2xl font-bold text-ink">Ventas</h1>
+        <p className="text-[15px] text-ink-3 mt-1">
           Pedidos de la tienda y estado de entrega
         </p>
       </div>
 
       {/* Stats: también funcionan como filtro */}
-      <div className="grid grid-cols-2 xl:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4 mb-6">
         {[
           {
             key: "all" as const,
@@ -209,13 +209,13 @@ export default function SalesPage() {
             key={key}
             onClick={() => setFilter(key)}
             aria-pressed={filter === key}
-            className={`text-left bg-surface rounded-xl shadow-sm border p-4 transition-colors ${
+            className={`text-left card p-4 transition-[box-shadow,background-color] ${
               filter === key
-                ? "border-primary ring-1 ring-primary"
-                : "border-line hover:bg-surface-2"
+                ? "ring-2 ring-primary bg-primary-soft/40"
+                : "hover:shadow-md"
             }`}
           >
-            <p className="text-xs text-ink-3 mb-1">{label}</p>
+            <p className="text-[13px] font-semibold text-ink-3 mb-1">{label}</p>
             <p className={`text-2xl font-bold tabular-nums ${color}`}>
               {value}
             </p>
@@ -233,7 +233,7 @@ export default function SalesPage() {
         <ViewToggle view={view} onChange={setView} />
       </div>
 
-      <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
+      <div className="card overflow-x-auto">
         {isLoading ? (
           <TableSkeleton label="Cargando ventas…" />
         ) : view === "grid" ? (
@@ -241,13 +241,13 @@ export default function SalesPage() {
             {filtered.map((o) => (
               <GridCard key={o.id}>
                 <div className="flex items-start justify-between gap-3">
-                  <span className="font-mono text-xs font-semibold text-ink">
+                  <span className="font-mono text-xs font-bold text-primary bg-primary-soft px-2 py-0.5 rounded-md whitespace-nowrap">
                     #{o.code}
                   </span>
                   <StatusBadge status={o.status} />
                 </div>
                 <div>
-                  <h2 className="text-sm font-medium text-ink">
+                  <h2 className="text-base font-bold text-ink">
                     {customerName(o)}
                   </h2>
                   <p className="text-xs text-ink-3">
@@ -287,7 +287,7 @@ export default function SalesPage() {
                 ].map((h) => (
                   <th
                     key={h}
-                    className="text-left text-xs font-medium text-ink-3 px-5 py-3"
+                    className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3"
                   >
                     {h}
                   </th>
@@ -298,37 +298,37 @@ export default function SalesPage() {
               {filtered.map((o) => (
                 <tr
                   key={o.id}
-                  className="border-b border-line/70 hover:bg-surface-2"
+                  className="border-b border-line/70 transition-colors hover:bg-primary-soft/50"
                 >
-                  <td className="px-5 py-3.5">
-                    <span className="font-mono text-xs font-semibold text-ink">
+                  <td className="px-4 py-3.5">
+                    <span className="font-mono text-xs font-bold text-primary bg-primary-soft px-2 py-0.5 rounded-md whitespace-nowrap">
                       #{o.code}
                     </span>
                   </td>
-                  <td className="px-5 py-3.5">
-                    <p className="text-sm font-medium text-ink">
+                  <td className="px-4 py-3.5">
+                    <p className="text-sm font-semibold text-ink">
                       {customerName(o)}
                     </p>
                     <p className="text-xs text-ink-3">
                       {o.customer?.phone ?? o.customer?.email ?? ""}
                     </p>
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-ink-2">
+                  <td className="px-4 py-3.5 text-sm text-ink-2">
                     {units(o)} {units(o) === 1 ? "unidad" : "unidades"}
                     <span className="block text-xs text-ink-3 truncate max-w-48">
                       {o.items.map((it) => it.name).join(", ")}
                     </span>
                   </td>
-                  <td className="px-5 py-3.5 text-sm font-semibold text-ink tabular-nums">
+                  <td className="px-4 py-3.5 text-sm font-semibold text-ink tabular-nums">
                     {renderTotal(o)}
                   </td>
-                  <td className="px-5 py-3.5">
+                  <td className="px-4 py-3.5">
                     <StatusBadge status={o.status} />
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-ink-3">
+                  <td className="px-4 py-3.5 text-sm text-ink-3">
                     {formatDate(o)}
                   </td>
-                  <td className="px-5 py-3.5">
+                  <td className="px-4 py-3.5">
                     <div className="flex gap-2">{renderActions(o)}</div>
                   </td>
                 </tr>
@@ -337,7 +337,7 @@ export default function SalesPage() {
                 <tr>
                   <td
                     colSpan={7}
-                    className="px-5 py-8 text-center text-ink-3 text-sm"
+                    className="px-4 py-10 text-center text-ink-3 text-[15px]"
                   >
                     <ShoppingCart
                       size={28}
@@ -373,23 +373,23 @@ export default function SalesPage() {
             </div>
 
             {detail.customer && (
-              <div className="rounded-lg border border-line p-3 space-y-1.5 text-sm">
-                <p className="font-medium text-ink">{customerName(detail)}</p>
+              <div className="rounded-xl bg-surface-2 p-4 space-y-1.5 text-sm">
+                <p className="font-bold text-ink text-base">{customerName(detail)}</p>
                 {detail.customer.phone && (
                   <a
                     href={`tel:${detail.customer.phone}`}
                     className="flex items-center gap-2 text-info-fg hover:underline"
                   >
-                    <Phone size={13} /> {detail.customer.phone}
+                    <Phone size={15} /> {detail.customer.phone}
                   </a>
                 )}
                 <p className="flex items-center gap-2 text-ink-2">
-                  <Mail size={13} /> {detail.customer.email}
+                  <Mail size={15} /> {detail.customer.email}
                 </p>
                 {detail.customer.address && (
                   <div className="flex flex-wrap items-start gap-2 text-ink-2">
                     <p className="flex items-start gap-2 min-w-0 flex-1">
-                      <MapPin size={13} className="mt-0.5 shrink-0" />{" "}
+                      <MapPin size={15} className="mt-0.5 shrink-0" />{" "}
                       {detail.customer.address}
                     </p>
                     <AddressMapButton
@@ -410,7 +410,7 @@ export default function SalesPage() {
 
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-line text-xs text-ink-3">
+                <tr className="border-b border-line text-[13px] font-semibold text-ink-2">
                   <th className="text-left py-2">Producto</th>
                   <th className="text-right py-2">Cant.</th>
                   <th className="text-right py-2">P. Unit.</th>
@@ -426,12 +426,12 @@ export default function SalesPage() {
                           <ZoomableImage
                             src={it.photo}
                             alt={it.name}
-                            buttonClassName="rounded"
-                            className="w-8 h-8 rounded object-cover bg-line"
+                            buttonClassName="rounded-lg"
+                            className="w-10 h-10 rounded-lg object-cover bg-line"
                           />
                         ) : (
                           <div
-                            className="w-8 h-8 rounded bg-line"
+                            className="w-10 h-10 rounded-lg bg-line"
                             aria-hidden="true"
                           />
                         )}
@@ -470,7 +470,7 @@ export default function SalesPage() {
             </dl>
 
             {detail.observation && (
-              <p className="text-sm text-ink-2 bg-surface-2 rounded-lg p-3">
+              <p className="text-sm text-ink-2 bg-surface-2 rounded-xl p-4">
                 <span className="text-ink-3">Observación: </span>
                 {detail.observation}
               </p>
@@ -527,9 +527,9 @@ export default function SalesPage() {
               {allowed.map((s) => (
                 <label
                   key={s}
-                  className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                  className={`flex items-center gap-3 p-3 rounded-xl border-[1.5px] cursor-pointer transition-colors ${
                     newStatus === s
-                      ? "border-info bg-info-bg"
+                      ? "border-primary bg-primary-soft"
                       : "border-line hover:bg-surface-2"
                   }`}
                 >
@@ -539,7 +539,7 @@ export default function SalesPage() {
                     value={s}
                     checked={newStatus === s}
                     onChange={() => setNewStatus(s)}
-                    className="accent-primary"
+                    className="accent-primary w-5 h-5"
                   />
                   <StatusBadge status={s} />
                 </label>
@@ -563,7 +563,7 @@ export default function SalesPage() {
             <div>
               <label
                 htmlFor="sale-observation"
-                className="block text-sm font-medium text-ink mb-1"
+                className="block text-sm font-semibold text-ink mb-1.5"
               >
                 Observación (opcional)
               </label>

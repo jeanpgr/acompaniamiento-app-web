@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { getDashboard, type DashboardDays } from "@/api/dashboard";
 import { LIVE_REFETCH_MS } from "@/lib/invalidate";
+import { getStoredUser } from "@/store/authStore";
 import Button from "@/components/ui/Button";
 import Panel from "@/components/dashboard/Panel";
 import KpiTile, { Delta } from "@/components/dashboard/KpiTile";
@@ -85,12 +86,17 @@ export default function DashboardPage() {
   });
   const data = query.data;
   const previousLabel = `los ${days} días anteriores`;
+  // Saludo como en el Inicio de la app móvil.
+  const firstName = getStoredUser()?.name?.split(" ")[0];
 
   const header = (
     <div className="flex flex-wrap items-end justify-between gap-3 mb-6">
       <div>
-        <h1 className="text-xl font-semibold text-ink">Dashboard</h1>
-        <p className="text-sm text-ink-3 mt-0.5">
+        {firstName && (
+          <p className="text-base text-ink-3 font-medium">Hola, {firstName}</p>
+        )}
+        <h1 className="text-xl sm:text-2xl font-bold text-ink">Dashboard</h1>
+        <p className="text-[15px] text-ink-3 mt-1">
           Pendientes del día y rendimiento de la plataforma
         </p>
       </div>
@@ -105,7 +111,7 @@ export default function DashboardPage() {
           </span>
         )}
         <div
-          className="inline-flex rounded-lg border border-line bg-surface p-0.5"
+          className="segmented"
           role="group"
           aria-label="Periodo"
         >
@@ -115,11 +121,7 @@ export default function DashboardPage() {
               type="button"
               onClick={() => setDays(r.days)}
               aria-pressed={days === r.days}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                days === r.days
-                  ? "bg-primary text-white"
-                  : "text-ink-2 hover:text-ink hover:bg-surface-2"
-              }`}
+              className="segment"
             >
               {r.label}
             </button>
@@ -134,12 +136,12 @@ export default function DashboardPage() {
       <div>
         {header}
         {query.isError ? (
-          <div className="bg-surface rounded-xl border border-line p-10 text-center">
-            <p className="text-sm text-ink-2 mb-4">
+          <div className="card p-10 text-center">
+            <p className="text-[15px] text-ink-2 mb-4">
               No se pudieron cargar las métricas.
             </p>
             <Button variant="secondary" onClick={() => query.refetch()}>
-              <RefreshCw size={14} /> Reintentar
+              <RefreshCw size={16} /> Reintentar
             </Button>
           </div>
         ) : (
@@ -166,17 +168,18 @@ export default function DashboardPage() {
       >
         <AttentionStrip attention={data.attention} lowStock={data.lowStock} />
 
-        <h2 className="text-sm font-semibold text-ink mb-3">
+        <h2 className="text-lg font-bold text-ink mb-3">
           Últimos {days} días
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
           {/* Cifra principal: ingresos del periodo */}
-          <div className="sm:col-span-2 bg-primary text-white rounded-xl p-5 shadow-[0_1px_2px_rgb(23_38_58/0.06)] min-w-0">
-            <p className="text-sm text-white/80">Ingresos del periodo</p>
-            <p className="text-5xl font-semibold mt-2 leading-none">
+          {/* Tarjeta destacada en navy con etiqueta dorada (hero de la app) */}
+          <div className="sm:col-span-2 bg-sidebar text-white rounded-2xl p-6 shadow-hero min-w-0">
+            <p className="text-sm font-bold text-gold">Ingresos del periodo</p>
+            <p className="text-5xl font-bold mt-2 leading-none">
               {formatMoney(totalRevenue)}
             </p>
-            <div className="flex flex-wrap gap-x-6 gap-y-1 mt-3 text-sm text-white/85">
+            <div className="flex flex-wrap gap-x-6 gap-y-1 mt-3 text-sm text-on-dark">
               <span>
                 Servicios{" "}
                 <strong className="text-white">
@@ -192,7 +195,7 @@ export default function DashboardPage() {
                 {kpis.storeOrders.current === 1 ? "pedido" : "pedidos"}
               </span>
             </div>
-            <div className="[&_p]:text-white/80 [&_.text-success-fg]:text-white [&_.text-danger-fg]:text-white">
+            <div className="[&_p]:text-on-dark [&_.text-ink-3]:text-on-dark [&_.text-success-fg]:text-white [&_.text-danger-fg]:text-white">
               <Delta
                 current={totalRevenue}
                 previous={previousRevenue}

@@ -43,55 +43,48 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex bg-app-bg">
       {/* Panel de marca */}
-      <div className="hidden lg:flex flex-col w-80 xl:w-96 p-10 shrink-0 bg-sidebar">
-        <div className="flex items-center gap-3">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center bg-brand-mark"
-            aria-hidden="true"
-          >
-            <Heart size={20} className="text-white" fill="white" />
-          </div>
-          <div>
-            <p className="text-white font-semibold text-lg leading-tight">
-              Acompáñame
-            </p>
-            <p className="text-white/65 text-xs">Panel Administrativo</p>
-          </div>
+      <div className="hidden lg:flex flex-col items-center justify-center text-center w-96 xl:w-[28rem] p-10 shrink-0 bg-sidebar">
+        {/* Mismo recibimiento que la app móvil: logo dorado sobre navy */}
+        <div
+          className="w-30 h-30 rounded-full flex items-center justify-center bg-gold shadow-[0_8px_28px_-4px_rgb(252_201_118/0.5)] mb-8"
+          aria-hidden="true"
+        >
+          <Heart size={56} className="text-sidebar" fill="currentColor" />
         </div>
-
-        <div className="mt-auto mb-auto">
-          <h2 className="text-white text-3xl font-bold leading-tight mb-4 text-balance">
-            Gestiona tu plataforma
-          </h2>
-          <p className="text-white/70 text-sm leading-relaxed max-w-[32ch]">
-            Administra usuarios, servicios, vehículos y agendas desde un solo
-            lugar.
-          </p>
-        </div>
+        <h2 className="text-white text-[32px] font-bold leading-tight mb-1">
+          Bienvenido
+        </h2>
+        <p className="text-gold text-2xl font-extrabold mb-6">
+          Acompáñame · Panel
+        </p>
+        <p className="text-on-dark text-base leading-relaxed max-w-[30ch]">
+          Administra usuarios, servicios, vehículos y agendas desde un solo
+          lugar.
+        </p>
       </div>
 
       {/* Formulario */}
       <main className="flex-1 flex items-center justify-center p-6">
-        <div className="bg-surface rounded-2xl shadow-[0_8px_24px_-8px_rgb(23_38_58/0.12)] border border-line w-full max-w-sm p-8">
-          <div className="flex items-center gap-2 mb-8 lg:hidden">
+        <div className="bg-surface rounded-2xl shadow-lg w-full max-w-md p-8 sm:p-10">
+          <div className="flex items-center gap-3 mb-8 lg:hidden">
             <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center bg-brand-mark"
+              className="w-11 h-11 rounded-full flex items-center justify-center bg-gold"
               aria-hidden="true"
             >
-              <Heart size={16} className="text-white" fill="white" />
+              <Heart size={22} className="text-sidebar" fill="currentColor" />
             </div>
-            <span className="font-semibold text-ink">Acompáñame</span>
+            <span className="text-lg font-extrabold text-ink">Acompáñame</span>
           </div>
 
-          <h1 className="text-2xl font-bold text-ink mb-1">Iniciar sesión</h1>
-          <p className="text-sm text-ink-3 mb-7">
+          <h1 className="text-[26px] font-bold text-ink mb-1">Iniciar sesión</h1>
+          <p className="text-base text-ink-3 mb-7">
             Ingresa tus credenciales para acceder al panel
           </p>
 
           {apiError && (
             <div
               role="alert"
-              className="flex items-center gap-2 bg-danger-bg text-danger-fg text-sm px-4 py-3 rounded-lg mb-5"
+              className="flex items-center gap-2 bg-danger-bg text-danger-fg text-sm font-medium px-4 py-3 rounded-lg mb-5"
             >
               <AlertCircle size={15} className="shrink-0" aria-hidden="true" />
               <span>{apiError}</span>
@@ -106,7 +99,7 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="login-email"
-                className="block text-sm font-medium text-ink mb-1.5"
+                className="block text-sm font-semibold text-ink mb-1.5"
               >
                 Correo electrónico
               </label>
@@ -115,7 +108,7 @@ export default function LoginPage() {
                 type="email"
                 autoComplete="email"
                 placeholder="correo@ejemplo.com"
-                className="field h-11"
+                className="field h-13 text-base"
                 aria-invalid={!!errors.email}
                 aria-describedby={
                   errors.email ? "login-email-error" : undefined
@@ -125,7 +118,7 @@ export default function LoginPage() {
               {errors.email && (
                 <p
                   id="login-email-error"
-                  className="text-danger-fg text-xs mt-1"
+                  className="text-danger-fg text-xs font-semibold mt-1"
                 >
                   {errors.email.message}
                 </p>
@@ -135,7 +128,7 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="login-password"
-                className="block text-sm font-medium text-ink mb-1.5"
+                className="block text-sm font-semibold text-ink mb-1.5"
               >
                 Contraseña
               </label>
@@ -145,7 +138,7 @@ export default function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   placeholder="••••••••"
-                  className="field h-11 pr-11"
+                  className="field h-13 text-base pr-12"
                   aria-invalid={!!errors.password}
                   aria-describedby={
                     errors.password ? "login-password-error" : undefined
@@ -158,16 +151,16 @@ export default function LoginPage() {
                     showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
                   }
                   aria-pressed={showPassword}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 inline-flex items-center justify-center rounded-md text-ink-3 hover:text-ink hover:bg-surface-2"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 w-10 h-10 inline-flex items-center justify-center rounded-full text-ink-3 hover:text-ink hover:bg-surface-2"
                   onClick={() => setShowPassword((p) => !p)}
                 >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
               {errors.password && (
                 <p
                   id="login-password-error"
-                  className="text-danger-fg text-xs mt-1"
+                  className="text-danger-fg text-xs font-semibold mt-1"
                 >
                   {errors.password.message}
                 </p>
@@ -177,7 +170,7 @@ export default function LoginPage() {
             <Button
               type="submit"
               loading={isSubmitting}
-              className="w-full h-11"
+              className="w-full h-13 text-base mt-2"
             >
               {isSubmitting ? "Ingresando…" : "Ingresar al panel"}
             </Button>

@@ -26,13 +26,6 @@ import {
   type ProductFormValues,
 } from "@/components/products/productForm";
 
-function chipClass(selected: boolean) {
-  return `px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-    selected
-      ? "bg-primary text-white border-primary"
-      : "bg-surface text-ink-2 border-line hover:border-line-strong hover:text-ink"
-  }`;
-}
 
 export default function ProductsPage() {
   const confirm = useConfirm();
@@ -122,15 +115,15 @@ export default function ProductsPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-ink">
+          <h1 className="text-xl sm:text-2xl font-bold text-ink">
             Catálogo de productos
           </h1>
-          <p className="text-sm text-ink-3 mt-0.5">
+          <p className="text-[15px] text-ink-3 mt-1">
             {pager.total} productos{filterCat ? " en esta categoría" : ""}
           </p>
         </div>
         <Button onClick={() => openForm(null)}>
-          <Plus size={14} /> Nuevo producto
+          <Plus size={16} /> Nuevo producto
         </Button>
       </div>
 
@@ -150,7 +143,7 @@ export default function ProductsPage() {
             type="button"
             onClick={() => setFilterCat("")}
             aria-pressed={filterCat === ""}
-            className={chipClass(filterCat === "")}
+            className="chip"
           >
             Todos
           </button>
@@ -160,7 +153,7 @@ export default function ProductsPage() {
               type="button"
               onClick={() => setFilterCat(filterCat === c.id ? "" : c.id)}
               aria-pressed={filterCat === c.id}
-              className={chipClass(filterCat === c.id)}
+              className="chip"
             >
               {c.name}
             </button>
@@ -168,7 +161,7 @@ export default function ProductsPage() {
         </div>
       )}
 
-      <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
+      <div className="card overflow-x-auto">
         {isLoading ? (
           <TableSkeleton label="Cargando productos…" />
         ) : isError ? (
@@ -198,7 +191,7 @@ export default function ProductsPage() {
                   variant="secondary"
                   onClick={() => openForm(p)}
                 >
-                  <Pencil size={14} aria-hidden="true" />
+                  <Pencil size={16} aria-hidden="true" />
                 </Button>
                 <Button
                   size="icon"
@@ -208,7 +201,7 @@ export default function ProductsPage() {
                   loading={deleteMut.isPending && deleteMut.variables === p.id}
                   onClick={() => confirmDelete(p)}
                 >
-                  <Trash2 size={14} aria-hidden="true" />
+                  <Trash2 size={16} aria-hidden="true" />
                 </Button>
               </>
             )}

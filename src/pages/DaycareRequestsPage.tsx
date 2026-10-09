@@ -29,6 +29,13 @@ import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import StatCard from "@/components/ui/StatCard";
 import TableSkeleton from "@/components/ui/TableSkeleton";
+import {
+  CardGrid,
+  GridCard,
+  CardFields,
+  CardField,
+  CardActions,
+} from "@/components/ui/CardGrid";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import {
   EmptyCell,
@@ -121,7 +128,7 @@ function StatusBadge({ r }: { r: Request }) {
       return (
         <div className="flex flex-col items-start gap-1">
           <Badge variant="danger">Cancelada</Badge>
-          <span className="text-[11px] text-ink-3">
+          <span className="text-xs text-ink-3">
             {!r.refund_status
               ? "Sin pago · sin reembolso"
               : r.refund_status === "REALIZADO"
@@ -175,6 +182,12 @@ export default function DaycareRequestsPage() {
   const activeTab = tab ?? (pendingCount > 0 ? "pending" : "all");
   const shown =
     activeTab === "all" ? items : items.filter((r) => groupOf(r) === activeTab);
+  const emptyText =
+    items.length === 0
+      ? "Este plan todavía no tiene solicitudes"
+      : activeTab === "pending"
+        ? "No hay solicitudes por confirmar"
+        : "No hay solicitudes en este estado";
   const countOf = (key: Group | "all") =>
     key === "all"
       ? items.length
@@ -311,7 +324,7 @@ export default function DaycareRequestsPage() {
           loading={confirmMut.isPending && confirmMut.variables?.id === r.id}
           onClick={() => askConfirm(r)}
         >
-          <BadgeCheck size={13} /> Confirmar pago
+          <BadgeCheck size={15} /> Confirmar pago
         </Button>
       );
     // Servicio continuo: sigue activo hasta que el panel lo finaliza.
@@ -324,7 +337,7 @@ export default function DaycareRequestsPage() {
             loading={completeMut.isPending && completeMut.variables === r.id}
             onClick={() => askComplete(r)}
           >
-            <CircleCheckBig size={13} /> Finalizar
+            <CircleCheckBig size={15} /> Finalizar
           </Button>
           <Button
             size="sm"
@@ -332,7 +345,7 @@ export default function DaycareRequestsPage() {
             loading={unconfirmMut.isPending && unconfirmMut.variables === r.id}
             onClick={() => askUnconfirm(r)}
           >
-            <Undo2 size={13} /> Deshacer
+            <Undo2 size={15} /> Deshacer
           </Button>
         </div>
       );
@@ -344,7 +357,7 @@ export default function DaycareRequestsPage() {
           loading={refundMut.isPending && refundMut.variables === r.id}
           onClick={() => askRefund(r)}
         >
-          <Wallet size={13} /> Reembolso hecho
+          <Wallet size={15} /> Reembolso hecho
         </Button>
       );
     return null;
@@ -354,17 +367,17 @@ export default function DaycareRequestsPage() {
     isPickup(r) ? (
       <div>
         <p className="inline-flex items-center gap-1 text-sm text-ink-2 whitespace-nowrap">
-          <Car size={14} aria-hidden="true" /> Recogida a domicilio
+          <Car size={16} aria-hidden="true" /> Recogida a domicilio
         </p>
         {r.address_pick_home && (
           <p
-            className="text-xs text-ink-3 truncate max-w-56"
+            className="text-xs text-ink-3 line-clamp-2 max-w-56"
             title={r.address_pick_home}
           >
             {r.address_pick_home}
           </p>
         )}
-        <p className="text-xs text-ink-3 whitespace-nowrap">
+        <p className="text-xs text-ink-3">
           {r.vehicle
             ? `${r.vehicle.name} · ${r.vehicle.license_plate}`
             : "Sin vehículo"}
@@ -372,7 +385,7 @@ export default function DaycareRequestsPage() {
       </div>
     ) : (
       <p className="inline-flex items-center gap-1 text-sm text-ink-2 whitespace-nowrap">
-        <Footprints size={14} aria-hidden="true" /> La familia lo lleva
+        <Footprints size={16} aria-hidden="true" /> La familia lo lleva
       </p>
     );
 
@@ -385,16 +398,16 @@ export default function DaycareRequestsPage() {
       `Hola ${r.user?.name ?? ""}, te escribimos de ServiMayor por tu solicitud de "${planName}".`,
     );
     return (
-      <div className="whitespace-nowrap">
+      <div className="min-w-0">
         {url ? (
           <a
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-sm font-medium text-success-fg hover:underline"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-success-fg hover:underline"
             aria-label={`Escribir por WhatsApp a ${phone}`}
           >
-            <MessageCircle size={14} aria-hidden="true" /> {phone}
+            <MessageCircle size={16} aria-hidden="true" /> {phone}
           </a>
         ) : (
           phone && <span className="text-sm text-ink-2">{phone}</span>
@@ -422,7 +435,7 @@ export default function DaycareRequestsPage() {
             { label: "Solicitudes" },
           ]}
         />
-        <h1 className="text-xl font-semibold text-ink">
+        <h1 className="text-xl sm:text-2xl font-bold text-ink">
           Solicitudes · {plan.data ? planName : "…"}
         </h1>
         <p className="text-sm text-ink-3 mt-2 max-w-2xl">
@@ -435,7 +448,7 @@ export default function DaycareRequestsPage() {
       </div>
 
       {/* Resumen */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6">
         <StatCard
           icon={Clock}
           tone="warning"
@@ -472,11 +485,7 @@ export default function DaycareRequestsPage() {
               type="button"
               onClick={() => setTab(key)}
               aria-pressed={selected}
-              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                selected
-                  ? "bg-primary text-white border-primary"
-                  : "bg-surface text-ink-2 border-line hover:border-line-strong hover:text-ink"
-              }`}
+              className="chip"
             >
               {label} ({count})
             </button>
@@ -484,54 +493,85 @@ export default function DaycareRequestsPage() {
         })}
       </div>
 
-      {/* Tabla */}
-      <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
+      {/* Tarjetas bajo 2xl (7 columnas no caben); tabla desde 2xl */}
+      <div className="card overflow-hidden">
         {requests.isLoading ? (
           <TableSkeleton label="Cargando solicitudes…" />
         ) : (
-          <table className="w-full min-w-240">
+          <>
+          <div className="2xl:hidden">
+            <CardGrid empty={shown.length === 0 && emptyText}>
+              {shown.map((r) => {
+                const price = priceText(r);
+                return (
+                  <GridCard key={r.id}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h2 className="font-bold text-ink text-base wrap-break-word">
+                          {requesterName(r)}
+                        </h2>
+                        <p className="text-xs text-ink-3">
+                          {formatCreated(r.created_at)}
+                        </p>
+                      </div>
+                      <StatusBadge r={r} />
+                    </div>
+                    <CardFields>
+                      <CardField label="Beneficiario">
+                        {beneficiaryName(r) ?? "—"}
+                      </CardField>
+                      <CardField label="Traslado">{transfer(r)}</CardField>
+                      <CardField label="Contacto">{contact(r)}</CardField>
+                      <CardField label="Precio">
+                        <span className="font-semibold">{price ?? "—"}</span>
+                      </CardField>
+                    </CardFields>
+                    {renderActions(r) && (
+                      <CardActions>{renderActions(r)}</CardActions>
+                    )}
+                  </GridCard>
+                );
+              })}
+            </CardGrid>
+          </div>
+          <table className="hidden 2xl:table w-full">
             <TableHead columns={COLUMNS} />
             <tbody>
               {shown.map((r) => {
                 const price = priceText(r);
                 return (
                   <TableRow key={r.id}>
-                    <td className="px-5 py-3.5">
-                      <p className="font-medium text-ink text-sm whitespace-nowrap">
+                    <td className="px-4 py-3.5">
+                      <p className="font-semibold text-ink text-sm">
                         {requesterName(r)}
                       </p>
                       <p className="text-xs text-ink-3 whitespace-nowrap">
                         {formatCreated(r.created_at)}
                       </p>
                     </td>
-                    <td className="px-5 py-3.5 text-sm text-ink whitespace-nowrap">
+                    <td className="px-4 py-3.5 text-sm text-ink">
                       {beneficiaryName(r) ?? <EmptyCell />}
                     </td>
-                    <td className="px-5 py-3.5">{transfer(r)}</td>
-                    <td className="px-5 py-3.5">{contact(r)}</td>
-                    <td className="px-5 py-3.5 text-sm font-medium text-ink whitespace-nowrap">
+                    <td className="px-4 py-3.5">{transfer(r)}</td>
+                    <td className="px-4 py-3.5">{contact(r)}</td>
+                    <td className="px-4 py-3.5 text-sm font-medium text-ink whitespace-nowrap">
                       {price ?? <EmptyCell />}
                     </td>
-                    <td className="px-5 py-3.5">
+                    <td className="px-4 py-3.5">
                       <StatusBadge r={r} />
                     </td>
-                    <td className="px-5 py-3.5 text-right">
+                    <td className="px-4 py-3.5 text-right">
                       {renderActions(r)}
                     </td>
                   </TableRow>
                 );
               })}
               {shown.length === 0 && (
-                <EmptyRow colSpan={COLUMNS.length}>
-                  {items.length === 0
-                    ? "Este plan todavía no tiene solicitudes"
-                    : activeTab === "pending"
-                      ? "No hay solicitudes por confirmar"
-                      : "No hay solicitudes en este estado"}
-                </EmptyRow>
+                <EmptyRow colSpan={COLUMNS.length}>{emptyText}</EmptyRow>
               )}
             </tbody>
           </table>
+          </>
         )}
       </div>
 
@@ -579,7 +619,7 @@ export default function DaycareRequestsPage() {
             <div>
               <label
                 htmlFor="daycare-request-vehicle"
-                className="block text-sm font-medium text-ink mb-1"
+                className="block text-sm font-semibold text-ink mb-1.5"
               >
                 Vehículo para la recogida{" "}
                 <span className="text-danger-fg">*</span>
@@ -598,7 +638,7 @@ export default function DaycareRequestsPage() {
                 ))}
               </select>
               {activeVehicles.length === 0 && (
-                <p className="text-danger-fg text-xs mt-1">
+                <p className="text-danger-fg text-xs font-semibold mt-1">
                   No hay vehículos activos. Registra uno en Vehículos.
                 </p>
               )}

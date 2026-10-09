@@ -28,14 +28,14 @@ export default function RefundsPanel({
   const pendingCount = refunds.filter(isRefundPending).length;
 
   return (
-    <div className="bg-surface rounded-xl shadow-sm border border-line overflow-hidden">
-      <div className="h-12 px-4 border-b border-line flex items-center gap-2">
-        <Landmark size={14} className="text-danger-fg" />
-        <span className="font-semibold text-ink text-sm">
+    <div className="card overflow-hidden">
+      <div className="h-14 px-5 border-b border-line flex items-center gap-2.5">
+        <Landmark size={16} className="text-danger-fg" />
+        <span className="font-bold text-ink text-base">
           Reembolsos ({refunds.length})
         </span>
         {pendingCount > 0 && (
-          <span className="ml-auto text-xs text-warning-fg font-medium">
+          <span className="ml-auto text-xs text-warning-fg font-semibold">
             {pendingCount} por hacer
           </span>
         )}
@@ -69,7 +69,7 @@ function RefundCard({
   onMarkRefunded: () => void;
 }) {
   return (
-    <div className="bg-surface-2 rounded-lg p-3 border border-line">
+    <div className="bg-surface rounded-xl p-3.5 shadow-card">
       <p className="font-semibold text-ink text-sm leading-tight">{s.title}</p>
       <p className="text-xs text-ink-3 mt-1">{s.personName}</p>
       {(s.refundBank || s.refundAccount) && (
@@ -84,13 +84,13 @@ function RefundCard({
           type="button"
           onClick={onMarkRefunded}
           disabled={saving}
-          className="mt-2.5 w-full py-1.5 rounded-lg text-xs font-medium disabled:opacity-50 bg-primary text-white hover:bg-primary-hover transition-colors"
+          className="mt-2.5 w-full min-h-9 rounded-lg text-[13px] font-semibold disabled:opacity-50 bg-primary text-white shadow-raised hover:bg-primary-hover transition-colors"
         >
           {saving ? "Guardando…" : "Marcar reembolso realizado"}
         </button>
       ) : (
-        <div className="mt-2.5 flex items-center gap-1.5 text-xs font-medium text-success-fg bg-success-bg rounded-lg py-1.5 px-2">
-          <CheckCircle size={12} /> Reembolso realizado
+        <div className="mt-2.5 flex items-center gap-1.5 text-[13px] font-semibold text-success-fg bg-success-bg rounded-lg py-2 px-2.5">
+          <CheckCircle size={14} /> Reembolso realizado
         </div>
       )}
     </div>

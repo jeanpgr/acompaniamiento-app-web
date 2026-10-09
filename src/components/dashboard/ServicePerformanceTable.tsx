@@ -48,14 +48,101 @@ export default function ServicePerformanceTable({
     { requests: 0, paid: 0, cancelled: 0, forgotten: 0, revenue: 0 },
   );
 
-  const th = "text-right font-medium py-2 px-3 whitespace-nowrap";
+  const th = "text-right font-semibold py-2 px-3 whitespace-nowrap";
   const td = "py-2.5 px-3 text-right tabular-nums text-ink";
+
+  /** Medidas de una fila, como pares etiqueta/valor (vista de tarjetas). */
+  const metrics = (r: {
+    requests: number;
+    paid: number;
+    cancelled: number;
+    forgotten: number;
+    revenue: number;
+  }) => [
+    ["Solicitudes", formatInt(r.requests)],
+    ["Pagadas", formatInt(r.paid)],
+    ["Canceladas", formatInt(r.cancelled)],
+    ["No asistidas", formatInt(r.forgotten)],
+    ["Ingresos", formatMoney(r.revenue)],
+  ];
+
   return (
-    <div className="overflow-x-auto -mx-5 px-5">
-      <table className="w-full min-w-180 text-sm">
+    <>
+      {/* Bajo xl: una tarjeta por servicio (8 columnas no caben) */}
+      <ul role="list" className="xl:hidden grid gap-3 sm:grid-cols-2">
+        {[
+          ...rows.map((r) => ({
+            key: r.kind,
+            label: KIND_META[r.kind].label,
+            color: KIND_META[r.kind].color as string | null,
+            rate: r.confirmationRate,
+            rating: r.rating,
+            ratingCount: r.ratingCount,
+            values: metrics(r),
+          })),
+          {
+            key: "total",
+            label: "Total",
+            color: null,
+            rate: overallRate,
+            rating: null,
+            ratingCount: 0,
+            values: metrics(total),
+          },
+        ].map((c) => (
+          <li
+            key={c.key}
+            className={`rounded-xl p-4 min-w-0 ${c.color ? "bg-surface-2" : "bg-surface-2 ring-1 ring-line-strong"}`}
+          >
+            <p className="flex items-center gap-2 font-bold text-ink mb-2">
+              {c.color && (
+                <span
+                  className="w-2.5 h-2.5 rounded-[3px] shrink-0"
+                  style={{ backgroundColor: c.color }}
+                  aria-hidden="true"
+                />
+              )}
+              {c.label}
+            </p>
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+              {c.values.map(([label, value]) => (
+                <div key={label} className="flex justify-between gap-2 min-w-0">
+                  <dt className="text-ink-3 truncate">{label}</dt>
+                  <dd className="font-semibold text-ink tabular-nums">
+                    {value}
+                  </dd>
+                </div>
+              ))}
+              {c.rating != null && (
+                <div className="col-span-2 flex justify-between gap-2 min-w-0">
+                  <dt className="text-ink-3">Calificación</dt>
+                  <dd className="inline-flex items-center gap-1 font-semibold text-ink tabular-nums">
+                    <Star
+                      size={14}
+                      className="fill-warning text-warning"
+                      aria-hidden="true"
+                    />
+                    {pct.format(c.rating)}
+                    <span className="text-ink-3 text-xs font-normal">
+                      ({c.ratingCount})
+                    </span>
+                  </dd>
+                </div>
+              )}
+            </dl>
+            <div className="mt-3 pt-3 border-t border-line flex items-center justify-between gap-3 text-sm">
+              <span className="text-ink-3">Confirmación de pago</span>
+              <RateMeter value={c.rate} />
+            </div>
+          </li>
+        ))}
+      </ul>
+
+    <div className="hidden xl:block overflow-x-auto -mx-5 px-5">
+      <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-line text-xs text-ink-3">
-            <th className="text-left font-medium py-2 pr-3">Servicio</th>
+          <tr className="border-b border-line text-[13px] text-ink-2">
+            <th className="text-left font-semibold py-2 pr-3">Servicio</th>
             <th className={th}>Solicitudes</th>
             <th className={th}>Pagadas</th>
             <th className={th}>Confirmación de pago</th>
@@ -92,7 +179,7 @@ export default function ServicePerformanceTable({
                 ) : (
                   <span className="inline-flex items-center gap-1">
                     <Star
-                      size={13}
+                      size={15}
                       className="fill-warning text-warning"
                       aria-hidden="true"
                     />
@@ -122,5 +209,6 @@ export default function ServicePerformanceTable({
         </tfoot>
       </table>
     </div>
+    </>
   );
 }

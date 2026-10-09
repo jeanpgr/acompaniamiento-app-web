@@ -138,9 +138,9 @@ export default function VehiclesPage() {
     const reviewSoon = new Date(v.next_review) <= REVIEW_THRESHOLD;
     return (
       <span
-        className={`text-sm ${reviewSoon ? "text-warning-fg font-medium" : "text-ink-3"}`}
+        className={`text-sm ${reviewSoon ? "text-warning-fg font-semibold" : "text-ink-3"}`}
       >
-        {reviewSoon && <AlertTriangle size={12} className="inline mr-1" />}
+        {reviewSoon && <AlertTriangle size={14} className="inline mr-1" />}
         {new Date(v.next_review).toLocaleDateString("es-CO")}
       </span>
     );
@@ -155,7 +155,7 @@ export default function VehiclesPage() {
         variant="secondary"
         onClick={() => openEdit(v)}
       >
-        <Pencil size={14} aria-hidden="true" />
+        <Pencil size={16} aria-hidden="true" />
       </Button>
       <Button
         size="icon"
@@ -164,7 +164,7 @@ export default function VehiclesPage() {
         aria-label={`Eliminar ${v.name}`}
         title="Eliminar"
       >
-        <Trash2 size={14} aria-hidden="true" />
+        <Trash2 size={16} aria-hidden="true" />
       </Button>
     </>
   );
@@ -173,19 +173,19 @@ export default function VehiclesPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-ink">
+          <h1 className="text-xl sm:text-2xl font-bold text-ink">
             Gestión de vehículos
           </h1>
-          <p className="text-sm text-ink-3 mt-0.5">
+          <p className="text-[15px] text-ink-3 mt-1">
             Administra la flota de vehículos y sus revisiones
           </p>
         </div>
         <Button onClick={openCreate}>
-          <Plus size={14} /> Nuevo vehículo
+          <Plus size={16} /> Nuevo vehículo
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-6">
         <StatCard
           icon={Truck}
           tone="info"
@@ -222,7 +222,7 @@ export default function VehiclesPage() {
         <ViewToggle view={view} onChange={setView} />
       </div>
 
-      <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
+      <div className="card overflow-x-auto">
         {isLoading ? (
           <TableSkeleton label="Cargando vehículos…" />
         ) : view === "grid" ? (
@@ -231,11 +231,11 @@ export default function VehiclesPage() {
               <GridCard key={v.id}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-lg bg-info-bg flex items-center justify-center shrink-0">
-                      <Truck size={16} className="text-info-fg" />
+                    <div className="w-11 h-11 rounded-xl bg-primary-soft flex items-center justify-center shrink-0">
+                      <Truck size={20} className="text-primary" />
                     </div>
                     <div className="min-w-0">
-                      <h2 className="font-medium text-ink text-sm truncate">
+                      <h2 className="font-bold text-ink text-base line-clamp-2 wrap-break-word">
                         {v.name}
                       </h2>
                       <p className="text-xs text-ink-3 truncate">{v.model}</p>
@@ -267,25 +267,25 @@ export default function VehiclesPage() {
           <table className="w-full min-w-160">
             <thead>
               <tr className="border-b border-line bg-surface-2">
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Vehículo
                 </th>
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Placa
                 </th>
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Capacidad
                 </th>
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Conductor
                 </th>
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Próx. revisión
                 </th>
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Estado
                 </th>
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Acciones
                 </th>
               </tr>
@@ -294,37 +294,37 @@ export default function VehiclesPage() {
               {vehicles.map((v) => (
                 <tr
                   key={v.id}
-                  className="border-b border-line/70 hover:bg-surface-2"
+                  className="border-b border-line/70 transition-colors hover:bg-primary-soft/50"
                 >
-                  <td className="px-5 py-3.5">
+                  <td className="px-4 py-3.5">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-info-bg flex items-center justify-center">
-                        <Truck size={15} className="text-info-fg" />
+                      <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center">
+                        <Truck size={18} className="text-primary" />
                       </div>
                       <div>
-                        <p className="font-medium text-ink text-sm">{v.name}</p>
+                        <p className="font-semibold text-ink text-sm">{v.name}</p>
                         <p className="text-xs text-ink-3">{v.model}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-5 py-3.5">
+                  <td className="px-4 py-3.5">
                     <span className="font-mono text-sm text-ink">
                       {v.license_plate}
                     </span>
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-ink-2">
+                  <td className="px-4 py-3.5 text-sm text-ink-2">
                     {v.capacity ?? "—"} personas
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-ink-2">
+                  <td className="px-4 py-3.5 text-sm text-ink-2">
                     {userMap[v.id_driver] ?? "Sin asignar"}
                   </td>
-                  <td className="px-5 py-3.5">{renderReview(v)}</td>
-                  <td className="px-5 py-3.5">
+                  <td className="px-4 py-3.5">{renderReview(v)}</td>
+                  <td className="px-4 py-3.5">
                     <Badge variant={v.active ? "success" : "default"}>
                       {v.active ? "Activo" : "Inactivo"}
                     </Badge>
                   </td>
-                  <td className="px-5 py-3.5">
+                  <td className="px-4 py-3.5">
                     <div className="flex gap-2">{renderActions(v)}</div>
                   </td>
                 </tr>
@@ -333,7 +333,7 @@ export default function VehiclesPage() {
                 <tr>
                   <td
                     colSpan={7}
-                    className="px-5 py-8 text-center text-ink-3 text-sm"
+                    className="px-4 py-10 text-center text-ink-3 text-[15px]"
                   >
                     {emptyText}
                   </td>
@@ -367,7 +367,7 @@ export default function VehiclesPage() {
           <div>
             <label
               htmlFor="vehicles-name"
-              className="block text-sm font-medium text-ink mb-1"
+              className="block text-sm font-semibold text-ink mb-1.5"
             >
               Nombre
             </label>
@@ -381,7 +381,7 @@ export default function VehiclesPage() {
           <div>
             <label
               htmlFor="vehicles-model"
-              className="block text-sm font-medium text-ink mb-1"
+              className="block text-sm font-semibold text-ink mb-1.5"
             >
               Modelo
             </label>
@@ -395,7 +395,7 @@ export default function VehiclesPage() {
           <div>
             <label
               htmlFor="vehicles-license_plate"
-              className="block text-sm font-medium text-ink mb-1"
+              className="block text-sm font-semibold text-ink mb-1.5"
             >
               Placa
             </label>
@@ -409,7 +409,7 @@ export default function VehiclesPage() {
           <div>
             <label
               htmlFor="vehicles-capacity"
-              className="block text-sm font-medium text-ink mb-1"
+              className="block text-sm font-semibold text-ink mb-1.5"
             >
               Capacidad
             </label>
@@ -424,7 +424,7 @@ export default function VehiclesPage() {
           <div>
             <label
               htmlFor="vehicles-id_driver"
-              className="block text-sm font-medium text-ink mb-1"
+              className="block text-sm font-semibold text-ink mb-1.5"
             >
               Conductor
             </label>
@@ -451,7 +451,7 @@ export default function VehiclesPage() {
               ))}
             </select>
             {errors.id_driver && (
-              <p className="text-danger-fg text-xs mt-1">
+              <p className="text-danger-fg text-xs font-semibold mt-1">
                 {errors.id_driver.message}
               </p>
             )}
@@ -459,7 +459,7 @@ export default function VehiclesPage() {
               {drivers.length === 0 ? (
                 <>
                   No hay usuarios con el rol Conductor. Asígnalo en{" "}
-                  <Link to="/users" className="text-primary hover:underline">
+                  <Link to="/users" className="font-semibold text-primary hover:underline">
                     Usuarios y roles
                   </Link>
                   .
@@ -472,7 +472,7 @@ export default function VehiclesPage() {
           <div>
             <label
               htmlFor="vehicles-next_review"
-              className="block text-sm font-medium text-ink mb-1"
+              className="block text-sm font-semibold text-ink mb-1.5"
             >
               Próxima revisión
             </label>

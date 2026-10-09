@@ -51,6 +51,10 @@ function withPhoto(body: object, photo?: File | null) {
 
 export const getUsers = () => apiClient.get<User[]>(BASE).then((r) => r.data);
 
+/** Perfil del usuario con sesión (la foto llega como URL firmada). */
+export const getMyProfile = () =>
+  apiClient.get<User | null>(`${BASE}/me`).then((r) => r.data);
+
 /** Página por cursor (created_at DESC) para la tabla del panel. */
 export const getUsersPage = (
   cursor: string | null,

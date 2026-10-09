@@ -68,13 +68,6 @@ const formatDate = (iso: string) =>
     year: "numeric",
   });
 
-function chipClass(selected: boolean) {
-  return `px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-    selected
-      ? "bg-primary text-white border-primary"
-      : "bg-surface text-ink-2 border-line hover:border-line-strong hover:text-ink"
-  }`;
-}
 
 function StatusBadge({ s }: { s: Unified }) {
   const status = statusOf(s);
@@ -97,11 +90,13 @@ function ServiceCell({ s }: { s: Unified }) {
   return (
     <div className="min-w-0">
       <span
-        className={`inline-block text-[11px] px-2 py-0.5 rounded-full font-medium mb-1 ${st.badge}`}
+        className={`inline-block text-xs px-2.5 py-0.5 rounded-full font-semibold mb-1 ${st.badge}`}
       >
         {st.label}
       </span>
-      <p className="font-medium text-ink text-sm truncate">{s.title}</p>
+      <p className="font-semibold text-ink text-sm line-clamp-2 wrap-break-word">
+        {s.title}
+      </p>
     </div>
   );
 }
@@ -116,7 +111,7 @@ export default function DistributionServicesPage() {
   const [search, setSearch] = useState("");
   // El filtrado es local: se difiere para que escribir no se sienta lento.
   const query = useDeferredValue(search.trim().toLowerCase());
-  const [view, setView] = useViewMode();
+  const [view, setView] = useViewMode("2xl");
 
   const { schedules, isLoading } = useDistributionSchedules();
   const { data: vehicles = [] } = useQuery({
@@ -160,7 +155,7 @@ export default function DistributionServicesPage() {
     ) : s.vehicleId ? (
       (vehicleName.get(s.vehicleId) ?? "Vehículo asignado")
     ) : (
-      <span className="text-xs text-ink-3 italic">Sin asignar</span>
+      <span className="text-xs text-ink-3">Sin asignar</span>
     );
 
   const locationCell = (s: Unified) =>
@@ -183,25 +178,21 @@ export default function DistributionServicesPage() {
             { label: "Servicios y estados" },
           ]}
         />
-        <h1 className="text-xl font-semibold text-ink">Servicios y estados</h1>
-        <p className="text-sm text-ink-3 mt-0.5">
+        <h1 className="text-xl sm:text-2xl font-bold text-ink">Servicios y estados</h1>
+        <p className="text-[15px] text-ink-3 mt-1">
           Todas las citas agendadas con su estado, vehículo y reembolso
         </p>
       </div>
 
       {/* Tipo de servicio */}
-      <div className="flex flex-wrap gap-1 mb-3 border-b border-line pb-3">
+      <div className="flex flex-wrap gap-2 mb-3 border-b border-line pb-3">
         {FILTER_TABS.map((t) => (
           <button
             key={t.key}
             type="button"
             onClick={() => setTab(t.key)}
             aria-pressed={tab === t.key}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              tab === t.key
-                ? "bg-primary text-white"
-                : "text-ink-3 hover:bg-line"
-            }`}
+            className="chip"
           >
             {t.label}
           </button>
@@ -228,7 +219,7 @@ export default function DistributionServicesPage() {
               type="button"
               onClick={() => setStatus(f)}
               aria-pressed={status === f}
-              className={chipClass(status === f)}
+              className="chip"
             >
               {/* EN CURSO mezcla servicios: "En ruta" (acompañamiento) y
                   "Confirmada" (el resto). */}
@@ -248,7 +239,7 @@ export default function DistributionServicesPage() {
         </div>
       </div>
 
-      <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
+      <div className="card overflow-x-auto">
         {isLoading ? (
           <TableSkeleton label="Cargando servicios…" />
         ) : view === "grid" ? (
@@ -281,26 +272,26 @@ export default function DistributionServicesPage() {
             <tbody>
               {pager.items.map((s) => (
                 <TableRow key={`${s.originalType}-${s.id}`}>
-                  <td className="px-5 py-3 max-w-56">
+                  <td className="px-4 py-3 max-w-56">
                     <ServiceCell s={s} />
                   </td>
-                  <td className="px-5 py-3 text-sm text-ink-2 max-w-48 truncate">
+                  <td className="px-4 py-3 text-sm text-ink-2 max-w-48 truncate">
                     {s.personName}
                   </td>
-                  <td className="px-5 py-3 text-sm text-ink-2 whitespace-nowrap">
+                  <td className="px-4 py-3 text-sm text-ink-2 whitespace-nowrap">
                     <div>{formatDate(s.dateTime)}</div>
                     <div className="text-xs text-ink-3 tabular-nums">
                       {formatTime(s.dateTime)}
                     </div>
                   </td>
-                  <td className="px-5 py-3">
+                  <td className="px-4 py-3">
                     <StatusBadge s={s} />
                   </td>
-                  <td className="px-5 py-3 text-sm text-ink-2">
+                  <td className="px-4 py-3 text-sm text-ink-2">
                     {vehicleCell(s)}
                   </td>
-                  <td className="px-5 py-3">{locationCell(s)}</td>
-                  <td className="px-5 py-3">
+                  <td className="px-4 py-3">{locationCell(s)}</td>
+                  <td className="px-4 py-3">
                     <RefundBadge s={s} />
                   </td>
                 </TableRow>

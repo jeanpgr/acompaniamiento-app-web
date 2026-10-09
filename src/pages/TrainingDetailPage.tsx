@@ -41,10 +41,10 @@ function EnrollmentsLink({
   return (
     <Link
       to={`${trainingId}/inscripciones`}
-      className={`inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+      className={`inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-lg text-[13px] font-semibold whitespace-nowrap transition-colors ${
         pending > 0
           ? "bg-warning-bg text-warning-fg hover:brightness-95"
-          : "bg-surface border border-line text-ink-2 hover:bg-surface-2 hover:border-line-strong"
+          : "bg-surface border-[1.5px] border-line-strong text-primary hover:bg-primary-soft hover:border-primary/40"
       }`}
       aria-label={
         pending > 0
@@ -52,9 +52,9 @@ function EnrollmentsLink({
           : "Ver inscripciones de la capacitación"
       }
     >
-      <Users size={12} aria-hidden="true" /> Inscripciones
+      <Users size={14} aria-hidden="true" /> Inscripciones
       {pending > 0 && (
-        <span className="min-w-5 h-5 px-1.5 rounded-full bg-warning-fg text-white text-[11px] font-semibold inline-flex items-center justify-center tabular-nums">
+        <span className="min-w-5 h-5 px-1.5 rounded-full bg-warning-fg text-white text-xs font-semibold inline-flex items-center justify-center tabular-nums">
           {pending}
         </span>
       )}
@@ -176,19 +176,19 @@ export default function TrainingDetailPage() {
               { label: currentService?.name ?? "Capacitación" },
             ]}
           />
-          <h1 className="text-xl font-semibold text-ink">
+          <h1 className="text-xl sm:text-2xl font-bold text-ink">
             {currentService
               ? `Capacitación · ${currentService.name}`
               : "Detalles de capacitación"}
           </h1>
-          <p className="text-sm text-ink-3 mt-0.5">
+          <p className="text-[15px] text-ink-3 mt-1">
             {serviceId
               ? "Talleres y sesiones de este servicio de capacitación"
               : "Gestiona talleres y cursos de formación"}
           </p>
         </div>
         <Button onClick={() => openForm(null)}>
-          <Plus size={14} /> Nueva capacitación
+          <Plus size={16} /> Nueva capacitación
         </Button>
       </div>
 
@@ -202,7 +202,7 @@ export default function TrainingDetailPage() {
         <ViewToggle view={view} onChange={setView} />
       </div>
 
-      <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
+      <div className="card overflow-x-auto">
         {isLoading ? (
           <TableSkeleton label="Cargando capacitaciones…" />
         ) : (
@@ -223,7 +223,7 @@ export default function TrainingDetailPage() {
                   variant="secondary"
                   onClick={() => openForm(item)}
                 >
-                  <Pencil size={14} aria-hidden="true" />
+                  <Pencil size={16} aria-hidden="true" />
                 </Button>
                 <Button
                   size="icon"
@@ -235,7 +235,7 @@ export default function TrainingDetailPage() {
                   }
                   onClick={() => confirmDelete(item)}
                 >
-                  <Trash2 size={14} aria-hidden="true" />
+                  <Trash2 size={16} aria-hidden="true" />
                 </Button>
               </>
             )}

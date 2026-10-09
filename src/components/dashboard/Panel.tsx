@@ -16,11 +16,11 @@ export default function Panel({
 }) {
   return (
     <section
-      className={`bg-surface rounded-xl shadow-[0_1px_2px_rgb(23_38_58/0.06)] border border-line p-5 min-w-0 ${className}`}
+      className={`card p-5 min-w-0 ${className}`}
     >
       <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-ink">{title}</h2>
+          <h2 className="text-base font-bold text-ink">{title}</h2>
           {subtitle && <p className="text-xs text-ink-3 mt-0.5">{subtitle}</p>}
         </div>
         {action}

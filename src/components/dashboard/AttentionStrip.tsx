@@ -36,10 +36,8 @@ function Item({
   const pending = count > 0;
   return (
     <div
-      className={`rounded-xl border p-4 min-w-0 ${
-        pending
-          ? "border-warning/40 bg-warning-bg/50"
-          : "border-line bg-surface"
+      className={`rounded-xl p-4 min-w-0 shadow-card ${
+        pending ? "bg-warning-bg/60 ring-1 ring-warning/40" : "bg-surface"
       }`}
     >
       <Link
@@ -47,23 +45,27 @@ function Item({
         className="group flex items-start gap-3 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-focus"
       >
         <span
-          className={`w-9 h-9 shrink-0 rounded-lg flex items-center justify-center ${
+          className={`w-11 h-11 shrink-0 rounded-xl flex items-center justify-center ${
             pending
               ? "bg-warning-bg text-warning-fg"
               : "bg-success-bg text-success-fg"
           }`}
           aria-hidden="true"
         >
-          {pending ? <Icon size={18} /> : <CheckCircle2 size={18} />}
+          {pending ? <Icon size={22} /> : <CheckCircle2 size={22} />}
         </span>
         <span className="min-w-0">
-          <span className="block text-2xl font-semibold text-ink leading-tight">
+          <span className="block text-2xl font-bold text-ink leading-tight">
             {count}
           </span>
-          <span className="block text-sm text-ink-2 group-hover:underline">
+          <span className="block text-sm font-medium text-ink-2 group-hover:underline wrap-break-word hyphens-auto">
             {label}
           </span>
-          {!pending && <span className="block text-xs text-ink-3">Al día</span>}
+          {!pending && (
+            <span className="block text-xs font-semibold text-success-fg">
+              Al día
+            </span>
+          )}
         </span>
       </Link>
       {children}
@@ -84,11 +86,11 @@ export default function AttentionStrip({
 
   return (
     <section aria-labelledby="attention-title" className="mb-6">
-      <h2 id="attention-title" className="text-sm font-semibold text-ink mb-3">
+      <h2 id="attention-title" className="text-lg font-bold text-ink mb-3">
         Requiere atención{" "}
         <span className="font-normal text-ink-3">· ahora</span>
       </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5 gap-3">
         <Item
           icon={BadgeDollarSign}
           count={totalPayments}

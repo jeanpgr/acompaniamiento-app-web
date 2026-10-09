@@ -17,7 +17,7 @@ export default function ViewToggle({ view, onChange }: Props) {
     <div
       role="group"
       aria-label="Tipo de vista"
-      className="inline-flex shrink-0 rounded-lg border border-line bg-surface p-0.5"
+      className="inline-flex shrink-0 rounded-full border border-line bg-surface-2 p-1 gap-0.5"
     >
       {OPTIONS.map(({ value, label, Icon }) => (
         <button
@@ -27,10 +27,10 @@ export default function ViewToggle({ view, onChange }: Props) {
           aria-pressed={view === value}
           aria-label={label}
           title={label}
-          className={`w-8 h-7 inline-flex items-center justify-center rounded-md transition-colors ${
+          className={`w-9 h-8 inline-flex items-center justify-center rounded-full transition-colors ${
             view === value
-              ? "bg-primary text-white"
-              : "text-ink-3 hover:text-ink hover:bg-surface-2"
+              ? "bg-primary text-white shadow-raised"
+              : "text-ink-3 hover:text-ink hover:bg-surface"
           }`}
         >
           <Icon size={15} aria-hidden="true" />

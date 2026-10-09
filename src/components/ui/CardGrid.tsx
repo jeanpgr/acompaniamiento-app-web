@@ -12,12 +12,19 @@ export function CardGrid({
   empty?: ReactNode;
 }) {
   if (empty) {
-    return <p className="px-5 py-8 text-center text-ink-3 text-sm">{empty}</p>;
+    return <p className="px-5 py-10 text-center text-ink-3 text-[15px]">{empty}</p>;
   }
+  // Las columnas dependen del ancho del contenedor (no de la pantalla): la
+  // misma cuadrícula sirve a pantalla completa o junto a un panel lateral.
   return (
-    <ul role="list" className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-3">
-      {children}
-    </ul>
+    <div className="@container">
+      <ul
+        role="list"
+        className="grid grid-cols-1 gap-3 p-3 @sm:p-4 @xl:grid-cols-2 @4xl:grid-cols-3"
+      >
+        {children}
+      </ul>
+    </div>
   );
 }
 
@@ -35,10 +42,10 @@ export function GridCard({
   return (
     <li
       onClick={onClick}
-      className={`flex flex-col gap-3 rounded-xl border bg-surface p-4 transition-colors ${
+      className={`flex flex-col gap-3 min-w-0 rounded-xl bg-surface p-4 shadow-card transition-[box-shadow,background-color] ${
         selected
-          ? "border-primary ring-1 ring-primary"
-          : "border-line hover:border-line-strong"
+          ? "ring-2 ring-primary bg-primary-soft/40"
+          : "hover:shadow-md"
       } ${onClick ? "cursor-pointer" : ""}`}
     >
       {children}
@@ -60,7 +67,7 @@ export function CardField({
 }) {
   return (
     <div className="flex items-start justify-between gap-3">
-      <dt className="text-ink-3 shrink-0">{label}</dt>
+      <dt className="text-ink-3 font-medium shrink-0">{label}</dt>
       <dd className="text-ink text-right min-w-0 wrap-break-word">
         {children}
       </dd>

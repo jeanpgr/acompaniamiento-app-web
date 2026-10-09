@@ -60,7 +60,7 @@ export default function ServiceSections({
 
   if (sections.length === 0) {
     return isLoading ? null : (
-      <p className="text-xs text-ink-3 text-center py-6">{emptyText}</p>
+      <p className="text-sm text-ink-3 text-center py-6">{emptyText}</p>
     );
   }
 
@@ -78,22 +78,22 @@ export default function ServiceSections({
                 onClick={() => toggle(type)}
                 aria-expanded={open}
                 aria-controls={bodyId}
-                className="w-full flex items-center gap-2 px-4 py-2.5 text-left hover:bg-surface-2 transition-colors"
+                className="w-full flex items-center gap-2.5 px-5 min-h-12 text-left hover:bg-primary-soft/50 transition-colors"
               >
                 <span
                   aria-hidden="true"
-                  className={`w-2 h-2 rounded-full shrink-0 ${st.dot}`}
+                  className={`w-2.5 h-2.5 rounded-full shrink-0 ${st.dot}`}
                 />
-                <span className="flex-1 text-sm font-medium text-ink">
+                <span className="flex-1 text-sm font-semibold text-ink">
                   {st.label}
                 </span>
                 <span
-                  className={`text-xs px-2 py-0.5 rounded-full font-semibold tabular-nums ${st.badge}`}
+                  className={`text-xs px-2.5 py-0.5 rounded-full font-semibold tabular-nums ${st.badge}`}
                 >
                   {countOf(sectionItems)}
                 </span>
                 <ChevronDown
-                  size={14}
+                  size={16}
                   aria-hidden="true"
                   className={`text-ink-3 transition-transform motion-reduce:transition-none ${open ? "" : "-rotate-90"}`}
                 />

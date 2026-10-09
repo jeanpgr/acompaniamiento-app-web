@@ -170,7 +170,7 @@ export default function TourismFormModal({
           />
         </FormField>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <FormField
             htmlFor="tourismdetail-date_output"
             label="Fecha salida"
@@ -201,7 +201,7 @@ export default function TourismFormModal({
           </FormField>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <FormField
             htmlFor="tourismdetail-quotas"
             label="Cupos totales"
@@ -257,7 +257,7 @@ export default function TourismFormModal({
         <div>
           <p
             id="tourism-tarifas"
-            className="block text-sm font-medium text-ink mb-2"
+            className="block text-sm font-semibold text-ink mb-2"
           >
             Tarifas por persona
           </p>
@@ -270,7 +270,7 @@ export default function TourismFormModal({
               <div key={field}>
                 <label
                   htmlFor={`tourism-${field}`}
-                  className="block text-xs text-ink-2 mb-1"
+                  className="block text-[13px] font-semibold text-ink-2 mb-1"
                 >
                   {label}
                 </label>
@@ -290,7 +290,7 @@ export default function TourismFormModal({
                   />
                 </div>
                 {errors[field] && (
-                  <p className="text-danger-fg text-xs mt-1">
+                  <p className="text-danger-fg text-xs font-semibold mt-1">
                     {errors[field]?.message}
                   </p>
                 )}
@@ -305,7 +305,7 @@ export default function TourismFormModal({
         {/* Itinerario: hora + lugar de cada parada, en el orden del recorrido */}
         <fieldset>
           <div className="flex items-center justify-between mb-2">
-            <legend className="block text-sm font-medium text-ink">
+            <legend className="block text-sm font-semibold text-ink">
               Itinerario
             </legend>
             <button
@@ -313,11 +313,11 @@ export default function TourismFormModal({
               onClick={() => append({ hour: "", place: "" })}
               className="flex items-center gap-1 text-xs text-info-fg hover:text-info-fg font-medium"
             >
-              <Plus size={12} /> Agregar parada
+              <Plus size={14} /> Agregar parada
             </button>
           </div>
           {fields.length === 0 ? (
-            <p className="text-xs text-ink-3 italic">
+            <p className="text-xs text-ink-3">
               Sin paradas. Haz clic en "Agregar parada" para añadir.
             </p>
           ) : (
@@ -351,11 +351,11 @@ export default function TourismFormModal({
                         aria-label={`Quitar parada ${i + 1}`}
                         className="text-ink-3 hover:text-danger-fg transition-colors"
                       >
-                        <X size={14} />
+                        <X size={16} />
                       </button>
                     </div>
                     {placeError && (
-                      <p className="text-danger-fg text-xs mt-1 ml-30">
+                      <p className="text-danger-fg text-xs font-semibold mt-1 ml-30">
                         {placeError}
                       </p>
                     )}

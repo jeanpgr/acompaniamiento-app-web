@@ -71,7 +71,7 @@ function TypeBadge({ type }: { type: ServiceType | null }) {
   const cfg = serviceTypeStyle(type);
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${cfg.badge}`}
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${cfg.badge}`}
     >
       {SERVICE_TYPE_STYLE[type] ? cfg.label : type}
     </span>
@@ -208,7 +208,7 @@ export default function ServicesPage() {
           variant="secondary"
           onClick={() => handleManageDetails(s)}
         >
-          <ChevronRight size={12} /> Gestionar
+          <ChevronRight size={14} /> Gestionar
         </Button>
       )}
       <Button
@@ -218,7 +218,7 @@ export default function ServicesPage() {
         variant="secondary"
         onClick={() => openEdit(s)}
       >
-        <Pencil size={14} aria-hidden="true" />
+        <Pencil size={16} aria-hidden="true" />
       </Button>
       <Button
         size="icon"
@@ -231,7 +231,7 @@ export default function ServicesPage() {
             deleteMut.mutate(s.id);
         }}
       >
-        <Trash2 size={14} aria-hidden="true" />
+        <Trash2 size={16} aria-hidden="true" />
       </Button>
     </>
   );
@@ -240,22 +240,22 @@ export default function ServicesPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-ink">
+          <h1 className="text-xl sm:text-2xl font-bold text-ink">
             Gestión de servicios
           </h1>
-          <p className="text-sm text-ink-3 mt-0.5">
+          <p className="text-[15px] text-ink-3 mt-1">
             Administra el catálogo de servicios. Para tipos con detalle
             (Turismo, Capacitación, Guardería) usa "Gestionar" para ingresar su
             información específica.
           </p>
         </div>
         <Button onClick={openCreate}>
-          <Plus size={14} /> Nuevo servicio
+          <Plus size={16} /> Nuevo servicio
         </Button>
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 mb-4 border-b border-line">
+      <div className="segmented mb-4">
         {(
           [
             { key: "all", label: `Activos (${pager.counts?.active ?? 0})` },
@@ -268,11 +268,7 @@ export default function ServicesPage() {
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`px-5 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
-              tab === key
-                ? "border-primary bg-primary text-white rounded-t-lg"
-                : "border-transparent text-ink-3 hover:text-ink"
-            }`}
+            className="segment"
             aria-pressed={tab === key}
           >
             {label}
@@ -291,7 +287,7 @@ export default function ServicesPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
+      <div className="card overflow-x-auto">
         {isLoading ? (
           <TableSkeleton label="Cargando servicios…" />
         ) : view === "grid" ? (
@@ -300,8 +296,8 @@ export default function ServicesPage() {
               <GridCard key={s.id}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-2 min-w-0">
-                    <Briefcase size={14} className="text-ink-3 shrink-0" />
-                    <h2 className="font-medium text-ink text-sm truncate">
+                    <Briefcase size={18} className="text-primary shrink-0" />
+                    <h2 className="font-bold text-ink text-base line-clamp-2 wrap-break-word">
                       {s.name}
                     </h2>
                   </div>
@@ -326,19 +322,19 @@ export default function ServicesPage() {
           <table className="w-full min-w-160">
             <thead>
               <tr className="border-b border-line bg-surface-2">
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Servicio
                 </th>
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Tipo
                 </th>
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Precio base
                 </th>
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Creación
                 </th>
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Acciones
                 </th>
               </tr>
@@ -347,13 +343,13 @@ export default function ServicesPage() {
               {displayed.map((s) => (
                 <tr
                   key={s.id}
-                  className="border-b border-line/70 hover:bg-surface-2"
+                  className="border-b border-line/70 transition-colors hover:bg-primary-soft/50"
                 >
-                  <td className="px-5 py-3.5">
+                  <td className="px-4 py-3.5">
                     <div className="flex items-center gap-2">
-                      <Briefcase size={14} className="text-ink-3 shrink-0" />
+                      <Briefcase size={18} className="text-primary shrink-0" />
                       <div>
-                        <p className="font-medium text-ink text-sm">{s.name}</p>
+                        <p className="font-semibold text-ink text-sm">{s.name}</p>
                         {s.description && (
                           <p className="text-xs text-ink-3 truncate max-w-56">
                             {s.description}
@@ -362,20 +358,20 @@ export default function ServicesPage() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-5 py-3.5">
+                  <td className="px-4 py-3.5">
                     <TypeBadge type={s.type} />
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-ink-3">
+                  <td className="px-4 py-3.5 text-sm text-ink-3">
                     {s.price ? (
                       `$ ${s.price}`
                     ) : (
-                      <span className="text-ink-3 italic text-xs">—</span>
+                      <span className="text-ink-3 text-xs">—</span>
                     )}
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-ink-3">
+                  <td className="px-4 py-3.5 text-sm text-ink-3">
                     {new Date(s.created_at).toLocaleDateString("es-CO")}
                   </td>
-                  <td className="px-5 py-3.5">
+                  <td className="px-4 py-3.5">
                     <div className="flex gap-2 flex-wrap">
                       {renderActions(s)}
                     </div>
@@ -386,7 +382,7 @@ export default function ServicesPage() {
                 <tr>
                   <td
                     colSpan={5}
-                    className="px-5 py-8 text-center text-ink-3 text-sm"
+                    className="px-4 py-10 text-center text-ink-3 text-[15px]"
                   >
                     {emptyText}
                   </td>
@@ -430,7 +426,7 @@ export default function ServicesPage() {
           <div>
             <label
               htmlFor="services-name"
-              className="block text-sm font-medium text-ink mb-1"
+              className="block text-sm font-semibold text-ink mb-1.5"
             >
               Nombre <span className="text-danger-fg">*</span>
             </label>
@@ -443,7 +439,7 @@ export default function ServicesPage() {
               {...register("name")}
             />
             {errors.name && (
-              <p className="text-danger-fg text-xs mt-1">
+              <p className="text-danger-fg text-xs font-semibold mt-1">
                 {errors.name.message}
               </p>
             )}
@@ -452,7 +448,7 @@ export default function ServicesPage() {
           <div>
             <label
               htmlFor="services-description"
-              className="block text-sm font-medium text-ink mb-1"
+              className="block text-sm font-semibold text-ink mb-1.5"
             >
               Descripción
             </label>
@@ -466,17 +462,17 @@ export default function ServicesPage() {
               {...register("description")}
             />
             {errors.description && (
-              <p className="text-danger-fg text-xs mt-1">
+              <p className="text-danger-fg text-xs font-semibold mt-1">
                 {errors.description.message}
               </p>
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label
                 htmlFor="services-type"
-                className="block text-sm font-medium text-ink mb-1"
+                className="block text-sm font-semibold text-ink mb-1.5"
               >
                 Tipo <span className="text-danger-fg">*</span>
               </label>
@@ -493,7 +489,7 @@ export default function ServicesPage() {
                 <option value="GUARDERIA">Guardería</option>
               </select>
               {errors.type && (
-                <p className="text-danger-fg text-xs mt-1">
+                <p className="text-danger-fg text-xs font-semibold mt-1">
                   {errors.type.message}
                 </p>
               )}
@@ -501,7 +497,7 @@ export default function ServicesPage() {
             <div>
               <label
                 htmlFor="services-price"
-                className="block text-sm font-medium text-ink mb-1"
+                className="block text-sm font-semibold text-ink mb-1.5"
               >
                 Precio base
               </label>
@@ -518,7 +514,7 @@ export default function ServicesPage() {
                 />
               </div>
               {errors.price && (
-                <p className="text-danger-fg text-xs mt-1">
+                <p className="text-danger-fg text-xs font-semibold mt-1">
                   {errors.price.message}
                 </p>
               )}

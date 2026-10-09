@@ -40,7 +40,7 @@ function tabClass(key: FilterTab, selected: boolean) {
     selected && key !== "todos"
       ? "ring-2 ring-current ring-offset-1 ring-offset-surface"
       : "";
-  return `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-[filter,background-color] ${color} ${active}`;
+  return `inline-flex items-center gap-1.5 min-h-9 px-3.5 rounded-full text-sm font-semibold transition-[filter,background-color] ${color} ${active}`;
 }
 
 export default function DistributionPage() {
@@ -111,19 +111,19 @@ export default function DistributionPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
         <div>
-          <h1 className="text-xl font-semibold text-ink">
+          <h1 className="text-xl sm:text-2xl font-bold text-ink">
             Panel de distribución
           </h1>
-          <p className="text-sm text-ink-3 mt-0.5">
+          <p className="text-[15px] text-ink-3 mt-1">
             Agendamientos de todos los servicios · Asigna vehículo y confirma
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link
             to="servicios"
-            className="inline-flex items-center gap-2 h-9 px-3 rounded-lg text-sm font-medium bg-surface border border-line text-ink-2 hover:bg-surface-2 hover:border-line-strong transition-colors"
+            className="inline-flex items-center gap-2 h-11 px-5 rounded-lg text-sm font-semibold bg-surface border-[1.5px] border-line-strong text-primary hover:bg-primary-soft hover:border-primary/40 transition-colors"
           >
-            <List size={14} aria-hidden="true" /> Ver servicios y estados
+            <List size={16} aria-hidden="true" /> Ver servicios y estados
           </Link>
         </div>
       </div>

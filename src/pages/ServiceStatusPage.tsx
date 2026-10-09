@@ -152,17 +152,17 @@ export default function ServiceStatusPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-ink">
+          <h1 className="text-xl sm:text-2xl font-bold text-ink">
             Estado del servicio
           </h1>
-          <p className="text-sm text-ink-3 mt-0.5">
+          <p className="text-[15px] text-ink-3 mt-1">
             Monitorea el estado en tiempo real de los servicios activos
           </p>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-5">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4 mb-5">
         <StatCard
           icon={Clock}
           tone="warning"
@@ -203,11 +203,7 @@ export default function ServiceStatusPage() {
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                filter === f
-                  ? "bg-primary text-white"
-                  : "bg-surface text-ink-2 ring-1 ring-inset ring-line hover:bg-surface-2"
-              }`}
+              className="chip"
               aria-pressed={filter === f}
             >
               {cfg && (
@@ -245,12 +241,12 @@ export default function ServiceStatusPage() {
             return (
               <div
                 key={item.id}
-                className="bg-surface rounded-xl shadow-sm border border-line p-4"
+                className="card p-5"
               >
                 {/* Card header */}
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-ink text-sm truncate">
+                    <p className="font-bold text-ink text-base line-clamp-2 wrap-break-word">
                       {item.title}
                     </p>
                     <span className="inline-block text-xs text-ink-3 mt-0.5">
@@ -258,7 +254,7 @@ export default function ServiceStatusPage() {
                     </span>
                   </div>
                   <Badge variant={cfg.variant}>
-                    <Icon size={10} className="mr-1" />
+                    <Icon size={12} className="mr-1" />
                     {cfg.label}
                   </Badge>
                 </div>
@@ -266,21 +262,21 @@ export default function ServiceStatusPage() {
                 {/* Beneficiary */}
                 <div className="flex items-center gap-4 mb-3 text-xs text-ink-3">
                   <span className="flex items-center gap-1">
-                    <User size={11} /> {item.person}
+                    <User size={13} /> {item.person}
                   </span>
                   <span className="flex items-center gap-1">
-                    <Phone size={11} /> {item.phone}
+                    <Phone size={13} /> {item.phone}
                   </span>
                 </div>
 
                 {/* Route */}
                 <div className="space-y-1 mb-3">
                   <div className="flex items-start gap-2 text-xs text-ink-2">
-                    <div className="w-2 h-2 rounded-full bg-blue-400 mt-0.5 shrink-0" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-primary mt-1 shrink-0" />
                     <span className="truncate">{item.origin}</span>
                   </div>
                   <div className="flex items-start gap-2 text-xs text-ink-2">
-                    <div className="w-2 h-2 rounded-full bg-success mt-0.5 shrink-0" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-success mt-1 shrink-0" />
                     <span className="truncate">{item.destination}</span>
                   </div>
                   <AddressMapButton
@@ -295,7 +291,7 @@ export default function ServiceStatusPage() {
                   <div className="text-xs text-ink-3">
                     {item.vehicle ? (
                       <span className="flex items-center gap-1">
-                        <Truck size={10} /> {item.vehicle}
+                        <Truck size={12} /> {item.vehicle}
                       </span>
                     ) : (
                       <span className="text-warning-fg">Sin vehículo</span>
@@ -318,14 +314,15 @@ export default function ServiceStatusPage() {
                                 onClick={() =>
                                   updateMut.mutate({ id: item.id, status: s })
                                 }
-                                className="flex-1 py-1 rounded text-xs font-medium border border-line hover:bg-surface-2 text-ink-2"
+                                className="flex-1 min-h-9 rounded-lg text-[13px] font-semibold border-[1.5px] border-line-strong text-primary hover:bg-primary-soft"
                               >
                                 {STATUS_CONFIG[s].label}
                               </button>
                             ))}
                           <button
                             onClick={() => setUpdatingId(null)}
-                            className="px-2 py-1 text-xs text-ink-3"
+                            className="w-9 h-9 rounded-full text-sm text-ink-3 hover:bg-surface-2"
+                            aria-label="Cancelar cambio de estado"
                           >
                             ✕
                           </button>
@@ -333,9 +330,9 @@ export default function ServiceStatusPage() {
                       ) : (
                         <button
                           onClick={() => setUpdatingId(item.id)}
-                          className="w-full flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs text-ink-2 border border-line hover:bg-surface-2"
+                          className="w-full flex items-center justify-center gap-1 min-h-9 rounded-lg text-[13px] font-semibold text-primary border-[1.5px] border-line-strong hover:bg-primary-soft"
                         >
-                          Cambiar estado <ChevronDown size={11} />
+                          Cambiar estado <ChevronDown size={16} />
                         </button>
                       )}
                     </div>
@@ -346,7 +343,7 @@ export default function ServiceStatusPage() {
                   <div className="mt-3 pt-3 border-t border-line/70">
                     {(item.refundBank || item.refundAccount) && (
                       <div className="flex items-start gap-1.5 text-xs text-ink-3 mb-2">
-                        <Landmark size={11} className="mt-0.5 shrink-0" />
+                        <Landmark size={13} className="mt-0.5 shrink-0" />
                         <span>
                           {item.refundAccountType ?? "Cuenta"} ·{" "}
                           {item.refundBank ?? "—"} · {item.refundAccount ?? "—"}
@@ -361,14 +358,14 @@ export default function ServiceStatusPage() {
                         Cancelada antes del pago · sin reembolso
                       </p>
                     ) : item.refundStatus === "REALIZADO" ? (
-                      <div className="flex items-center gap-1.5 text-xs font-medium text-success-fg bg-success-bg rounded-lg py-1.5 px-2">
-                        <CheckCircle size={12} /> Reembolso realizado
+                      <div className="flex items-center gap-1.5 text-[13px] font-semibold text-success-fg bg-success-bg rounded-lg py-2 px-2.5">
+                        <CheckCircle size={14} /> Reembolso realizado
                       </div>
                     ) : (
                       <button
                         onClick={() => refundMut.mutate(item.id)}
                         disabled={refundMut.isPending}
-                        className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-medium disabled:opacity-50 bg-primary text-white hover:bg-primary-hover transition-colors"
+                        className="w-full flex items-center justify-center gap-1.5 min-h-9 rounded-lg text-[13px] font-semibold disabled:opacity-50 bg-primary text-white shadow-raised hover:bg-primary-hover transition-colors"
                       >
                         {refundMut.isPending && refundMut.variables === item.id
                           ? "Guardando…"
@@ -381,7 +378,7 @@ export default function ServiceStatusPage() {
             );
           })}
           {filtered.length === 0 && (
-            <div className="col-span-3 py-12 text-center text-ink-3 text-sm">
+            <div className="col-span-3 py-12 text-center text-ink-3 text-[15px]">
               No hay servicios en este estado
             </div>
           )}

@@ -2,16 +2,17 @@ import { useState } from "react";
 import ZoomableImage from "@/components/ui/ZoomableImage";
 import { initialsOf } from "./userForm";
 
-// Tonos oscuros: las iniciales en blanco mantienen contraste AA en todos.
+// Tonos de la paleta de la app móvil (verde salvia como el avatar del
+// Inicio). Todos oscuros: las iniciales en blanco mantienen contraste AA.
 const COLORS = [
-  "#1D4ED8",
-  "#15803D",
+  "#3A8049",
+  "#1B5598",
+  "#C8401C",
+  "#0B233B",
   "#B45309",
-  "#B91C1C",
-  "#6D28D9",
-  "#0E7490",
-  "#C2410C",
-  "#BE185D",
+  "#7C3AED",
+  "#0F7A5C",
+  "#1E40AF",
 ];
 
 interface Props {
@@ -31,14 +32,14 @@ export default function UserAvatar({ name, lastname, idx, image }: Props) {
         src={image}
         alt={`${name} ${lastname ?? ""}`.trim()}
         buttonClassName="rounded-full"
-        className="w-8 h-8 rounded-full object-cover shrink-0 bg-line"
+        className="w-10 h-10 rounded-full object-cover shrink-0 bg-line"
         onError={() => setImgError(true)}
       />
     );
   }
   return (
     <div
-      className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+      className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0"
       style={{ backgroundColor: COLORS[idx % COLORS.length] }}
       aria-hidden="true"
     >

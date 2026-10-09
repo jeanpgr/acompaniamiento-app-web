@@ -31,7 +31,7 @@ export default function AddressMapButton({ points, title, className }: Props) {
           setOpen(true);
         }}
       >
-        <MapIcon size={12} aria-hidden="true" /> Ver en mapa
+        <MapIcon size={14} aria-hidden="true" /> Ver en mapa
       </Button>
       <Modal open={open} onClose={() => setOpen(false)} title={title} size="lg">
         <Suspense

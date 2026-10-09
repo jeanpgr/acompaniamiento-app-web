@@ -98,7 +98,7 @@ export default function UserFormModal({
           onClear={clearPhoto}
         />
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <FormField
             htmlFor="users-name"
             label="Nombre"
@@ -164,7 +164,7 @@ export default function UserFormModal({
           </FormField>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <FormField htmlFor="users-id_role" label="Rol">
             <select
               id="users-id_role"
@@ -200,7 +200,7 @@ export default function UserFormModal({
           </FormField>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <FormField
             htmlFor="users-phone"
             label="Teléfono"

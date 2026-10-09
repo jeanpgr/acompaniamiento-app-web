@@ -55,7 +55,7 @@ export default function MapPickButton({
         aria-label={`Elegir ${title.toLowerCase()} en el mapa`}
         className="shrink-0"
       >
-        <MapPin size={14} aria-hidden="true" /> Mapa
+        <MapPin size={16} aria-hidden="true" /> Mapa
       </Button>
       <PickerDialog
         key={dialogKey}
@@ -180,7 +180,7 @@ function PickerDialog({
             placeholder="Buscar dirección, barrio o lugar"
           />
           <Button type="submit" variant="secondary" disabled={!query.trim()}>
-            <Search size={14} aria-hidden="true" /> Buscar
+            <Search size={16} aria-hidden="true" /> Buscar
           </Button>
         </form>
 

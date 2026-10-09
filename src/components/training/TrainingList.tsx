@@ -34,9 +34,9 @@ const withIcon = (icon: ReactNode, text: string) => (
 const COLUMNS: Column[] = [
   "Tema",
   "Fecha y hora",
-  { label: withIcon(<Clock size={12} />, "Duración") },
+  { label: withIcon(<Clock size={14} />, "Duración") },
   "Precio",
-  { label: withIcon(<Video size={12} />, "Enlace") },
+  { label: withIcon(<Video size={14} />, "Enlace") },
   "Acciones",
 ];
 
@@ -46,7 +46,7 @@ function Price({ item }: { item: DetailTraining }) {
       ${Number(item.price).toFixed(2)}
     </span>
   ) : (
-    <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-success-bg text-success-fg font-medium">
+    <span className="inline-block text-xs px-2.5 py-0.5 rounded-full bg-success-bg text-success-fg font-semibold">
       Gratuito
     </span>
   );
@@ -58,7 +58,7 @@ function MeetLink({ item }: { item: DetailTraining }) {
       href={item.link_meet}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-xs text-info-fg hover:underline truncate max-w-36 block"
+      className="text-[13px] font-semibold text-primary hover:underline truncate max-w-36 block"
     >
       {item.link_meet}
     </a>
@@ -71,7 +71,7 @@ function MeetLink({ item }: { item: DetailTraining }) {
 function PastTag({ item, now }: { item: DetailTraining; now: number }) {
   if (new Date(item.date_time).getTime() > now) return null;
   return (
-    <span className="ml-2 inline-block text-[11px] px-1.5 py-0.5 rounded bg-surface-2 text-ink-3 font-medium">
+    <span className="ml-2 inline-block text-xs px-2.5 py-0.5 rounded-full bg-surface-2 text-ink-3 font-semibold ring-1 ring-inset ring-line">
       Finalizada
     </span>
   );
@@ -93,7 +93,7 @@ export default function TrainingList({
         {items.map((item) => (
           <GridCard key={item.id}>
             <div className="flex items-start justify-between gap-3">
-              <h2 className="font-medium text-ink text-sm">
+              <h2 className="font-bold text-ink text-base">
                 {item.topic}
                 <PastTag item={item} now={now} />
               </h2>
@@ -128,8 +128,8 @@ export default function TrainingList({
       <tbody>
         {items.map((item) => (
           <TableRow key={item.id}>
-            <td className="px-5 py-3.5">
-              <p className="font-medium text-ink text-sm">
+            <td className="px-4 py-3.5">
+              <p className="font-semibold text-ink text-sm">
                 {item.topic}
                 <PastTag item={item} now={now} />
               </p>
@@ -139,19 +139,19 @@ export default function TrainingList({
                 </p>
               )}
             </td>
-            <td className="px-5 py-3.5 text-sm text-ink-3">
+            <td className="px-4 py-3.5 text-sm text-ink-3">
               {formatDateTime(item.date_time)}
             </td>
-            <td className="px-5 py-3.5 text-sm text-ink-2">
+            <td className="px-4 py-3.5 text-sm text-ink-2">
               {formatDuration(item.duration)}
             </td>
-            <td className="px-5 py-3.5 text-sm">
+            <td className="px-4 py-3.5 text-sm">
               <Price item={item} />
             </td>
-            <td className="px-5 py-3.5">
+            <td className="px-4 py-3.5">
               <MeetLink item={item} />
             </td>
-            <td className="px-5 py-3.5">
+            <td className="px-4 py-3.5">
               <div className="flex gap-2">{renderActions(item)}</div>
             </td>
           </TableRow>

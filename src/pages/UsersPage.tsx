@@ -152,19 +152,19 @@ export default function UsersPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-ink">
+          <h1 className="text-xl sm:text-2xl font-bold text-ink">
             Usuarios · Talento humano
           </h1>
-          <p className="text-sm text-ink-3 mt-0.5">
+          <p className="text-[15px] text-ink-3 mt-1">
             Gestiona el personal de la plataforma y los roles asignados
           </p>
         </div>
         <Button onClick={() => openForm(null)}>
-          <UserPlus size={14} /> Agregar usuario
+          <UserPlus size={16} /> Agregar usuario
         </Button>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-3 gap-2.5 sm:gap-4 mb-6">
         <StatCard
           icon={Users}
           tone="info"
@@ -198,11 +198,7 @@ export default function UsersPage() {
             key={f}
             type="button"
             onClick={() => setStatus(f)}
-            className={`px-4 py-1.5 rounded-full text-sm transition-colors ${
-              f === statusFilter
-                ? "bg-primary text-white"
-                : "bg-surface text-ink-2 ring-1 ring-inset ring-line hover:bg-surface-2"
-            }`}
+            className="chip"
             aria-pressed={f === statusFilter}
           >
             {STATUS_LABEL[f]}
@@ -213,7 +209,7 @@ export default function UsersPage() {
         </div>
       </div>
 
-      <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
+      <div className="card overflow-x-auto">
         {isLoading ? (
           <TableSkeleton label="Cargando usuarios…" />
         ) : (
@@ -223,11 +219,11 @@ export default function UsersPage() {
             emptyText={emptyText}
             renderRole={(u) =>
               u.id_role ? (
-                <span className="text-xs bg-info-bg text-info-fg px-2 py-0.5 rounded-full">
+                <span className="text-xs font-semibold bg-info-bg text-info-fg px-2.5 py-0.5 rounded-full">
                   {u.role_name ?? roleMap[u.id_role] ?? "Rol desconocido"}
                 </span>
               ) : (
-                <span className="text-ink-3 text-xs italic">Sin rol</span>
+                <span className="text-ink-3 text-xs">Sin rol</span>
               )
             }
             renderActions={(u) => (
@@ -239,7 +235,7 @@ export default function UsersPage() {
                   variant="secondary"
                   onClick={() => openForm(u)}
                 >
-                  <Pencil size={14} aria-hidden="true" />
+                  <Pencil size={16} aria-hidden="true" />
                 </Button>
                 <Button
                   size="icon"
@@ -249,7 +245,7 @@ export default function UsersPage() {
                   loading={deleteMut.isPending && deleteMut.variables === u.id}
                   onClick={() => confirmDelete(u)}
                 >
-                  <Trash2 size={14} aria-hidden="true" />
+                  <Trash2 size={16} aria-hidden="true" />
                 </Button>
               </>
             )}

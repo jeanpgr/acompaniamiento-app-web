@@ -19,7 +19,7 @@ export default function Badge({
 }: Props) {
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${VARIANTS[variant]} ${className}`}
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${VARIANTS[variant]} ${className}`}
     >
       {children}
     </span>

@@ -24,6 +24,13 @@ import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import StatCard from "@/components/ui/StatCard";
 import TableSkeleton from "@/components/ui/TableSkeleton";
+import {
+  CardGrid,
+  GridCard,
+  CardFields,
+  CardField,
+  CardActions,
+} from "@/components/ui/CardGrid";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import {
   EmptyCell,
@@ -92,7 +99,7 @@ function StatusBadge({ r }: { r: Reservation }) {
       return (
         <div className="flex flex-col items-start gap-1">
           <Badge variant="danger">Cancelada</Badge>
-          <span className="text-[11px] text-ink-3">
+          <span className="text-xs text-ink-3">
             {!r.refund_status
               ? "Sin pago · sin reembolso"
               : r.refund_status === "REALIZADO"
@@ -144,6 +151,12 @@ export default function TourismReservationsPage() {
   const activeTab = tab ?? (pendingCount > 0 ? "pending" : "all");
   const shown =
     activeTab === "all" ? items : items.filter((r) => groupOf(r) === activeTab);
+  const emptyText =
+    items.length === 0
+      ? "Esta excursión todavía no tiene reservas"
+      : activeTab === "pending"
+        ? "No hay reservas por confirmar"
+        : "No hay reservas en este estado";
   const countOf = (key: Group | "all") =>
     key === "all"
       ? items.length
@@ -243,7 +256,7 @@ export default function TourismReservationsPage() {
           loading={confirmMut.isPending && confirmMut.variables === r.id}
           onClick={() => askConfirm(r)}
         >
-          <BadgeCheck size={13} /> Confirmar pago
+          <BadgeCheck size={15} /> Confirmar pago
         </Button>
       );
     if (group === "confirmed" && r.status === "EN CURSO")
@@ -254,7 +267,7 @@ export default function TourismReservationsPage() {
           loading={unconfirmMut.isPending && unconfirmMut.variables === r.id}
           onClick={() => askUnconfirm(r)}
         >
-          <Undo2 size={13} /> Deshacer
+          <Undo2 size={15} /> Deshacer
         </Button>
       );
     if (group === "cancelled" && r.refund_status === "EN_PROCESO")
@@ -265,7 +278,7 @@ export default function TourismReservationsPage() {
           loading={refundMut.isPending && refundMut.variables === r.id}
           onClick={() => askRefund(r)}
         >
-          <Wallet size={13} /> Reembolso hecho
+          <Wallet size={15} /> Reembolso hecho
         </Button>
       );
     return null;
@@ -277,16 +290,16 @@ export default function TourismReservationsPage() {
       `Hola ${r.user?.name ?? ""}, te escribimos de ServiMayor por tu reserva de ${r.quotas} ${r.quotas === 1 ? "cupo" : "cupos"} para "${tripName}".`,
     );
     return (
-      <div className="whitespace-nowrap">
+      <div className="min-w-0">
         {url ? (
           <a
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-sm font-medium text-success-fg hover:underline"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-success-fg hover:underline"
             aria-label={`Escribir por WhatsApp a ${r.phone_responsible}`}
           >
-            <MessageCircle size={14} aria-hidden="true" /> {r.phone_responsible}
+            <MessageCircle size={16} aria-hidden="true" /> {r.phone_responsible}
           </a>
         ) : (
           <span className="text-sm text-ink-2">{r.phone_responsible}</span>
@@ -314,11 +327,11 @@ export default function TourismReservationsPage() {
             { label: "Reservas" },
           ]}
         />
-        <h1 className="text-xl font-semibold text-ink">
+        <h1 className="text-xl sm:text-2xl font-bold text-ink">
           Reservas · {trip.data?.name ?? "…"}
         </h1>
         {trip.data && (
-          <p className="text-sm text-ink-3 mt-0.5">
+          <p className="text-[15px] text-ink-3 mt-1">
             {formatDateRange(trip.data.date_output, trip.data.date_arrival)} ·{" "}
             {formatTripMeta(trip.data.date_output, trip.data.date_arrival)}
           </p>
@@ -332,7 +345,7 @@ export default function TourismReservationsPage() {
       </div>
 
       {/* Resumen */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-6">
         <StatCard
           icon={Clock}
           tone="warning"
@@ -379,11 +392,7 @@ export default function TourismReservationsPage() {
               type="button"
               onClick={() => setTab(key)}
               aria-pressed={selected}
-              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                selected
-                  ? "bg-primary text-white border-primary"
-                  : "bg-surface text-ink-2 border-line hover:border-line-strong hover:text-ink"
-              }`}
+              className="chip"
             >
               {label} ({count})
             </button>
@@ -392,11 +401,56 @@ export default function TourismReservationsPage() {
       </div>
 
       {/* Tabla */}
-      <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
+      <div className="card overflow-hidden">
         {reservations.isLoading ? (
           <TableSkeleton label="Cargando reservas…" />
         ) : (
-          <table className="w-full min-w-200">
+          <>
+          <div className="xl:hidden">
+            <CardGrid empty={shown.length === 0 && emptyText}>
+              {shown.map((r) => {
+                const amount = toAmount(r.price_pay);
+                const names = Array.isArray(r.names_persons)
+                  ? r.names_persons
+                  : [];
+                return (
+                  <GridCard key={r.id}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h2 className="font-bold text-ink text-base wrap-break-word">
+                          {holderName(r)}
+                        </h2>
+                        <p className="text-xs text-ink-3">
+                          {formatCreated(r.created_at)}
+                        </p>
+                      </div>
+                      <StatusBadge r={r} />
+                    </div>
+                    <CardFields>
+                      <CardField label="Pasajeros">
+                        {r.quotas} {r.quotas === 1 ? "cupo" : "cupos"}
+                        {names.length > 0 && (
+                          <span className="block text-xs text-ink-3">
+                            {names.join(", ")}
+                          </span>
+                        )}
+                      </CardField>
+                      <CardField label="Contacto">{contact(r)}</CardField>
+                      <CardField label="Total">
+                        <span className="font-semibold">
+                          {amount != null ? formatMoney(amount) : "—"}
+                        </span>
+                      </CardField>
+                    </CardFields>
+                    {renderActions(r) && (
+                      <CardActions>{renderActions(r)}</CardActions>
+                    )}
+                  </GridCard>
+                );
+              })}
+            </CardGrid>
+          </div>
+          <table className="hidden xl:table w-full">
             <TableHead columns={COLUMNS} />
             <tbody>
               {shown.map((r) => {
@@ -406,49 +460,44 @@ export default function TourismReservationsPage() {
                   : [];
                 return (
                   <TableRow key={r.id}>
-                    <td className="px-5 py-3.5">
-                      <p className="font-medium text-ink text-sm whitespace-nowrap">
+                    <td className="px-4 py-3.5">
+                      <p className="font-semibold text-ink text-sm">
                         {holderName(r)}
                       </p>
                       <p className="text-xs text-ink-3 whitespace-nowrap">
                         {formatCreated(r.created_at)}
                       </p>
                     </td>
-                    <td className="px-5 py-3.5">
+                    <td className="px-4 py-3.5">
                       <p className="text-sm text-ink-2 whitespace-nowrap">
                         {r.quotas} {r.quotas === 1 ? "cupo" : "cupos"}
                       </p>
                       <p
-                        className="text-xs text-ink-3 truncate max-w-56"
+                        className="text-xs text-ink-3 truncate max-w-44"
                         title={names.join(", ")}
                       >
                         {names.join(", ") || "—"}
                       </p>
                     </td>
-                    <td className="px-5 py-3.5">{contact(r)}</td>
-                    <td className="px-5 py-3.5 text-sm font-medium text-ink whitespace-nowrap">
+                    <td className="px-4 py-3.5">{contact(r)}</td>
+                    <td className="px-4 py-3.5 text-sm font-medium text-ink whitespace-nowrap">
                       {amount != null ? formatMoney(amount) : <EmptyCell />}
                     </td>
-                    <td className="px-5 py-3.5">
+                    <td className="px-4 py-3.5">
                       <StatusBadge r={r} />
                     </td>
-                    <td className="px-5 py-3.5 text-right">
+                    <td className="px-4 py-3.5 text-right">
                       {renderActions(r)}
                     </td>
                   </TableRow>
                 );
               })}
               {shown.length === 0 && (
-                <EmptyRow colSpan={COLUMNS.length}>
-                  {items.length === 0
-                    ? "Esta excursión todavía no tiene reservas"
-                    : activeTab === "pending"
-                      ? "No hay reservas por confirmar"
-                      : "No hay reservas en este estado"}
-                </EmptyRow>
+                <EmptyRow colSpan={COLUMNS.length}>{emptyText}</EmptyRow>
               )}
             </tbody>
           </table>
+          </>
         )}
       </div>
     </div>

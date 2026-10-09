@@ -177,7 +177,7 @@ export default function DiscountCouponsPage() {
         variant="secondary"
         onClick={() => openEdit(c)}
       >
-        <Pencil size={14} aria-hidden="true" />
+        <Pencil size={16} aria-hidden="true" />
       </Button>
       <Button
         size="icon"
@@ -190,7 +190,7 @@ export default function DiscountCouponsPage() {
             deleteMut.mutate(c.id);
         }}
       >
-        <Trash2 size={14} aria-hidden="true" />
+        <Trash2 size={16} aria-hidden="true" />
       </Button>
     </>
   );
@@ -199,15 +199,15 @@ export default function DiscountCouponsPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-ink">
+          <h1 className="text-xl sm:text-2xl font-bold text-ink">
             Cupones de descuento
           </h1>
-          <p className="text-sm text-ink-3 mt-0.5">
+          <p className="text-[15px] text-ink-3 mt-1">
             {pager.total} cupones registrados
           </p>
         </div>
         <Button onClick={openCreate}>
-          <Plus size={14} /> Nuevo cupón
+          <Plus size={16} /> Nuevo cupón
         </Button>
       </div>
 
@@ -221,7 +221,7 @@ export default function DiscountCouponsPage() {
         <ViewToggle view={view} onChange={setView} />
       </div>
 
-      <div className="bg-surface rounded-xl shadow-sm border border-line overflow-x-auto">
+      <div className="card overflow-x-auto">
         {isLoading ? (
           <TableSkeleton label="Cargando cupones…" />
         ) : view === "grid" ? (
@@ -229,7 +229,7 @@ export default function DiscountCouponsPage() {
             {coupons.map((c) => (
               <GridCard key={c.id}>
                 <div className="flex items-start justify-between gap-3">
-                  <span className="font-mono font-semibold text-ink text-sm bg-line px-2 py-0.5 rounded">
+                  <span className="font-mono font-bold text-primary text-sm bg-primary-soft px-2.5 py-1 rounded-lg tracking-wider">
                     {c.coupon}
                   </span>
                   {renderStatus(c)}
@@ -253,24 +253,24 @@ export default function DiscountCouponsPage() {
           <table className="w-full min-w-160">
             <thead>
               <tr className="border-b border-line bg-surface-2">
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Código
                 </th>
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   <div className="flex items-center gap-1">
-                    <Percent size={12} /> Descuento
+                    <Percent size={14} /> Descuento
                   </div>
                 </th>
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Usos
                 </th>
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Vence
                 </th>
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Estado
                 </th>
-                <th className="text-left text-xs font-medium text-ink-3 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Acciones
                 </th>
               </tr>
@@ -279,24 +279,24 @@ export default function DiscountCouponsPage() {
               {coupons.map((c) => (
                 <tr
                   key={c.id}
-                  className="border-b border-line/70 hover:bg-surface-2"
+                  className="border-b border-line/70 transition-colors hover:bg-primary-soft/50"
                 >
-                  <td className="px-5 py-3.5">
-                    <span className="font-mono font-semibold text-ink text-sm bg-line px-2 py-0.5 rounded">
+                  <td className="px-4 py-3.5">
+                    <span className="font-mono font-bold text-primary text-sm bg-primary-soft px-2.5 py-1 rounded-lg tracking-wider">
                       {c.coupon}
                     </span>
                   </td>
-                  <td className="px-5 py-3.5 text-sm font-medium text-success-fg">
+                  <td className="px-4 py-3.5 text-sm font-medium text-success-fg">
                     {c.discount_percentage}%
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-ink-2">
+                  <td className="px-4 py-3.5 text-sm text-ink-2">
                     {c.times_used} / {c.times_allowed}
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-ink-3">
+                  <td className="px-4 py-3.5 text-sm text-ink-3">
                     {new Date(c.expired_at).toLocaleDateString("es-CO")}
                   </td>
-                  <td className="px-5 py-3.5">{renderStatus(c)}</td>
-                  <td className="px-5 py-3.5">
+                  <td className="px-4 py-3.5">{renderStatus(c)}</td>
+                  <td className="px-4 py-3.5">
                     <div className="flex gap-2">{renderActions(c)}</div>
                   </td>
                 </tr>
@@ -305,7 +305,7 @@ export default function DiscountCouponsPage() {
                 <tr>
                   <td
                     colSpan={6}
-                    className="px-5 py-8 text-center text-ink-3 text-sm"
+                    className="px-4 py-10 text-center text-ink-3 text-[15px]"
                   >
                     {emptyText}
                   </td>
@@ -340,7 +340,7 @@ export default function DiscountCouponsPage() {
           <div>
             <label
               htmlFor="discountcoupons-coupon"
-              className="block text-sm font-medium text-ink mb-1"
+              className="block text-sm font-semibold text-ink mb-1.5"
             >
               Código <span className="text-danger-fg">*</span>
             </label>
@@ -357,7 +357,7 @@ export default function DiscountCouponsPage() {
                   type="button"
                   aria-label="Generar código aleatorio"
                   title="Generar código aleatorio"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 inline-flex items-center justify-center rounded-md text-ink-3 hover:text-ink hover:bg-surface-2"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 inline-flex items-center justify-center rounded-full text-primary hover:bg-primary-soft"
                   onClick={() =>
                     setValue("coupon", generateCouponCode(), {
                       shouldValidate: true,
@@ -370,16 +370,16 @@ export default function DiscountCouponsPage() {
               )}
             </div>
             {errors.coupon && (
-              <p className="text-danger-fg text-xs mt-1">
+              <p className="text-danger-fg text-xs font-semibold mt-1">
                 {errors.coupon.message}
               </p>
             )}
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label
                 htmlFor="discountcoupons-discount_percentage"
-                className="block text-sm font-medium text-ink mb-1"
+                className="block text-sm font-semibold text-ink mb-1.5"
               >
                 Descuento (%) <span className="text-danger-fg">*</span>
               </label>
@@ -393,7 +393,7 @@ export default function DiscountCouponsPage() {
                 {...register("discount_percentage", { valueAsNumber: true })}
               />
               {errors.discount_percentage && (
-                <p className="text-danger-fg text-xs mt-1">
+                <p className="text-danger-fg text-xs font-semibold mt-1">
                   {errors.discount_percentage.message}
                 </p>
               )}
@@ -401,7 +401,7 @@ export default function DiscountCouponsPage() {
             <div>
               <label
                 htmlFor="discountcoupons-times_allowed"
-                className="block text-sm font-medium text-ink mb-1"
+                className="block text-sm font-semibold text-ink mb-1.5"
               >
                 Usos permitidos <span className="text-danger-fg">*</span>
               </label>
@@ -414,7 +414,7 @@ export default function DiscountCouponsPage() {
                 {...register("times_allowed", { valueAsNumber: true })}
               />
               {errors.times_allowed && (
-                <p className="text-danger-fg text-xs mt-1">
+                <p className="text-danger-fg text-xs font-semibold mt-1">
                   {errors.times_allowed.message}
                 </p>
               )}
@@ -423,7 +423,7 @@ export default function DiscountCouponsPage() {
           <div>
             <label
               htmlFor="discountcoupons-expired_at"
-              className="block text-sm font-medium text-ink mb-1"
+              className="block text-sm font-semibold text-ink mb-1.5"
             >
               Fecha de vencimiento <span className="text-danger-fg">*</span>
             </label>
@@ -435,7 +435,7 @@ export default function DiscountCouponsPage() {
               {...register("expired_at")}
             />
             {errors.expired_at && (
-              <p className="text-danger-fg text-xs mt-1">
+              <p className="text-danger-fg text-xs font-semibold mt-1">
                 {errors.expired_at.message}
               </p>
             )}

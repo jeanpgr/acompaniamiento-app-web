@@ -20,7 +20,7 @@ export default function ProductThumbnail({
   const [imgError, setImgError] = useState(false);
   return (
     <div
-      className={`${className} rounded-lg overflow-hidden shrink-0 border border-line bg-surface-2 flex items-center justify-center`}
+      className={`${className} rounded-xl overflow-hidden shrink-0 ring-1 ring-line bg-surface-2 flex items-center justify-center`}
     >
       {photo && !imgError ? (
         <ZoomableImage
