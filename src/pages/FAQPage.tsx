@@ -17,6 +17,7 @@ import Modal from "@/components/ui/Modal";
 import TableSkeleton from "@/components/ui/TableSkeleton";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import SearchInput from "@/components/ui/SearchInput";
+import { useDiscardGuard } from "@/hooks/useDiscardGuard";
 
 const schema = z.object({
   question: z.string().min(5, "La pregunta debe tener al menos 5 caracteres"),
@@ -76,10 +77,12 @@ export default function FAQPage() {
     register,
     handleSubmit,
     reset,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
+  // Cerrar con cambios sin guardar pide confirmación.
+  const requestClose = useDiscardGuard(isDirty, () => setModalOpen(false));
 
   const openCreate = () => {
     setEditTarget(null);
@@ -174,10 +177,7 @@ export default function FAQPage() {
       ) : (
         <div className="space-y-3">
           {visible.map((faq, idx) => (
-            <div
-              key={faq.id}
-              className="card p-5"
-            >
+            <div key={faq.id} className="card p-5">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3 flex-1 min-w-0">
                   <span className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white bg-primary">
@@ -226,13 +226,13 @@ export default function FAQPage() {
 
       <Modal
         open={modalOpen}
-        onClose={() => !isPending && setModalOpen(false)}
+        onClose={() => !isPending && requestClose()}
         title={editTarget ? "Editar pregunta" : "Nueva pregunta frecuente"}
         footer={
           <>
             <Button
               variant="secondary"
-              onClick={() => setModalOpen(false)}
+              onClick={requestClose}
               disabled={isPending}
             >
               Cancelar

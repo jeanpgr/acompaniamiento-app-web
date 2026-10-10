@@ -29,6 +29,7 @@ import {
   CardActions,
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
+import { useDiscardGuard } from "@/hooks/useDiscardGuard";
 
 // Deben coincidir con los módulos de `authorizePermission("<módulo>")` en el backend.
 const ALL_PERMISSIONS = [
@@ -152,8 +153,16 @@ export default function RolesPage() {
     }
   };
 
-  const { register, handleSubmit, reset, setValue, control } =
-    useForm<CreateRoleInput>();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    control,
+    formState: { isDirty },
+  } = useForm<CreateRoleInput>();
+  // Cerrar con cambios sin guardar pide confirmación.
+  const requestClose = useDiscardGuard(isDirty, () => setModalOpen(false));
   const watchedPerms =
     useWatch({ control, name: "permissions", defaultValue: {} }) ?? {};
 
@@ -223,7 +232,9 @@ export default function RolesPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-ink">Roles y permisos</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-ink">
+            Roles y permisos
+          </h1>
           <p className="text-[15px] text-ink-3 mt-1">
             Configura los roles del sistema y sus permisos de acceso
           </p>
@@ -432,11 +443,11 @@ export default function RolesPage() {
       {/* Create/Edit modal */}
       <Modal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={requestClose}
         title={editTarget ? "Editar rol" : "Nuevo rol"}
         footer={
           <>
-            <Button variant="secondary" onClick={() => setModalOpen(false)}>
+            <Button variant="secondary" onClick={requestClose}>
               Cancelar
             </Button>
             <Button

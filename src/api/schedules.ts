@@ -210,8 +210,10 @@ export interface ScheduleDaycare extends RefundFields {
 }
 
 /** Solicitud con la cuenta que la hizo y su vehículo (listado por plan). */
-export interface ScheduleDaycareWithUser
-  extends Omit<ScheduleDaycare, "vehicle"> {
+export interface ScheduleDaycareWithUser extends Omit<
+  ScheduleDaycare,
+  "vehicle"
+> {
   vehicle: { id: string; name: string; license_plate: string } | null;
   user: { name: string; lastname: string; phone: string; email: string } | null;
 }

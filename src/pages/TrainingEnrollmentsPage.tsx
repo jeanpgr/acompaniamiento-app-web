@@ -423,60 +423,62 @@ export default function TrainingEnrollmentsPage() {
           <TableSkeleton label="Cargando inscripciones…" />
         ) : (
           <>
-          <div className="xl:hidden">
-            <CardGrid empty={shown.length === 0 && emptyText}>
-              {shown.map((r) => (
-                <GridCard key={r.id}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <h2 className="font-bold text-ink text-base wrap-break-word">
+            <div className="xl:hidden">
+              <CardGrid empty={shown.length === 0 && emptyText}>
+                {shown.map((r) => (
+                  <GridCard key={r.id}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h2 className="font-bold text-ink text-base wrap-break-word">
+                          {attendeeName(r)}
+                        </h2>
+                        <p className="text-xs text-ink-3">
+                          {formatCreated(r.created_at)}
+                        </p>
+                      </div>
+                      <StatusBadge r={r} />
+                    </div>
+                    <CardFields>
+                      <CardField label="Contacto">{contact(r)}</CardField>
+                    </CardFields>
+                    {renderActions(r) && (
+                      <CardActions>{renderActions(r)}</CardActions>
+                    )}
+                  </GridCard>
+                ))}
+              </CardGrid>
+            </div>
+            <table className="hidden xl:table w-full">
+              <TableHead columns={COLUMNS} />
+              <tbody>
+                {shown.map((r) => (
+                  <TableRow key={r.id}>
+                    <td className="px-4 py-3.5">
+                      <p className="font-semibold text-ink text-sm">
                         {attendeeName(r)}
-                      </h2>
+                      </p>
                       <p className="text-xs text-ink-3">
                         {formatCreated(r.created_at)}
+                        {r.user &&
+                          `${r.user.name} ${r.user.lastname}` !==
+                            attendeeName(r) &&
+                          ` · Cuenta: ${r.user.name} ${r.user.lastname}`}
                       </p>
-                    </div>
-                    <StatusBadge r={r} />
-                  </div>
-                  <CardFields>
-                    <CardField label="Contacto">{contact(r)}</CardField>
-                  </CardFields>
-                  {renderActions(r) && (
-                    <CardActions>{renderActions(r)}</CardActions>
-                  )}
-                </GridCard>
-              ))}
-            </CardGrid>
-          </div>
-          <table className="hidden xl:table w-full">
-            <TableHead columns={COLUMNS} />
-            <tbody>
-              {shown.map((r) => (
-                <TableRow key={r.id}>
-                  <td className="px-4 py-3.5">
-                    <p className="font-semibold text-ink text-sm">
-                      {attendeeName(r)}
-                    </p>
-                    <p className="text-xs text-ink-3">
-                      {formatCreated(r.created_at)}
-                      {r.user &&
-                        `${r.user.name} ${r.user.lastname}` !==
-                          attendeeName(r) &&
-                        ` · Cuenta: ${r.user.name} ${r.user.lastname}`}
-                    </p>
-                  </td>
-                  <td className="px-4 py-3.5">{contact(r)}</td>
-                  <td className="px-4 py-3.5">
-                    <StatusBadge r={r} />
-                  </td>
-                  <td className="px-4 py-3.5 text-right">{renderActions(r)}</td>
-                </TableRow>
-              ))}
-              {shown.length === 0 && (
-                <EmptyRow colSpan={COLUMNS.length}>{emptyText}</EmptyRow>
-              )}
-            </tbody>
-          </table>
+                    </td>
+                    <td className="px-4 py-3.5">{contact(r)}</td>
+                    <td className="px-4 py-3.5">
+                      <StatusBadge r={r} />
+                    </td>
+                    <td className="px-4 py-3.5 text-right">
+                      {renderActions(r)}
+                    </td>
+                  </TableRow>
+                ))}
+                {shown.length === 0 && (
+                  <EmptyRow colSpan={COLUMNS.length}>{emptyText}</EmptyRow>
+                )}
+              </tbody>
+            </table>
           </>
         )}
       </div>

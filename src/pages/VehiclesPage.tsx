@@ -30,6 +30,8 @@ import {
   CardActions,
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
+import { useDiscardGuard } from "@/hooks/useDiscardGuard";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 const REVIEW_THRESHOLD = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
@@ -78,6 +80,17 @@ export default function VehiclesPage() {
     },
     onSuccess: () => setModalOpen(false),
   });
+  const confirm = useConfirm();
+  const askDelete = async (v: Vehicle) => {
+    if (
+      await confirm({
+        title: `¿Eliminar el vehículo "${v.name}"?`,
+        message: `Placa ${v.license_plate}. Ya no se podrá asignar a nuevos servicios. Esta acción no se puede deshacer.`,
+        confirmLabel: "Eliminar vehículo",
+      })
+    )
+      deleteMut.mutate(v.id);
+  };
   const deleteMut = useMutation({
     mutationFn: deleteVehicle,
     meta: {
@@ -91,8 +104,10 @@ export default function VehiclesPage() {
     register,
     handleSubmit,
     reset,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<CreateVehicleInput>();
+  // Cerrar con cambios sin guardar pide confirmación.
+  const requestClose = useDiscardGuard(isDirty, () => setModalOpen(false));
 
   const openCreate = () => {
     setEditTarget(null);
@@ -160,7 +175,7 @@ export default function VehiclesPage() {
       <Button
         size="icon"
         variant="danger-soft"
-        onClick={() => deleteMut.mutate(v.id)}
+        onClick={() => askDelete(v)}
         aria-label={`Eliminar ${v.name}`}
         title="Eliminar"
       >
@@ -302,7 +317,9 @@ export default function VehiclesPage() {
                         <Truck size={18} className="text-primary" />
                       </div>
                       <div>
-                        <p className="font-semibold text-ink text-sm">{v.name}</p>
+                        <p className="font-semibold text-ink text-sm">
+                          {v.name}
+                        </p>
                         <p className="text-xs text-ink-3">{v.model}</p>
                       </div>
                     </div>
@@ -347,11 +364,11 @@ export default function VehiclesPage() {
 
       <Modal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={requestClose}
         title={editTarget ? "Editar vehículo" : "Nuevo vehículo"}
         footer={
           <>
-            <Button variant="secondary" onClick={() => setModalOpen(false)}>
+            <Button variant="secondary" onClick={requestClose}>
               Cancelar
             </Button>
             <Button
@@ -459,7 +476,10 @@ export default function VehiclesPage() {
               {drivers.length === 0 ? (
                 <>
                   No hay usuarios con el rol Conductor. Asígnalo en{" "}
-                  <Link to="/users" className="font-semibold text-primary hover:underline">
+                  <Link
+                    to="/users"
+                    className="font-semibold text-primary hover:underline"
+                  >
                     Usuarios y roles
                   </Link>
                   .

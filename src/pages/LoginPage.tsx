@@ -43,7 +43,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex bg-app-bg">
       {/* Panel de marca */}
-      <div className="hidden lg:flex flex-col items-center justify-center text-center w-96 xl:w-[28rem] p-10 shrink-0 bg-sidebar">
+      <div className="hidden lg:flex flex-col items-center justify-center text-center w-96 xl:w-md p-10 shrink-0 bg-sidebar">
         {/* Mismo recibimiento que la app móvil: logo dorado sobre navy */}
         <div
           className="w-30 h-30 rounded-full flex items-center justify-center bg-gold shadow-[0_8px_28px_-4px_rgb(252_201_118/0.5)] mb-8"
@@ -76,7 +76,9 @@ export default function LoginPage() {
             <span className="text-lg font-extrabold text-ink">Acompáñame</span>
           </div>
 
-          <h1 className="text-[26px] font-bold text-ink mb-1">Iniciar sesión</h1>
+          <h1 className="text-[26px] font-bold text-ink mb-1">
+            Iniciar sesión
+          </h1>
           <p className="text-base text-ink-3 mb-7">
             Ingresa tus credenciales para acceder al panel
           </p>

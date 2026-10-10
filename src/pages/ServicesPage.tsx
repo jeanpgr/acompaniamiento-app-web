@@ -33,6 +33,7 @@ import {
   CardActions,
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
+import { useDiscardGuard } from "@/hooks/useDiscardGuard";
 
 // ── Validation ──────────────────────────────────────────────────
 const schema = z.object({
@@ -159,8 +160,10 @@ export default function ServicesPage() {
     register,
     handleSubmit,
     reset,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
+  // Cerrar con cambios sin guardar pide confirmación.
+  const requestClose = useDiscardGuard(isDirty, () => setModalOpen(false));
 
   const openCreate = () => {
     setEditTarget(null);
@@ -349,7 +352,9 @@ export default function ServicesPage() {
                     <div className="flex items-center gap-2">
                       <Briefcase size={18} className="text-primary shrink-0" />
                       <div>
-                        <p className="font-semibold text-ink text-sm">{s.name}</p>
+                        <p className="font-semibold text-ink text-sm">
+                          {s.name}
+                        </p>
                         {s.description && (
                           <p className="text-xs text-ink-3 truncate max-w-56">
                             {s.description}
@@ -405,13 +410,13 @@ export default function ServicesPage() {
       {/* Modal */}
       <Modal
         open={modalOpen}
-        onClose={() => !isPending && setModalOpen(false)}
+        onClose={() => !isPending && requestClose()}
         title={editTarget ? "Editar servicio" : "Nuevo servicio"}
         footer={
           <>
             <Button
               variant="secondary"
-              onClick={() => setModalOpen(false)}
+              onClick={requestClose}
               disabled={isPending}
             >
               Cancelar

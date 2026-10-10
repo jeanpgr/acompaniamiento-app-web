@@ -55,7 +55,12 @@ export interface DashboardData {
   };
   lowStock: { id: string; name: string; stock: number }[];
   /** `revenue` es el monto de lista (antes de cupones). */
-  topProducts: { id: string; name: string; quantity: number; revenue: number }[];
+  topProducts: {
+    id: string;
+    name: string;
+    quantity: number;
+    revenue: number;
+  }[];
   recentReviews: {
     id: string;
     grade: number;

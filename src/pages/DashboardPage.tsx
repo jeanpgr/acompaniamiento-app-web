@@ -110,11 +110,7 @@ export default function DashboardPage() {
             })}
           </span>
         )}
-        <div
-          className="segmented"
-          role="group"
-          aria-label="Periodo"
-        >
+        <div className="segmented" role="group" aria-label="Periodo">
           {RANGES.map((r) => (
             <button
               key={r.days}
@@ -168,9 +164,7 @@ export default function DashboardPage() {
       >
         <AttentionStrip attention={data.attention} lowStock={data.lowStock} />
 
-        <h2 className="text-lg font-bold text-ink mb-3">
-          Últimos {days} días
-        </h2>
+        <h2 className="text-lg font-bold text-ink mb-3">Últimos {days} días</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
           {/* Cifra principal: ingresos del periodo */}
           {/* Tarjeta destacada en navy con etiqueta dorada (hero de la app) */}

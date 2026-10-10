@@ -13,7 +13,8 @@ interface Props {
   assigning: boolean;
   /** Citas recién asignadas que se animan fuera de la cola. */
   leaving: ReadonlySet<string>;
-  onAssign: (s: Unified, vehicleId: string) => void;
+  /** Resuelve en false si no se confirmó (el selector vuelve a vacío). */
+  onAssign: (s: Unified, vehicleId: string) => Promise<boolean>;
 }
 
 /**
@@ -74,7 +75,7 @@ interface CardProps {
   leaving: boolean;
   onOpen: () => void;
   onClose: () => void;
-  onAssign: (vehicleId: string) => void;
+  onAssign: (vehicleId: string) => Promise<boolean>;
 }
 
 /** Cita pendiente: datos básicos y acción para asignar vehículo o confirmar. */
@@ -146,8 +147,11 @@ function PendingCard({
                     className="field min-h-9 text-sm px-2.5 py-1.5"
                     defaultValue=""
                     disabled={busy}
-                    onChange={(e) => {
-                      if (e.target.value) onAssign(e.target.value);
+                    onChange={async (e) => {
+                      const select = e.currentTarget;
+                      if (!select.value) return;
+                      // Si se cancela la confirmación, nada queda elegido.
+                      if (!(await onAssign(select.value))) select.value = "";
                     }}
                   >
                     <option value="" disabled>

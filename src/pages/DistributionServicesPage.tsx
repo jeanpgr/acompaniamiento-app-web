@@ -68,7 +68,6 @@ const formatDate = (iso: string) =>
     year: "numeric",
   });
 
-
 function StatusBadge({ s }: { s: Unified }) {
   const status = statusOf(s);
   return <Badge variant={STATUS_VARIANT[status]}>{statusLabelOf(s)}</Badge>;
@@ -178,7 +177,9 @@ export default function DistributionServicesPage() {
             { label: "Servicios y estados" },
           ]}
         />
-        <h1 className="text-xl sm:text-2xl font-bold text-ink">Servicios y estados</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-ink">
+          Servicios y estados
+        </h1>
         <p className="text-[15px] text-ink-3 mt-1">
           Todas las citas agendadas con su estado, vehículo y reembolso
         </p>

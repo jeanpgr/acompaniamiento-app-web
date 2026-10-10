@@ -240,7 +240,7 @@ export default function SalesPage() {
           <CardGrid empty={filtered.length === 0 && emptyText}>
             {filtered.map((o) => (
               <GridCard key={o.id}>
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex flex-wrap items-start justify-between gap-2">
                   <span className="font-mono text-xs font-bold text-primary bg-primary-soft px-2 py-0.5 rounded-md whitespace-nowrap">
                     #{o.code}
                   </span>
@@ -374,7 +374,9 @@ export default function SalesPage() {
 
             {detail.customer && (
               <div className="rounded-xl bg-surface-2 p-4 space-y-1.5 text-sm">
-                <p className="font-bold text-ink text-base">{customerName(detail)}</p>
+                <p className="font-bold text-ink text-base">
+                  {customerName(detail)}
+                </p>
                 {detail.customer.phone && (
                   <a
                     href={`tel:${detail.customer.phone}`}

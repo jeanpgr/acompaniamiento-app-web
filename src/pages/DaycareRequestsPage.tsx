@@ -499,78 +499,78 @@ export default function DaycareRequestsPage() {
           <TableSkeleton label="Cargando solicitudes…" />
         ) : (
           <>
-          <div className="2xl:hidden">
-            <CardGrid empty={shown.length === 0 && emptyText}>
-              {shown.map((r) => {
-                const price = priceText(r);
-                return (
-                  <GridCard key={r.id}>
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <h2 className="font-bold text-ink text-base wrap-break-word">
+            <div className="2xl:hidden">
+              <CardGrid empty={shown.length === 0 && emptyText}>
+                {shown.map((r) => {
+                  const price = priceText(r);
+                  return (
+                    <GridCard key={r.id}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <h2 className="font-bold text-ink text-base wrap-break-word">
+                            {requesterName(r)}
+                          </h2>
+                          <p className="text-xs text-ink-3">
+                            {formatCreated(r.created_at)}
+                          </p>
+                        </div>
+                        <StatusBadge r={r} />
+                      </div>
+                      <CardFields>
+                        <CardField label="Beneficiario">
+                          {beneficiaryName(r) ?? "—"}
+                        </CardField>
+                        <CardField label="Traslado">{transfer(r)}</CardField>
+                        <CardField label="Contacto">{contact(r)}</CardField>
+                        <CardField label="Precio">
+                          <span className="font-semibold">{price ?? "—"}</span>
+                        </CardField>
+                      </CardFields>
+                      {renderActions(r) && (
+                        <CardActions>{renderActions(r)}</CardActions>
+                      )}
+                    </GridCard>
+                  );
+                })}
+              </CardGrid>
+            </div>
+            <table className="hidden 2xl:table w-full">
+              <TableHead columns={COLUMNS} />
+              <tbody>
+                {shown.map((r) => {
+                  const price = priceText(r);
+                  return (
+                    <TableRow key={r.id}>
+                      <td className="px-4 py-3.5">
+                        <p className="font-semibold text-ink text-sm">
                           {requesterName(r)}
-                        </h2>
-                        <p className="text-xs text-ink-3">
+                        </p>
+                        <p className="text-xs text-ink-3 whitespace-nowrap">
                           {formatCreated(r.created_at)}
                         </p>
-                      </div>
-                      <StatusBadge r={r} />
-                    </div>
-                    <CardFields>
-                      <CardField label="Beneficiario">
-                        {beneficiaryName(r) ?? "—"}
-                      </CardField>
-                      <CardField label="Traslado">{transfer(r)}</CardField>
-                      <CardField label="Contacto">{contact(r)}</CardField>
-                      <CardField label="Precio">
-                        <span className="font-semibold">{price ?? "—"}</span>
-                      </CardField>
-                    </CardFields>
-                    {renderActions(r) && (
-                      <CardActions>{renderActions(r)}</CardActions>
-                    )}
-                  </GridCard>
-                );
-              })}
-            </CardGrid>
-          </div>
-          <table className="hidden 2xl:table w-full">
-            <TableHead columns={COLUMNS} />
-            <tbody>
-              {shown.map((r) => {
-                const price = priceText(r);
-                return (
-                  <TableRow key={r.id}>
-                    <td className="px-4 py-3.5">
-                      <p className="font-semibold text-ink text-sm">
-                        {requesterName(r)}
-                      </p>
-                      <p className="text-xs text-ink-3 whitespace-nowrap">
-                        {formatCreated(r.created_at)}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3.5 text-sm text-ink">
-                      {beneficiaryName(r) ?? <EmptyCell />}
-                    </td>
-                    <td className="px-4 py-3.5">{transfer(r)}</td>
-                    <td className="px-4 py-3.5">{contact(r)}</td>
-                    <td className="px-4 py-3.5 text-sm font-medium text-ink whitespace-nowrap">
-                      {price ?? <EmptyCell />}
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <StatusBadge r={r} />
-                    </td>
-                    <td className="px-4 py-3.5 text-right">
-                      {renderActions(r)}
-                    </td>
-                  </TableRow>
-                );
-              })}
-              {shown.length === 0 && (
-                <EmptyRow colSpan={COLUMNS.length}>{emptyText}</EmptyRow>
-              )}
-            </tbody>
-          </table>
+                      </td>
+                      <td className="px-4 py-3.5 text-sm text-ink">
+                        {beneficiaryName(r) ?? <EmptyCell />}
+                      </td>
+                      <td className="px-4 py-3.5">{transfer(r)}</td>
+                      <td className="px-4 py-3.5">{contact(r)}</td>
+                      <td className="px-4 py-3.5 text-sm font-medium text-ink whitespace-nowrap">
+                        {price ?? <EmptyCell />}
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <StatusBadge r={r} />
+                      </td>
+                      <td className="px-4 py-3.5 text-right">
+                        {renderActions(r)}
+                      </td>
+                    </TableRow>
+                  );
+                })}
+                {shown.length === 0 && (
+                  <EmptyRow colSpan={COLUMNS.length}>{emptyText}</EmptyRow>
+                )}
+              </tbody>
+            </table>
           </>
         )}
       </div>

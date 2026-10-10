@@ -15,6 +15,9 @@ export interface User {
   phone: string | null;
   /** URL firmada temporal de la foto de perfil (o null). */
   image: string | null;
+  /** Punto del mapa de la dirección (null si se escribió a mano). */
+  address_lat?: number | null;
+  address_lng?: number | null;
   emailVerified: boolean;
   active: boolean;
   createdAt: string;
@@ -54,6 +57,33 @@ export const getUsers = () => apiClient.get<User[]>(BASE).then((r) => r.data);
 /** Perfil del usuario con sesión (la foto llega como URL firmada). */
 export const getMyProfile = () =>
   apiClient.get<User | null>(`${BASE}/me`).then((r) => r.data);
+
+/** Lo que cada usuario puede editar de sí mismo (PUT /users/me). */
+export interface UpdateMyProfileInput {
+  name?: string;
+  lastname?: string;
+  phone?: string;
+  address?: string;
+  address_lat?: number | null;
+  address_lng?: number | null;
+}
+
+export const updateMyProfile = (body: UpdateMyProfileInput) =>
+  apiClient.put<User>(`${BASE}/me`, body).then((r) => r.data);
+
+/** Sube o reemplaza la foto propia (multipart, campo "photo"). */
+export const uploadMyPhoto = (photo: File) => {
+  const fd = new FormData();
+  fd.append("photo", photo);
+  return apiClient
+    .put<User>(`${BASE}/me/photo`, fd, {
+      headers: { "Content-Type": undefined },
+    })
+    .then((r) => r.data);
+};
+
+export const deleteMyPhoto = () =>
+  apiClient.delete<User>(`${BASE}/me/photo`).then((r) => r.data);
 
 /** Página por cursor (created_at DESC) para la tabla del panel. */
 export const getUsersPage = (

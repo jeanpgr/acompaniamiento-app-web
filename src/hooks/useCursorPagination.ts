@@ -18,9 +18,10 @@ export function useCursorPagination<T, C = undefined>(
   options: { refetchInterval?: number } = {},
 ) {
   const key = JSON.stringify(queryKey);
-  const [state, setState] = useState<{ key: string; cursors: (string | null)[] }>(
-    { key, cursors: [null] },
-  );
+  const [state, setState] = useState<{
+    key: string;
+    cursors: (string | null)[];
+  }>({ key, cursors: [null] });
   // Filtros nuevos → primera página (ajuste durante el render, sin un
   // render intermedio con el cursor de los filtros anteriores).
   if (state.key !== key) setState({ key, cursors: [null] });

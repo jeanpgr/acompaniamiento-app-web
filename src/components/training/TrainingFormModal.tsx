@@ -13,6 +13,7 @@ import {
   TRAINING_LIMITS,
   type TrainingFormValues,
 } from "./trainingForm";
+import { useDiscardGuard } from "@/hooks/useDiscardGuard";
 
 interface Props {
   open: boolean;
@@ -50,11 +51,13 @@ export default function TrainingFormModal({
     register,
     handleSubmit,
     control,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<TrainingFormValues>({
     defaultValues: formValues(item, serviceId),
     resolver: zodResolver(trainingSchema(isEdit)),
   });
+  // Cerrar con cambios sin guardar pide confirmación.
+  const requestClose = useDiscardGuard(isDirty, onClose);
 
   const trainingServices = services.filter(
     (s) => s.type === "CAPACITACION" && s.active,
@@ -67,11 +70,11 @@ export default function TrainingFormModal({
   return (
     <Modal
       open={open}
-      onClose={() => !pending && onClose()}
+      onClose={() => !pending && requestClose()}
       title={isEdit ? "Editar capacitación" : "Nueva capacitación"}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose} disabled={pending}>
+          <Button variant="secondary" onClick={requestClose} disabled={pending}>
             Cancelar
           </Button>
           <Button type="submit" form={formId} loading={pending}>

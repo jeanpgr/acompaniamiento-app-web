@@ -30,6 +30,7 @@ import {
   CardActions,
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
+import { useDiscardGuard } from "@/hooks/useDiscardGuard";
 
 const schema = z.object({
   coupon: z.string().min(1, "Código requerido").max(50),
@@ -114,8 +115,10 @@ export default function DiscountCouponsPage() {
     handleSubmit,
     reset,
     setValue,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
+  // Cerrar con cambios sin guardar pide confirmación.
+  const requestClose = useDiscardGuard(isDirty, () => setModalOpen(false));
 
   const openCreate = () => {
     setEditTarget(null);
@@ -319,13 +322,13 @@ export default function DiscountCouponsPage() {
 
       <Modal
         open={modalOpen}
-        onClose={() => !isPending && setModalOpen(false)}
+        onClose={() => !isPending && requestClose()}
         title={editTarget ? "Editar cupón" : "Nuevo cupón de descuento"}
         footer={
           <>
             <Button
               variant="secondary"
-              onClick={() => setModalOpen(false)}
+              onClick={requestClose}
               disabled={isPending}
             >
               Cancelar

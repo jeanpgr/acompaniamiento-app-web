@@ -14,6 +14,7 @@ import {
   validateFile,
   type ProductFormValues,
 } from "./productForm";
+import { useDiscardGuard } from "@/hooks/useDiscardGuard";
 
 interface Props {
   open: boolean;
@@ -47,11 +48,13 @@ export default function ProductFormModal({
     handleSubmit,
     setValue,
     control,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<ProductFormValues>({
     defaultValues: formValues(product),
     resolver: zodResolver(productSchema),
   });
+  // Cerrar con cambios sin guardar pide confirmación.
+  const requestClose = useDiscardGuard(isDirty || !!file, onClose);
   const active = useWatch({ control, name: "active" });
 
   const pickFile = (picked: File) => {
@@ -73,11 +76,11 @@ export default function ProductFormModal({
   return (
     <Modal
       open={open}
-      onClose={() => !pending && onClose()}
+      onClose={() => !pending && requestClose()}
       title={isEdit ? `Editar · ${product.name}` : "Nuevo producto"}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose} disabled={pending}>
+          <Button variant="secondary" onClick={requestClose} disabled={pending}>
             Cancelar
           </Button>
           <Button type="submit" form={formId} loading={pending}>

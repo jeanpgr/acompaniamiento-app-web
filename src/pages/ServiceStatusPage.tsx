@@ -21,6 +21,7 @@ import Badge from "@/components/ui/Badge";
 import AddressMapButton from "@/components/ui/AddressMapButton";
 import StatCard from "@/components/ui/StatCard";
 import { LIVE_REFETCH_MS } from "@/lib/invalidate";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 const STATUS_CONFIG: Record<
   ScheduleStatus,
@@ -83,6 +84,7 @@ export default function ServiceStatusPage() {
     refetchInterval: LIVE_REFETCH_MS,
   });
 
+  const confirm = useConfirm();
   const updateMut = useMutation({
     mutationFn: ({ id, status }: { id: string; status: ScheduleStatus }) =>
       updateScheduleAcompan(id, { status }),
@@ -239,10 +241,7 @@ export default function ServiceStatusPage() {
             const cfg = STATUS_CONFIG[item.status];
             const Icon = cfg.icon;
             return (
-              <div
-                key={item.id}
-                className="card p-5"
-              >
+              <div key={item.id} className="card p-5">
                 {/* Card header */}
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 min-w-0">
@@ -311,9 +310,23 @@ export default function ServiceStatusPage() {
                             .map((s) => (
                               <button
                                 key={s}
-                                onClick={() =>
-                                  updateMut.mutate({ id: item.id, status: s })
-                                }
+                                onClick={async () => {
+                                  if (
+                                    await confirm({
+                                      title: `¿Cambiar a "${STATUS_CONFIG[s].label}"?`,
+                                      message:
+                                        s === "COMPLETADO"
+                                          ? `${item.title}. El servicio quedará como completado y el cliente podrá calificarlo.`
+                                          : `${item.title}. El cliente verá el nuevo estado en la app.`,
+                                      confirmLabel: "Cambiar estado",
+                                      tone: "primary",
+                                    })
+                                  )
+                                    updateMut.mutate({
+                                      id: item.id,
+                                      status: s,
+                                    });
+                                }}
                                 className="flex-1 min-h-9 rounded-lg text-[13px] font-semibold border-[1.5px] border-line-strong text-primary hover:bg-primary-soft"
                               >
                                 {STATUS_CONFIG[s].label}
@@ -363,7 +376,26 @@ export default function ServiceStatusPage() {
                       </div>
                     ) : (
                       <button
-                        onClick={() => refundMut.mutate(item.id)}
+                        onClick={async () => {
+                          if (
+                            await confirm({
+                              title:
+                                "¿Ya se hizo la transferencia del reembolso?",
+                              message: [
+                                item.title,
+                                (item.refundBank || item.refundAccount) &&
+                                  `${item.refundBank ?? ""} · ${item.refundAccountType ?? ""} ${item.refundAccount ?? ""}`,
+                                item.refundHolderCedula &&
+                                  `Cédula del titular: ${item.refundHolderCedula}`,
+                              ]
+                                .filter(Boolean)
+                                .join("\n"),
+                              confirmLabel: "Sí, reembolso realizado",
+                              tone: "primary",
+                            })
+                          )
+                            refundMut.mutate(item.id);
+                        }}
                         disabled={refundMut.isPending}
                         className="w-full flex items-center justify-center gap-1.5 min-h-9 rounded-lg text-[13px] font-semibold disabled:opacity-50 bg-primary text-white shadow-raised hover:bg-primary-hover transition-colors"
                       >

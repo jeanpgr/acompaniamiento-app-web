@@ -406,97 +406,97 @@ export default function TourismReservationsPage() {
           <TableSkeleton label="Cargando reservas…" />
         ) : (
           <>
-          <div className="xl:hidden">
-            <CardGrid empty={shown.length === 0 && emptyText}>
-              {shown.map((r) => {
-                const amount = toAmount(r.price_pay);
-                const names = Array.isArray(r.names_persons)
-                  ? r.names_persons
-                  : [];
-                return (
-                  <GridCard key={r.id}>
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <h2 className="font-bold text-ink text-base wrap-break-word">
+            <div className="xl:hidden">
+              <CardGrid empty={shown.length === 0 && emptyText}>
+                {shown.map((r) => {
+                  const amount = toAmount(r.price_pay);
+                  const names = Array.isArray(r.names_persons)
+                    ? r.names_persons
+                    : [];
+                  return (
+                    <GridCard key={r.id}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <h2 className="font-bold text-ink text-base wrap-break-word">
+                            {holderName(r)}
+                          </h2>
+                          <p className="text-xs text-ink-3">
+                            {formatCreated(r.created_at)}
+                          </p>
+                        </div>
+                        <StatusBadge r={r} />
+                      </div>
+                      <CardFields>
+                        <CardField label="Pasajeros">
+                          {r.quotas} {r.quotas === 1 ? "cupo" : "cupos"}
+                          {names.length > 0 && (
+                            <span className="block text-xs text-ink-3">
+                              {names.join(", ")}
+                            </span>
+                          )}
+                        </CardField>
+                        <CardField label="Contacto">{contact(r)}</CardField>
+                        <CardField label="Total">
+                          <span className="font-semibold">
+                            {amount != null ? formatMoney(amount) : "—"}
+                          </span>
+                        </CardField>
+                      </CardFields>
+                      {renderActions(r) && (
+                        <CardActions>{renderActions(r)}</CardActions>
+                      )}
+                    </GridCard>
+                  );
+                })}
+              </CardGrid>
+            </div>
+            <table className="hidden xl:table w-full">
+              <TableHead columns={COLUMNS} />
+              <tbody>
+                {shown.map((r) => {
+                  const amount = toAmount(r.price_pay);
+                  const names = Array.isArray(r.names_persons)
+                    ? r.names_persons
+                    : [];
+                  return (
+                    <TableRow key={r.id}>
+                      <td className="px-4 py-3.5">
+                        <p className="font-semibold text-ink text-sm">
                           {holderName(r)}
-                        </h2>
-                        <p className="text-xs text-ink-3">
+                        </p>
+                        <p className="text-xs text-ink-3 whitespace-nowrap">
                           {formatCreated(r.created_at)}
                         </p>
-                      </div>
-                      <StatusBadge r={r} />
-                    </div>
-                    <CardFields>
-                      <CardField label="Pasajeros">
-                        {r.quotas} {r.quotas === 1 ? "cupo" : "cupos"}
-                        {names.length > 0 && (
-                          <span className="block text-xs text-ink-3">
-                            {names.join(", ")}
-                          </span>
-                        )}
-                      </CardField>
-                      <CardField label="Contacto">{contact(r)}</CardField>
-                      <CardField label="Total">
-                        <span className="font-semibold">
-                          {amount != null ? formatMoney(amount) : "—"}
-                        </span>
-                      </CardField>
-                    </CardFields>
-                    {renderActions(r) && (
-                      <CardActions>{renderActions(r)}</CardActions>
-                    )}
-                  </GridCard>
-                );
-              })}
-            </CardGrid>
-          </div>
-          <table className="hidden xl:table w-full">
-            <TableHead columns={COLUMNS} />
-            <tbody>
-              {shown.map((r) => {
-                const amount = toAmount(r.price_pay);
-                const names = Array.isArray(r.names_persons)
-                  ? r.names_persons
-                  : [];
-                return (
-                  <TableRow key={r.id}>
-                    <td className="px-4 py-3.5">
-                      <p className="font-semibold text-ink text-sm">
-                        {holderName(r)}
-                      </p>
-                      <p className="text-xs text-ink-3 whitespace-nowrap">
-                        {formatCreated(r.created_at)}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <p className="text-sm text-ink-2 whitespace-nowrap">
-                        {r.quotas} {r.quotas === 1 ? "cupo" : "cupos"}
-                      </p>
-                      <p
-                        className="text-xs text-ink-3 truncate max-w-44"
-                        title={names.join(", ")}
-                      >
-                        {names.join(", ") || "—"}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3.5">{contact(r)}</td>
-                    <td className="px-4 py-3.5 text-sm font-medium text-ink whitespace-nowrap">
-                      {amount != null ? formatMoney(amount) : <EmptyCell />}
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <StatusBadge r={r} />
-                    </td>
-                    <td className="px-4 py-3.5 text-right">
-                      {renderActions(r)}
-                    </td>
-                  </TableRow>
-                );
-              })}
-              {shown.length === 0 && (
-                <EmptyRow colSpan={COLUMNS.length}>{emptyText}</EmptyRow>
-              )}
-            </tbody>
-          </table>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <p className="text-sm text-ink-2 whitespace-nowrap">
+                          {r.quotas} {r.quotas === 1 ? "cupo" : "cupos"}
+                        </p>
+                        <p
+                          className="text-xs text-ink-3 truncate max-w-44"
+                          title={names.join(", ")}
+                        >
+                          {names.join(", ") || "—"}
+                        </p>
+                      </td>
+                      <td className="px-4 py-3.5">{contact(r)}</td>
+                      <td className="px-4 py-3.5 text-sm font-medium text-ink whitespace-nowrap">
+                        {amount != null ? formatMoney(amount) : <EmptyCell />}
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <StatusBadge r={r} />
+                      </td>
+                      <td className="px-4 py-3.5 text-right">
+                        {renderActions(r)}
+                      </td>
+                    </TableRow>
+                  );
+                })}
+                {shown.length === 0 && (
+                  <EmptyRow colSpan={COLUMNS.length}>{emptyText}</EmptyRow>
+                )}
+              </tbody>
+            </table>
           </>
         )}
       </div>

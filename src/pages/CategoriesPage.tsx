@@ -32,6 +32,7 @@ import {
   CardActions,
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
+import { useDiscardGuard } from "@/hooks/useDiscardGuard";
 
 const schema = z.object({
   name: z.string().min(1, "Nombre requerido").max(30),
@@ -90,8 +91,10 @@ export default function CategoriesPage() {
     reset,
     setValue,
     control,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
+  // Cerrar con cambios sin guardar pide confirmación.
+  const requestClose = useDiscardGuard(isDirty, () => setModalOpen(false));
 
   const activeField = useWatch({ control, name: "active", defaultValue: true });
 
@@ -271,13 +274,13 @@ export default function CategoriesPage() {
 
       <Modal
         open={modalOpen}
-        onClose={() => !isPending && setModalOpen(false)}
+        onClose={() => !isPending && requestClose()}
         title={editTarget ? "Editar categoría" : "Nueva categoría"}
         footer={
           <>
             <Button
               variant="secondary"
-              onClick={() => setModalOpen(false)}
+              onClick={requestClose}
               disabled={isPending}
             >
               Cancelar

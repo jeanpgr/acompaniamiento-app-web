@@ -5,27 +5,27 @@ interface Props {
   open: boolean;
   onClose: () => void;
   title: string;
+  /** Texto bajo el título. */
+  description?: string;
   children: ReactNode;
   footer?: ReactNode;
-  size?: "md" | "lg";
 }
 
-// <dialog> nativo: capa superior (escapa cualquier overflow), foco atrapado,
-// Escape para cerrar y el foco vuelve al disparador al cerrar. El elemento
-// queda montado para que close() pueda devolver el foco; el contenido solo
-// se monta mientras está abierto.
-export default function Modal({
+// Panel lateral que entra desde la derecha. Igual que Modal usa <dialog>
+// nativo (capa superior, foco atrapado, Escape, foco de vuelta al
+// disparador) y puede abrirse encima de un Modal. Ocupa todo el alto; en
+// pantallas angostas, todo el ancho.
+export default function Drawer({
   open,
   onClose,
   title,
+  description,
   children,
   footer,
-  size = "md",
 }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
-  // Al cerrar, el contenido sigue montado mientras dura la transición de
-  // salida (index.css) para que no se desvanezca una caja vacía.
+  // Mismo patrón que Modal: el contenido sigue montado durante la salida.
   const [wasOpen, setWasOpen] = useState(open);
   const [lingering, setLingering] = useState(false);
   if (open !== wasOpen) {
@@ -45,7 +45,6 @@ export default function Modal({
       ref={ref}
       aria-labelledby={titleId}
       onCancel={(e) => {
-        // Escape: el padre decide (p. ej. no cerrar mientras se guarda).
         e.preventDefault();
         onClose();
       }}
@@ -55,17 +54,19 @@ export default function Modal({
       onTransitionEnd={(e) => {
         if (!open && e.target === e.currentTarget) setLingering(false);
       }}
-      className={`m-auto p-0 bg-surface rounded-2xl shadow-[0_24px_48px_-12px_rgb(11_35_59/0.35)] w-[calc(100%-2rem)] ${size === "lg" ? "max-w-2xl" : "max-w-md"} max-h-[calc(100dvh-2rem)] text-ink open:flex flex-col`}
+      className="drawer bg-surface text-ink shadow-[-24px_0_48px_-12px_rgb(11_35_59/0.35)] open:flex flex-col"
     >
       {(open || lingering) && (
         <>
-          <div className="flex items-center justify-between px-4 sm:px-6 py-5 border-b border-line shrink-0">
-            <h3
-              id={titleId}
-              className="text-lg font-bold text-ink truncate pr-4"
-            >
-              {title}
-            </h3>
+          <div className="flex items-start justify-between gap-3 px-5 sm:px-6 py-5 border-b border-line shrink-0">
+            <div className="min-w-0">
+              <h3 id={titleId} className="text-lg font-bold text-ink">
+                {title}
+              </h3>
+              {description && (
+                <p className="text-sm text-ink-3 mt-0.5">{description}</p>
+              )}
+            </div>
             <button
               type="button"
               onClick={onClose}
@@ -75,11 +76,11 @@ export default function Modal({
               <X size={20} />
             </button>
           </div>
-          <div className="px-4 sm:px-6 py-4 overflow-y-auto flex-1 min-h-0">
+          <div className="px-5 sm:px-6 py-5 overflow-y-auto flex-1 min-h-0">
             {children}
           </div>
           {footer && (
-            <div className="px-4 sm:px-6 py-4 border-t border-line bg-surface-2/60 flex flex-col-reverse sm:flex-row sm:flex-wrap sm:justify-end gap-2 sm:gap-3 shrink-0 *:w-full sm:*:w-auto">
+            <div className="px-5 sm:px-6 py-4 border-t border-line bg-surface-2/60 flex flex-col-reverse min-[400px]:flex-row min-[400px]:justify-end gap-2 min-[400px]:gap-3 shrink-0 *:w-full min-[400px]:*:w-auto">
               {footer}
             </div>
           )}

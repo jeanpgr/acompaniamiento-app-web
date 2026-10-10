@@ -107,9 +107,7 @@ function Itinerary({
 }) {
   return (
     <>
-      <p className="text-sm font-bold text-ink mb-3">
-        Itinerario
-      </p>
+      <p className="text-sm font-bold text-ink mb-3">Itinerario</p>
       <ol className="flex flex-col gap-0">
         {stops.map((stop, i) => (
           <li key={i} className="flex items-start gap-3">

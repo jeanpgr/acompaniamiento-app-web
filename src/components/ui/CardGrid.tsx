@@ -12,7 +12,9 @@ export function CardGrid({
   empty?: ReactNode;
 }) {
   if (empty) {
-    return <p className="px-5 py-10 text-center text-ink-3 text-[15px]">{empty}</p>;
+    return (
+      <p className="px-5 py-10 text-center text-ink-3 text-[15px]">{empty}</p>
+    );
   }
   // Las columnas dependen del ancho del contenedor (no de la pantalla): la
   // misma cuadrícula sirve a pantalla completa o junto a un panel lateral.
@@ -43,9 +45,7 @@ export function GridCard({
     <li
       onClick={onClick}
       className={`flex flex-col gap-3 min-w-0 rounded-xl bg-surface p-4 shadow-card transition-[box-shadow,background-color] ${
-        selected
-          ? "ring-2 ring-primary bg-primary-soft/40"
-          : "hover:shadow-md"
+        selected ? "ring-2 ring-primary bg-primary-soft/40" : "hover:shadow-md"
       } ${onClick ? "cursor-pointer" : ""}`}
     >
       {children}

@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
 import Badge from "@/components/ui/Badge";
+import { useDiscardGuard } from "@/hooks/useDiscardGuard";
 
 const schema = z
   .object({
@@ -229,11 +230,13 @@ export default function DaycareDetailPage() {
     reset,
     control,
     setValue,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: formValues(null, serviceId),
   });
+  // Cerrar con cambios sin guardar pide confirmación.
+  const requestClose = useDiscardGuard(isDirty, () => setModalOpen(false));
   const [pointAddress, pointLat, pointLng] = useWatch({
     control,
     name: ["address_point", "address_point_lat", "address_point_lng"],
@@ -506,13 +509,13 @@ export default function DaycareDetailPage() {
       {/* Modal */}
       <Modal
         open={modalOpen}
-        onClose={() => !isPending && setModalOpen(false)}
+        onClose={() => !isPending && requestClose()}
         title={editTarget ? "Editar modalidad" : "Nueva modalidad de guardería"}
         footer={
           <>
             <Button
               variant="secondary"
-              onClick={() => setModalOpen(false)}
+              onClick={requestClose}
               disabled={isPending}
             >
               Cancelar

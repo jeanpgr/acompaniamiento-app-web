@@ -26,7 +26,6 @@ import {
   type ProductFormValues,
 } from "@/components/products/productForm";
 
-
 export default function ProductsPage() {
   const confirm = useConfirm();
   const [filterCat, setFilterCat] = useState("");

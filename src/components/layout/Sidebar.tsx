@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -12,7 +12,6 @@ import {
   Eye,
   Truck,
   Heart,
-  LogOut,
   MessageCircleQuestion,
   Tag,
   Package,
@@ -24,7 +23,16 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { clearAuth } from "@/store/authStore";
 import { getMyProfile } from "@/api/users";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import UserMenu from "./UserMenu";
 import type { AuthUser } from "@/api/auth";
+
+// "Perfil" y "Cambiar contraseña" (formularios, mapa) se descargan solo al
+// abrirlos por primera vez.
+const ProfileModal = lazy(() => import("@/components/profile/ProfileModal"));
+const ChangePasswordDrawer = lazy(
+  () => import("@/components/profile/ChangePasswordDrawer"),
+);
 
 type NavItem = { to: string; icon: LucideIcon; label: string };
 
@@ -71,11 +79,9 @@ interface Props {
 function ProfileAvatar({
   src,
   initials,
-  name,
 }: {
   src: string | null | undefined;
   initials: string;
-  name: string;
 }) {
   // URL firmada que no cargó (vencida o borrada): se muestran las iniciales.
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
@@ -84,20 +90,18 @@ function ProfileAvatar({
       <img
         src={src}
         alt=""
-        title={name}
         onError={() => setFailedSrc(src)}
         className="w-10 h-10 rounded-full object-cover shrink-0 bg-sage ring-2 ring-white/15"
       />
     );
   }
   return (
-    <div
-      title={name}
-      className="w-10 h-10 rounded-full bg-sage flex items-center justify-center text-white text-sm font-bold shrink-0"
+    <span
+      className="w-10 h-10 rounded-full bg-sage inline-flex items-center justify-center text-white text-sm font-bold shrink-0"
       aria-hidden="true"
     >
       {initials}
-    </div>
+    </span>
   );
 }
 
@@ -111,6 +115,18 @@ export default function Sidebar({
   const navigate = useNavigate();
 
   const queryClient = useQueryClient();
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  // Qué partes ya se descargaron (siguen montadas para animar su cierre).
+  const [loaded, setLoaded] = useState({ profile: false, password: false });
+  const openProfile = () => {
+    setLoaded((l) => ({ ...l, profile: true }));
+    setProfileOpen(true);
+  };
+  const openPassword = () => {
+    setLoaded((l) => ({ ...l, password: true }));
+    setPasswordOpen(true);
+  };
   // La sesión guarda solo la clave de la foto; /users/me trae la URL firmada.
   // Bajo ["users"]: se refresca al editar usuarios desde el panel.
   const profile = useQuery({
@@ -120,17 +136,29 @@ export default function Sidebar({
     enabled: !!user,
   });
 
-  const handleLogout = () => {
+  const confirm = useConfirm();
+  const handleLogout = async () => {
+    const ok = await confirm({
+      title: "¿Cerrar sesión?",
+      message:
+        "Tendrás que ingresar tu correo y contraseña para volver a entrar al panel.",
+      confirmLabel: "Cerrar sesión",
+      tone: "danger",
+    });
+    if (!ok) return;
+    setProfileOpen(false);
     clearAuth();
     // Los datos en caché eran de esta sesión: el siguiente usuario no debe verlos.
     queryClient.clear();
     navigate("/login");
   };
 
-  const initials = user
-    ? `${user.name[0] ?? ""}${user.lastname?.[0] ?? ""}`.toUpperCase()
-    : "??";
-  const fullName = user ? `${user.name} ${user.lastname}` : "Usuario";
+  // El perfil (si ya cargó) gana a la sesión: refleja lo editado en "Mi perfil".
+  const name = profile.data?.name ?? user?.name ?? "";
+  const lastname = profile.data?.lastname ?? user?.lastname ?? "";
+  const initials =
+    `${name[0] ?? ""}${lastname[0] ?? ""}`.toUpperCase() || "??";
+  const fullName = `${name} ${lastname}`.trim() || "Usuario";
 
   // Las variantes contraídas llevan `lg:`: el cajón móvil siempre va completo.
   const hideWhenCollapsed = collapsed ? "lg:hidden" : "";
@@ -264,34 +292,46 @@ export default function Sidebar({
 
         {/* Usuario */}
         <div
-          className={`border-t border-white/10 p-4 flex items-center gap-3 shrink-0 ${
-            collapsed ? "lg:justify-center lg:px-0" : ""
+          className={`border-t border-white/10 p-2.5 flex items-center shrink-0 ${
+            collapsed ? "lg:justify-center" : ""
           }`}
         >
-          <ProfileAvatar
-            src={profile.data?.image}
-            initials={initials}
-            name={fullName}
-          />
-          <div className={`flex-1 min-w-0 ${hideWhenCollapsed}`}>
-            <p className="text-white text-sm font-semibold truncate">
-              {fullName}
-            </p>
-            <p className="text-on-dark text-xs truncate">
-              {user?.role ?? "Admin"}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={handleLogout}
-            aria-label="Cerrar sesión"
-            title="Cerrar sesión"
-            className={`w-10 h-10 inline-flex items-center justify-center rounded-full text-on-dark hover:text-white hover:bg-sidebar-hover transition-colors focus-visible:outline-white ${hideWhenCollapsed}`}
+          {/* Foto, nombre y rol: despliegan Perfil / Contraseña / Salir */}
+          <UserMenu
+            fullName={fullName}
+            email={profile.data?.email ?? user?.email}
+            collapsed={collapsed}
+            onProfile={openProfile}
+            onPassword={openPassword}
+            onLogout={handleLogout}
           >
-            <LogOut size={18} />
-          </button>
+            <ProfileAvatar src={profile.data?.image} initials={initials} />
+            <span className={`flex-1 min-w-0 ${hideWhenCollapsed}`}>
+              <span className="block text-white text-sm font-semibold truncate">
+                {fullName}
+              </span>
+              <span className="block text-on-dark text-xs truncate group-hover:text-white">
+                {user?.role ?? "Admin"}
+              </span>
+            </span>
+          </UserMenu>
         </div>
       </aside>
+
+      <Suspense fallback={null}>
+        {loaded.profile && (
+          <ProfileModal
+            open={profileOpen}
+            onClose={() => setProfileOpen(false)}
+          />
+        )}
+        {loaded.password && (
+          <ChangePasswordDrawer
+            open={passwordOpen}
+            onClose={() => setPasswordOpen(false)}
+          />
+        )}
+      </Suspense>
     </>
   );
 }

@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getVehicles } from "@/api/vehicles";
 import { serviceTypeStyle } from "@/lib/serviceTypes";
 import { invalidateResource } from "@/lib/invalidate";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import WeekCalendar from "@/components/distribution/WeekCalendar";
 import PendingQueue from "@/components/distribution/PendingQueue";
 import RefundsPanel from "@/components/distribution/RefundsPanel";
@@ -92,10 +93,23 @@ export default function DistributionPage() {
     },
   });
 
-  const handleAssign = (s: Unified, vehicleId: string) => {
+  const confirm = useConfirm();
+
+  /** Devuelve false si el usuario se arrepiente (el selector se limpia). */
+  const handleAssign = async (s: Unified, vehicleId: string) => {
     // Capacitación no usa vehículo: se confirma sin él.
-    if (s.needsVehicle && !vehicleId) return;
-    assignMut.mutate({ s, vehicleId });
+    if (s.needsVehicle && !vehicleId) return false;
+    const vehicle = vehicles.find((v) => v.id === vehicleId);
+    const ok = await confirm({
+      title: vehicle
+        ? `¿Asignar ${vehicle.name} (${vehicle.license_plate})?`
+        : "¿Confirmar este servicio?",
+      message: `${s.title} · ${s.personName}. La cita quedará confirmada y el cliente lo verá en la app.`,
+      confirmLabel: vehicle ? "Asignar y confirmar" : "Confirmar",
+      tone: "primary",
+    });
+    if (ok) assignMut.mutate({ s, vehicleId });
+    return ok;
   };
 
   // ── Reembolsos de citas canceladas ───────────────────────────
@@ -179,7 +193,25 @@ export default function DistributionPage() {
             savingId={
               refundMut.isPending ? (refundMut.variables?.id ?? null) : null
             }
-            onMarkRefunded={(s) => refundMut.mutate(s)}
+            onMarkRefunded={async (s) => {
+              if (
+                await confirm({
+                  title: "¿Ya se hizo la transferencia del reembolso?",
+                  message: [
+                    `${s.title} · ${s.personName}`,
+                    (s.refundBank || s.refundAccount) &&
+                      `${s.refundBank ?? ""} · ${s.refundAccountType ?? ""} ${s.refundAccount ?? ""}`,
+                    s.refundHolderCedula &&
+                      `Cédula del titular: ${s.refundHolderCedula}`,
+                  ]
+                    .filter(Boolean)
+                    .join("\n"),
+                  confirmLabel: "Sí, reembolso realizado",
+                  tone: "primary",
+                })
+              )
+                refundMut.mutate(s);
+            }}
           />
         </div>
       </div>

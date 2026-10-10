@@ -19,6 +19,7 @@ import {
 } from "@/api/settings";
 import { onlyDigits, sanitized } from "@/lib/digits";
 import Button from "@/components/ui/Button";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 // Reglas dentro de las del backend (features/settings/settings.registry.ts),
 // más estrictas para Ecuador.
@@ -97,7 +98,10 @@ function Field({
 }) {
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-semibold text-ink mb-1.5">
+      <label
+        htmlFor={id}
+        className="block text-sm font-semibold text-ink mb-1.5"
+      >
         {label} <span className="text-danger-fg">*</span>
       </label>
       {children}
@@ -119,6 +123,7 @@ export default function SettingsPage() {
     queryFn: getSettings,
   });
 
+  const confirm = useConfirm();
   const saveMut = useMutation({
     mutationFn: updateSettings,
     meta: {
@@ -177,7 +182,9 @@ export default function SettingsPage() {
   return (
     <div className="max-w-5xl">
       <div className="mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold text-ink">Configuración</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-ink">
+          Configuración
+        </h1>
         <p className="text-[15px] text-ink-3 mt-1">
           Parámetros del sistema que usa la app móvil. Los cambios se aplican
           sin publicar otra versión.
@@ -202,13 +209,13 @@ export default function SettingsPage() {
       ) : (
         <div className="space-y-6">
           {/* ── WhatsApp ── */}
-          <section
-            className="card p-5"
-            aria-labelledby="set-wa"
-          >
+          <section className="card p-5" aria-labelledby="set-wa">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 mb-4">
               <div className="flex items-start gap-3 min-w-0">
-                <span className="w-10 h-10 shrink-0 rounded-xl bg-success-bg text-success-fg flex items-center justify-center" aria-hidden="true">
+                <span
+                  className="w-10 h-10 shrink-0 rounded-xl bg-success-bg text-success-fg flex items-center justify-center"
+                  aria-hidden="true"
+                >
                   <MessageCircle size={20} />
                 </span>
                 <div>
@@ -226,11 +233,19 @@ export default function SettingsPage() {
             </div>
             <form
               className="flex flex-wrap items-start gap-3"
-              onSubmit={wa.handleSubmit((v) =>
-                saveMut.mutate({
-                  whatsapp_number: EC_PREFIX + v.whatsapp_number,
-                }),
-              )}
+              onSubmit={wa.handleSubmit(async (v) => {
+                if (
+                  await confirm({
+                    title: "¿Cambiar el WhatsApp de atención?",
+                    message: `Desde ahora los pedidos y comprobantes de pago de la app llegarán al +593 ${v.whatsapp_number}.`,
+                    confirmLabel: "Guardar número",
+                    tone: "primary",
+                  })
+                )
+                  saveMut.mutate({
+                    whatsapp_number: EC_PREFIX + v.whatsapp_number,
+                  });
+              })}
             >
               <div className="w-72">
                 <Field
@@ -297,13 +312,13 @@ export default function SettingsPage() {
           </section>
 
           {/* ── Cuenta bancaria ── */}
-          <section
-            className="card p-5"
-            aria-labelledby="set-bank"
-          >
+          <section className="card p-5" aria-labelledby="set-bank">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 mb-4">
               <div className="flex items-start gap-3 min-w-0">
-                <span className="w-10 h-10 shrink-0 rounded-xl bg-primary-soft text-primary flex items-center justify-center" aria-hidden="true">
+                <span
+                  className="w-10 h-10 shrink-0 rounded-xl bg-primary-soft text-primary flex items-center justify-center"
+                  aria-hidden="true"
+                >
                   <Landmark size={20} />
                 </span>
                 <div>
@@ -321,9 +336,17 @@ export default function SettingsPage() {
             <div className="grid lg:grid-cols-[1fr_18rem] gap-6">
               <form
                 className="grid sm:grid-cols-2 gap-4 content-start"
-                onSubmit={bank.handleSubmit((v) =>
-                  saveMut.mutate({ bank_account: v }),
-                )}
+                onSubmit={bank.handleSubmit(async (v) => {
+                  if (
+                    await confirm({
+                      title: "¿Cambiar la cuenta para transferencias?",
+                      message: `Los clientes verán estos datos para pagar sus reservas:\n${v.bank_name} · ${v.account_type} ${v.account_number}\nTitular: ${v.holder_name}`,
+                      confirmLabel: "Guardar cuenta",
+                      tone: "primary",
+                    })
+                  )
+                    saveMut.mutate({ bank_account: v });
+                })}
               >
                 <Field
                   id="set-bank-name"
