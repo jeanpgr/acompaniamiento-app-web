@@ -26,6 +26,7 @@ import { getMyProfile } from "@/api/users";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import UserMenu from "./UserMenu";
 import type { AuthUser } from "@/api/auth";
+import { canAccess } from "@/lib/permissions";
 
 // "Perfil" y "Cambiar contraseña" (formularios, mapa) se descargan solo al
 // abrirlos por primera vez.
@@ -113,6 +114,11 @@ export default function Sidebar({
   onToggleCollapsed,
 }: Props) {
   const navigate = useNavigate();
+  // Solo los módulos que el rol permite; una sección sin módulos no se muestra.
+  const visibleSections = NAV_SECTIONS.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => canAccess(user, item.to)),
+  })).filter((section) => section.items.length > 0);
 
   const queryClient = useQueryClient();
   const [profileOpen, setProfileOpen] = useState(false);
@@ -232,7 +238,7 @@ export default function Sidebar({
             collapsed ? "lg:px-2" : ""
           }`}
         >
-          {NAV_SECTIONS.map((section, i) => (
+          {visibleSections.map((section, i) => (
             <div key={section.title} className={i > 0 ? "mt-5" : undefined}>
               {/* Contraído: el título queda para el lector de pantalla y una
                   línea separa visualmente las secciones. */}

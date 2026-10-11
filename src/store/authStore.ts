@@ -41,6 +41,6 @@ export function requireAuthLoader() {
 
 /** /login: si ya hay sesión, va directo al panel. */
 export function guestOnlyLoader() {
-  if (getStoredToken()) throw redirect("/dashboard");
+  if (getStoredToken()) throw redirect("/");
   return null;
 }

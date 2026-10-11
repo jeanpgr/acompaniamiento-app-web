@@ -2,7 +2,6 @@ import { useDeferredValue, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { ScheduleStatus } from "@/api/schedules";
 import { getVehicles } from "@/api/vehicles";
-import { serviceTypeStyle } from "@/lib/serviceTypes";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
@@ -89,18 +88,10 @@ function RefundBadge({ s }: { s: Unified }) {
 }
 
 function ServiceCell({ s }: { s: Unified }) {
-  const st = serviceTypeStyle(s.serviceType);
   return (
-    <div className="min-w-0">
-      <span
-        className={`inline-block text-xs px-2.5 py-0.5 rounded-full font-semibold mb-1 ${st.badge}`}
-      >
-        {st.label}
-      </span>
-      <p className="font-semibold text-ink text-sm line-clamp-2 wrap-break-word">
-        {s.title}
-      </p>
-    </div>
+    <p className="min-w-0 font-semibold text-ink text-sm line-clamp-2 wrap-break-word">
+      {s.title}
+    </p>
   );
 }
 

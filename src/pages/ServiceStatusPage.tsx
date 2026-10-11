@@ -13,8 +13,8 @@ import {
   Landmark,
 } from "lucide-react";
 import {
-  getSchedulesAcompan,
-  updateScheduleAcompan,
+  getAssignedSchedulesAcompan,
+  updateAssignedStatusAcompan,
   markRefundCompleteAcompan,
   type ScheduleStatus,
 } from "@/api/schedules";
@@ -23,6 +23,8 @@ import AddressMapButton from "@/components/ui/AddressMapButton";
 import StatCard from "@/components/ui/StatCard";
 import { LIVE_REFETCH_MS } from "@/lib/invalidate";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { getStoredUser } from "@/store/authStore";
+import { hasPermission } from "@/lib/permissions";
 
 const STATUS_CONFIG: Record<
   ScheduleStatus,
@@ -80,15 +82,18 @@ export default function ServiceStatusPage() {
 
   const { data: schedules = [], isLoading } = useQuery({
     queryKey: ["schedules-acompan"],
-    queryFn: getSchedulesAcompan,
+    queryFn: getAssignedSchedulesAcompan,
     // Reservas y cancelaciones llegan desde la app sin que el panel haga nada.
     refetchInterval: LIVE_REFETCH_MS,
   });
 
+  // Un conductor solo ve y marca sus asignaciones; reembolsos y estados
+  // previos a la confirmación son de quien administra las citas.
+  const canManageAll = hasPermission(getStoredUser(), "schedule-acompan");
   const confirm = useConfirm();
   const updateMut = useMutation({
     mutationFn: ({ id, status }: { id: string; status: ScheduleStatus }) =>
-      updateScheduleAcompan(id, { status }),
+      updateAssignedStatusAcompan(id, status),
     meta: {
       invalidates: "schedules-acompan",
       errorMessage: "No se pudo actualizar el estado",
@@ -303,7 +308,8 @@ export default function ServiceStatusPage() {
 
                 {/* Status update — solo para estados que aún pueden avanzar */}
                 {item.status !== "COMPLETADO" &&
-                  item.status !== "CANCELADA" && (
+                  item.status !== "CANCELADA" &&
+                  (canManageAll || item.status !== "PENDIENTE") && (
                     <div className="mt-3">
                       {updatingId === item.id ? (
                         <div className="flex gap-2">
@@ -354,7 +360,7 @@ export default function ServiceStatusPage() {
                   )}
 
                 {/* Reembolso — solo para citas canceladas */}
-                {item.status === "CANCELADA" && (
+                {canManageAll && item.status === "CANCELADA" && (
                   <div className="mt-3 pt-3 border-t border-line/70">
                     {(item.refundBank || item.refundAccount) && (
                       <div className="flex items-start gap-1.5 text-xs text-ink-3 mb-2">

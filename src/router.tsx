@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import type { ComponentType } from "react";
 import Layout from "@/components/layout/Layout";
 import { guestOnlyLoader, requireAuthLoader } from "@/store/authStore";
+import HomeRedirect from "@/components/layout/HomeRedirect";
 
 // Cada página se descarga bajo demanda (un chunk por ruta) en lugar de
 // empaquetar todo el panel en un único bundle: el navegador solo baja el
@@ -23,7 +24,7 @@ export const router = createBrowserRouter([
     loader: requireAuthLoader,
     element: <Layout />,
     children: [
-      { index: true, element: <Navigate to="/dashboard" replace /> },
+      { index: true, element: <HomeRedirect /> },
       { path: "dashboard", lazy: page(() => import("@/pages/DashboardPage")) },
       { path: "roles", lazy: page(() => import("@/pages/RolesPage")) },
       { path: "users", lazy: page(() => import("@/pages/UsersPage")) },

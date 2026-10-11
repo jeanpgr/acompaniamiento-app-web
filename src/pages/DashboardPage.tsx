@@ -17,6 +17,8 @@ import Panel from "@/components/dashboard/Panel";
 import KpiTile, { Delta } from "@/components/dashboard/KpiTile";
 import StackedColumns from "@/components/dashboard/StackedColumns";
 import AttentionStrip from "@/components/dashboard/AttentionStrip";
+import DriverDashboard from "@/components/dashboard/DriverDashboard";
+import { hasPermission } from "@/lib/permissions";
 import ServicePerformanceTable from "@/components/dashboard/ServicePerformanceTable";
 import RatingsPanel from "@/components/dashboard/RatingsPanel";
 import TopProducts from "@/components/dashboard/TopProducts";
@@ -76,7 +78,7 @@ function DashboardSkeleton() {
  * solicitudes e ingresos, el rendimiento por servicio, la satisfacción y la
  * tienda. Un solo filtro de periodo arriba gobierna todo lo de abajo.
  */
-export default function DashboardPage() {
+function AdminDashboard() {
   const [days, setDays] = useState<DashboardDays>(30);
   const query = useQuery({
     queryKey: ["dashboard", days],
@@ -332,4 +334,16 @@ export default function DashboardPage() {
       </div>
     </div>
   );
+}
+
+/**
+ * Un conductor (Acompañamiento sin ver todas las citas) tiene su propio
+ * resumen; el resto de roles con el módulo ve el dashboard del negocio.
+ */
+export default function DashboardPage() {
+  const user = getStoredUser();
+  const isDriver =
+    hasPermission(user, "acompanamiento") &&
+    !hasPermission(user, "schedule-acompan");
+  return isDriver ? <DriverDashboard /> : <AdminDashboard />;
 }

@@ -32,7 +32,7 @@ export default function LoginPage() {
     try {
       const res = await signIn(data.email, data.password);
       saveAuth(res.token, res.user);
-      navigate("/dashboard", { replace: true });
+      navigate("/", { replace: true });
     } catch (err) {
       setApiError(
         getErrorMessage(err, "Credenciales incorrectas. Intenta de nuevo."),

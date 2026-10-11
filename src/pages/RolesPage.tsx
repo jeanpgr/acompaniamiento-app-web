@@ -29,53 +29,7 @@ import {
   CardActions,
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
-
-// Deben coincidir con los módulos de `authorizePermission("<módulo>")` en el backend.
-const ALL_PERMISSIONS = [
-  "dashboard",
-  "users",
-  "roles",
-  "services",
-  "vehicles",
-  "schedule-acompan",
-  "detail-tourism",
-  "schedule-tourism",
-  "detail-training",
-  "schedule-training",
-  "detail-daycare",
-  "schedule-daycare",
-  "products",
-  "categories",
-  "coupons",
-  "sales",
-  "sales-detail",
-  "customer-reviews",
-  "frequently-questions",
-  "settings",
-];
-
-const PERM_LABELS: Record<string, string> = {
-  dashboard: "Dashboard (métricas)",
-  users: "Gestión de usuarios",
-  roles: "Gestión de roles",
-  services: "Gestión servicios",
-  vehicles: "Gestión vehículos",
-  "schedule-acompan": "Acompañamiento",
-  "detail-tourism": "Turismo (detalles)",
-  "schedule-tourism": "Turismo (agendas)",
-  "detail-training": "Capacitación (detalles)",
-  "schedule-training": "Capacitación (agendas)",
-  "detail-daycare": "Guardería (detalles)",
-  "schedule-daycare": "Guardería (agendas)",
-  products: "Productos",
-  categories: "Categorías",
-  coupons: "Cupones de descuento",
-  sales: "Ventas",
-  "sales-detail": "Detalle de ventas",
-  "customer-reviews": "Reseñas de clientes",
-  "frequently-questions": "Preguntas frecuentes",
-  settings: "Configuración del sistema",
-};
+import { PERMISSION_GROUPS } from "@/lib/permissionCatalog";
 
 function usersLabel(n: number) {
   return n === 1 ? "1 persona" : `${n} personas`;
@@ -400,24 +354,31 @@ export default function RolesPage() {
               Módulos a los que puede acceder este rol. Haz clic en otro rol
               para ver sus permisos.
             </p>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-1">
-              {ALL_PERMISSIONS.map((p) => {
-                const has = !!(
-                  displayRole.permissions as Record<string, boolean> | null
-                )?.[p];
-                return (
-                  <div key={p} className="flex items-center gap-2 text-sm">
-                    <span
-                      className={`text-xs ${has ? "text-success-fg" : "text-ink-3"}`}
-                    >
-                      {has ? "✓" : "✗"}
-                    </span>
-                    <span className={has ? "text-ink" : "text-ink-3"}>
-                      {PERM_LABELS[p]}
-                    </span>
-                  </div>
-                );
-              })}
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-1">
+              {PERMISSION_GROUPS.map((group) => (
+                <div key={group.module} className="min-w-0">
+                  <p className="text-xs font-bold text-ink-3 mb-1">
+                    {group.module}
+                  </p>
+                  {group.items.map(({ key, label }) => {
+                    const has = !!(
+                      displayRole.permissions as Record<string, boolean> | null
+                    )?.[key];
+                    return (
+                      <div key={key} className="flex items-start gap-2 text-sm">
+                        <span
+                          className={`text-xs mt-0.5 ${has ? "text-success-fg" : "text-ink-3"}`}
+                        >
+                          {has ? "✓" : "✗"}
+                        </span>
+                        <span className={has ? "text-ink" : "text-ink-3"}>
+                          {label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
             <div className="mt-4 pt-4 border-t border-line">
               <p className="text-xs text-ink-3 mb-2">Selector de rol</p>
@@ -493,26 +454,33 @@ export default function RolesPage() {
             <div
               role="group"
               aria-labelledby="roles-permisos"
-              className="space-y-1.5 max-h-48 overflow-y-auto"
+              className="max-h-64 overflow-y-auto"
             >
-              {ALL_PERMISSIONS.map((p) => (
-                <label
-                  key={p}
-                  className="flex items-center gap-2.5 text-sm cursor-pointer py-0.5"
-                >
-                  <input
-                    type="checkbox"
-                    checked={!!watchedPerms[p]}
-                    onChange={(e) => {
-                      setValue("permissions", {
-                        ...watchedPerms,
-                        [p]: e.target.checked,
-                      });
-                    }}
-                    className="rounded accent-primary w-5 h-5"
-                  />
-                  <span className="text-ink">{PERM_LABELS[p]}</span>
-                </label>
+              {PERMISSION_GROUPS.map((group) => (
+                <div key={group.module}>
+                  <p className="text-xs font-bold text-ink-3 mt-2 mb-0.5">
+                    {group.module}
+                  </p>
+                  {group.items.map(({ key, label }) => (
+                    <label
+                      key={key}
+                      className="flex items-center gap-2.5 text-sm cursor-pointer py-0.5"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={!!watchedPerms[key]}
+                        onChange={(e) => {
+                          setValue("permissions", {
+                            ...watchedPerms,
+                            [key]: e.target.checked,
+                          });
+                        }}
+                        className="rounded accent-primary w-5 h-5"
+                      />
+                      <span className="text-ink">{label}</span>
+                    </label>
+                  ))}
+                </div>
               ))}
             </div>
           </div>

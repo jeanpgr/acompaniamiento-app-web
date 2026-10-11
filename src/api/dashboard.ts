@@ -71,6 +71,41 @@ export interface DashboardData {
   }[];
 }
 
+/** Servicio de acompañamiento asignado al conductor. */
+export interface DriverServiceItem {
+  id: string;
+  dateTime: string;
+  status: "EN CURSO" | "COMPLETADO" | "OLVIDADA";
+  service: string | null;
+  origin: string;
+  destination: string;
+  person: string;
+  contactName: string;
+  phone: string;
+  vehicle: string | null;
+}
+
+/** Dashboard del conductor: solo sus servicios. */
+export interface DriverDashboardData {
+  range: { days: number; from: string; to: string; bucket: "day" | "week" };
+  kpis: {
+    today: number;
+    upcoming: number;
+    toClose: number;
+    completed: number;
+    forgotten: number;
+  };
+  today: DriverServiceItem[];
+  upcoming: DriverServiceItem[];
+  toClose: DriverServiceItem[];
+  timeline: { date: string; completed: number; forgotten: number }[];
+}
+
+export const getDriverDashboard = (days: DashboardDays) =>
+  apiClient
+    .get<DriverDashboardData>("/dashboard/driver", { params: { days } })
+    .then((r) => r.data);
+
 export const getDashboard = (days: DashboardDays) =>
   apiClient
     .get<DashboardData>("/dashboard", { params: { days } })

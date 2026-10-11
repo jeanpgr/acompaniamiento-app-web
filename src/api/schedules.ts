@@ -71,6 +71,19 @@ export const getSchedulesAcompanPage = (
       CursorPage<ScheduleAcompan, Record<ScheduleStatus, number>>
     >("/schedule-acompan", { params: pageParams(cursor, filters) })
     .then((r) => r.data);
+/**
+ * Módulo Acompañamiento: quien administra las citas ve todas; un conductor,
+ * solo las de sus vehículos (con el servicio y el vehículo incluidos).
+ */
+export const getAssignedSchedulesAcompan = () =>
+  apiClient
+    .get<ScheduleAcompan[]>("/schedule-acompan/assigned")
+    .then((r) => r.data);
+/** Cambia el estado de una cita desde el módulo Acompañamiento. */
+export const updateAssignedStatusAcompan = (id: string, status: ScheduleStatus) =>
+  apiClient
+    .put<ScheduleAcompan>(`/schedule-acompan/${id}/status`, { status })
+    .then((r) => r.data);
 export const createScheduleAcompan = (body: CreateScheduleAcompanInput) =>
   apiClient
     .post<ScheduleAcompan>("/schedule-acompan", body)
