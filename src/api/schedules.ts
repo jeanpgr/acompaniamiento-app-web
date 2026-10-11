@@ -94,7 +94,8 @@ export interface ScheduleTourism extends RefundFields {
   id: string;
   id_detail_tourism: string;
   id_vehicle: string;
-  names_persons: string[];
+  /** `{ name, tier }` por persona (ver lib/persons). */
+  names_persons: unknown;
   quotas: number;
   phone_responsible: string;
   price_pay: string | null;

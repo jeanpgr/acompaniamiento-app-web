@@ -17,6 +17,7 @@ import {
   type RefundFields,
 } from "@/api/schedules";
 import type { MapPoint } from "@/components/ui/AddressMap";
+import { personNames } from "@/lib/persons";
 
 // ── Cita unificada (los 4 tipos de agendamiento en una sola forma) ──
 
@@ -86,9 +87,7 @@ function normalizeTourism(s: ScheduleTourism): Unified {
     originalType: "tourism",
     serviceType: "TURISMO",
     title: s.detail?.name ?? "Turismo",
-    personName: Array.isArray(s.names_persons)
-      ? s.names_persons.join(", ")
-      : s.phone_responsible,
+    personName: personNames(s.names_persons).join(", ") || s.phone_responsible,
     dateTime: s.detail?.date_output ?? s.created_at,
     status: s.status,
     needsVehicle: true,

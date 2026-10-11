@@ -47,6 +47,7 @@ import {
 } from "@/components/tourism/tourismForm";
 import { LIVE_REFETCH_MS } from "@/lib/invalidate";
 import { whatsappUrl } from "@/lib/whatsapp";
+import { personNames } from "@/lib/persons";
 
 type Reservation = ScheduleTourismWithUser;
 
@@ -412,9 +413,7 @@ export default function TourismReservationsPage() {
               <CardGrid empty={shown.length === 0 && emptyText}>
                 {shown.map((r) => {
                   const amount = toAmount(r.price_pay);
-                  const names = Array.isArray(r.names_persons)
-                    ? r.names_persons
-                    : [];
+                  const names = personNames(r.names_persons);
                   return (
                     <GridCard key={r.id}>
                       <div className="flex items-start justify-between gap-3">
@@ -457,9 +456,7 @@ export default function TourismReservationsPage() {
               <tbody>
                 {shown.map((r) => {
                   const amount = toAmount(r.price_pay);
-                  const names = Array.isArray(r.names_persons)
-                    ? r.names_persons
-                    : [];
+                  const names = personNames(r.names_persons);
                   return (
                     <TableRow key={r.id}>
                       <td className="px-4 py-3.5">
