@@ -5,6 +5,7 @@ import { getVehicles } from "@/api/vehicles";
 import { serviceTypeStyle } from "@/lib/serviceTypes";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
 import SearchInput from "@/components/ui/SearchInput";
 import ViewToggle from "@/components/ui/ViewToggle";
 import TableSkeleton from "@/components/ui/TableSkeleton";
@@ -25,11 +26,13 @@ import {
 import { useViewMode } from "@/hooks/useViewMode";
 import { useClientPagination } from "@/hooks/useClientPagination";
 import { useDistributionSchedules } from "@/components/distribution/useDistributionSchedules";
+import { useScheduleActions } from "@/components/distribution/useScheduleActions";
 import {
   FILTER_TABS,
   STATUS_LABEL,
   STATUS_VARIANT,
   statusLabelOf,
+  isPending,
   formatTime,
   type FilterTab,
   type Unified,
@@ -53,6 +56,7 @@ const COLUMNS = [
   "Vehículo",
   "Ubicación",
   "Reembolso",
+  "Acciones",
 ];
 
 const PAGE_SIZE = 20;
@@ -117,6 +121,8 @@ export default function DistributionServicesPage() {
     queryKey: ["vehicles"],
     queryFn: getVehicles,
   });
+  const actions = useScheduleActions(vehicles);
+  const activeVehicles = vehicles.filter((v) => v.active);
   const vehicleName = new Map(
     vehicles.map((v) => [v.id, `${v.name} · ${v.license_plate}`]),
   );
@@ -164,6 +170,55 @@ export default function DistributionServicesPage() {
       <EmptyCell />
     );
 
+  /**
+   * Lo que el equipo puede resolver desde aquí: confirmar el pago y asignar
+   * vehículo (citas sin asignar) o marcar el reembolso (canceladas).
+   */
+  const actionsCell = (s: Unified) => {
+    if (isPending(s)) {
+      const busy = actions.assigningId === s.id;
+      return s.needsVehicle ? (
+        <select
+          aria-label={`Asignar vehículo a ${s.title}`}
+          className="field min-h-9 w-48 max-w-full px-2.5 py-1.5 text-sm"
+          value=""
+          disabled={busy}
+          onChange={(e) => actions.assign(s, e.target.value)}
+        >
+          <option value="" disabled>
+            {busy ? "Confirmando…" : "Asignar vehículo…"}
+          </option>
+          {activeVehicles.map((v) => (
+            <option key={v.id} value={v.id}>
+              {v.name} — {v.license_plate}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <Button
+          size="sm"
+          loading={busy}
+          onClick={() => actions.assign(s, "")}
+        >
+          {s.originalType === "training"
+            ? "Confirmar inscripción"
+            : "Confirmar servicio"}
+        </Button>
+      );
+    }
+    if (s.status === "CANCELADA" && s.refundStatus === "EN_PROCESO")
+      return (
+        <Button
+          size="sm"
+          loading={actions.refundingId === s.id}
+          onClick={() => actions.markRefunded(s)}
+        >
+          Reembolso realizado
+        </Button>
+      );
+    return <EmptyCell />;
+  };
+
   const emptyText = query
     ? `Sin resultados para "${search.trim()}"`
     : "No hay servicios con estos filtros";
@@ -181,7 +236,7 @@ export default function DistributionServicesPage() {
           Servicios y estados
         </h1>
         <p className="text-[15px] text-ink-3 mt-1">
-          Todas las citas agendadas con su estado, vehículo y reembolso
+          Todas las citas agendadas con su estado, vehículo y reembolso · Confirma pagos, asigna vehículos y marca reembolsos
         </p>
       </div>
 
@@ -264,11 +319,14 @@ export default function DistributionServicesPage() {
                   )}
                 </CardFields>
                 {s.mapPoints && locationCell(s)}
+                {(isPending(s) || s.refundStatus === "EN_PROCESO") && (
+                  <div className="mt-3">{actionsCell(s)}</div>
+                )}
               </GridCard>
             ))}
           </CardGrid>
         ) : (
-          <table className="w-full min-w-200">
+          <table className="w-full min-w-250">
             <TableHead columns={COLUMNS} />
             <tbody>
               {pager.items.map((s) => (
@@ -295,6 +353,7 @@ export default function DistributionServicesPage() {
                   <td className="px-4 py-3">
                     <RefundBadge s={s} />
                   </td>
+                  <td className="px-4 py-3">{actionsCell(s)}</td>
                 </TableRow>
               ))}
               {pager.items.length === 0 && (
