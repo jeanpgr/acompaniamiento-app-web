@@ -14,7 +14,6 @@ import {
   TOURISM_LIMITS,
   type TourismFormValues,
 } from "./tourismForm";
-import { useDiscardGuard } from "@/hooks/useDiscardGuard";
 
 interface Props {
   open: boolean;
@@ -59,13 +58,12 @@ export default function TourismFormModal({
     handleSubmit,
     control,
     setValue,
-    formState: { errors, isDirty },
+    formState: { errors },
   } = useForm<TourismFormValues>({
     defaultValues: formValues(item, serviceId),
     resolver: zodResolver(tourismSchema(item)),
   });
-  // Cerrar con cambios sin guardar pide confirmación.
-  const requestClose = useDiscardGuard(isDirty, onClose);
+  const requestClose = onClose;
   // Paradas del itinerario como lista dinámica del propio formulario.
   const { fields, append, remove } = useFieldArray({
     control,

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import RefreshButton from "@/components/ui/RefreshButton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -181,14 +182,17 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-5xl">
-      <div className="mb-6">
-        <h1 className="text-xl sm:text-2xl font-bold text-ink">
-          Configuración
-        </h1>
-        <p className="text-[15px] text-ink-3 mt-1">
-          Parámetros del sistema que usa la app móvil. Los cambios se aplican
-          sin publicar otra versión.
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-ink">
+            Configuración
+          </h1>
+          <p className="text-[15px] text-ink-3 mt-1">
+            Parámetros del sistema que usa la app móvil. Los cambios se aplican
+            sin publicar otra versión.
+          </p>
+        </div>
+        <RefreshButton />
       </div>
 
       {isError ? (

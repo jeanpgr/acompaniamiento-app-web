@@ -40,7 +40,6 @@ import {
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
 import Badge from "@/components/ui/Badge";
-import { useDiscardGuard } from "@/hooks/useDiscardGuard";
 
 const schema = z
   .object({
@@ -230,13 +229,12 @@ export default function DaycareDetailPage() {
     reset,
     control,
     setValue,
-    formState: { errors, isDirty },
+    formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: formValues(null, serviceId),
   });
-  // Cerrar con cambios sin guardar pide confirmación.
-  const requestClose = useDiscardGuard(isDirty, () => setModalOpen(false));
+  const requestClose = () => setModalOpen(false);
   const [pointAddress, pointLat, pointLng] = useWatch({
     control,
     name: ["address_point", "address_point_lat", "address_point_lng"],

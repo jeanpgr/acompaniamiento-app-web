@@ -1,4 +1,5 @@
 import { useState } from "react";
+import RefreshButton from "@/components/ui/RefreshButton";
 import { useParams } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
@@ -314,7 +315,8 @@ export default function TourismReservationsPage() {
   return (
     <div>
       {/* Encabezado */}
-      <div className="mb-6">
+      <div className="mb-6 relative">
+        <RefreshButton className="absolute right-0 top-0" />
         <Breadcrumb
           items={[
             { label: "Gestión servicios", to: "/services" },

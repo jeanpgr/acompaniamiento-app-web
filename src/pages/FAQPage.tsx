@@ -1,4 +1,5 @@
 import { useState } from "react";
+import RefreshButton from "@/components/ui/RefreshButton";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, HelpCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -17,7 +18,6 @@ import Modal from "@/components/ui/Modal";
 import TableSkeleton from "@/components/ui/TableSkeleton";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import SearchInput from "@/components/ui/SearchInput";
-import { useDiscardGuard } from "@/hooks/useDiscardGuard";
 
 const schema = z.object({
   question: z.string().min(5, "La pregunta debe tener al menos 5 caracteres"),
@@ -77,12 +77,11 @@ export default function FAQPage() {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isDirty },
+    formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
-  // Cerrar con cambios sin guardar pide confirmación.
-  const requestClose = useDiscardGuard(isDirty, () => setModalOpen(false));
+  const requestClose = () => setModalOpen(false);
 
   const openCreate = () => {
     setEditTarget(null);
@@ -145,13 +144,14 @@ export default function FAQPage() {
         </Button>
       </div>
 
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <SearchInput
           value={search}
           onChange={setSearch}
           placeholder="Buscar en preguntas y respuestas"
           label="Buscar preguntas frecuentes"
         />
+        <RefreshButton />
       </div>
 
       {isLoading ? (

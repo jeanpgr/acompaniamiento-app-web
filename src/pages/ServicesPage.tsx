@@ -33,7 +33,6 @@ import {
   CardActions,
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
-import { useDiscardGuard } from "@/hooks/useDiscardGuard";
 
 // ── Validation ──────────────────────────────────────────────────
 const schema = z.object({
@@ -160,10 +159,9 @@ export default function ServicesPage() {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isDirty },
+    formState: { errors },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
-  // Cerrar con cambios sin guardar pide confirmación.
-  const requestClose = useDiscardGuard(isDirty, () => setModalOpen(false));
+  const requestClose = () => setModalOpen(false);
 
   const openCreate = () => {
     setEditTarget(null);

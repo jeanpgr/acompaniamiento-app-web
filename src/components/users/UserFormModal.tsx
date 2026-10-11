@@ -16,7 +16,6 @@ import {
   validatePhoto,
   type CreateFormData,
 } from "./userForm";
-import { useDiscardGuard } from "@/hooks/useDiscardGuard";
 
 interface Props {
   open: boolean;
@@ -49,15 +48,14 @@ export default function UserFormModal({
   const {
     register,
     handleSubmit,
-    formState: { errors, isDirty },
+    formState: { errors },
   } = useForm<CreateFormData>({
     defaultValues: formValues(user),
     resolver: zodResolver(
       isEdit ? editSchema : createSchema,
     ) as unknown as Resolver<CreateFormData>,
   });
-  // Cerrar con cambios sin guardar pide confirmación.
-  const requestClose = useDiscardGuard(isDirty || !!photoFile, onClose);
+  const requestClose = onClose;
 
   const pickPhoto = (file: File) => {
     const err = validatePhoto(file);

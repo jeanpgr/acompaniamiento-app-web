@@ -1,4 +1,5 @@
 import { useState } from "react";
+import RefreshButton from "@/components/ui/RefreshButton";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { List } from "lucide-react";
@@ -133,6 +134,7 @@ export default function DistributionPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <RefreshButton />
           <Link
             to="servicios"
             className="inline-flex items-center gap-2 h-11 px-5 rounded-lg text-sm font-semibold bg-surface border-[1.5px] border-line-strong text-primary hover:bg-primary-soft hover:border-primary/40 transition-colors"

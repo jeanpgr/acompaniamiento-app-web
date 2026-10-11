@@ -13,7 +13,6 @@ import {
   TRAINING_LIMITS,
   type TrainingFormValues,
 } from "./trainingForm";
-import { useDiscardGuard } from "@/hooks/useDiscardGuard";
 
 interface Props {
   open: boolean;
@@ -51,13 +50,12 @@ export default function TrainingFormModal({
     register,
     handleSubmit,
     control,
-    formState: { errors, isDirty },
+    formState: { errors },
   } = useForm<TrainingFormValues>({
     defaultValues: formValues(item, serviceId),
     resolver: zodResolver(trainingSchema(isEdit)),
   });
-  // Cerrar con cambios sin guardar pide confirmación.
-  const requestClose = useDiscardGuard(isDirty, onClose);
+  const requestClose = onClose;
 
   const trainingServices = services.filter(
     (s) => s.type === "CAPACITACION" && s.active,

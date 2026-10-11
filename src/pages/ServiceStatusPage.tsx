@@ -1,4 +1,5 @@
 import { useState } from "react";
+import RefreshButton from "@/components/ui/RefreshButton";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   Clock,
@@ -161,6 +162,7 @@ export default function ServiceStatusPage() {
             Monitorea el estado en tiempo real de los servicios activos
           </p>
         </div>
+        <RefreshButton />
       </div>
 
       {/* Stats */}

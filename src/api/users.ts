@@ -88,7 +88,7 @@ export const deleteMyPhoto = () =>
 /** Página por cursor (created_at DESC) para la tabla del panel. */
 export const getUsersPage = (
   cursor: string | null,
-  filters: { search?: string; active?: boolean } = {},
+  filters: { search?: string; active?: boolean; role?: string } = {},
 ) =>
   apiClient
     .get<

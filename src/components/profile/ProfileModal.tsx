@@ -19,7 +19,6 @@ import Badge from "@/components/ui/Badge";
 import ZoomableImage from "@/components/ui/ZoomableImage";
 import MapPickButton from "@/components/ui/MapPickButton";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
-import { useDiscardGuard } from "@/hooks/useDiscardGuard";
 import { ID_PHONE_MAX_DIGITS, onlyDigits, sanitized } from "@/lib/digits";
 import {
   initialsOf,
@@ -245,9 +244,8 @@ function ProfileContent({ open, onClose }: Props) {
     reset(toForm(user));
     setEditing(false);
   };
-  // Con cambios sin guardar, Cancelar o cerrar el modal piden confirmación.
-  const requestCancelEdit = useDiscardGuard(isDirty, cancelEdit);
-  const requestClose = useDiscardGuard(editing && isDirty, onClose);
+  const requestCancelEdit = cancelEdit;
+  const requestClose = onClose;
 
   const name = user?.name ?? fallback?.name ?? "";
   const lastname = user?.lastname ?? fallback?.lastname ?? "";

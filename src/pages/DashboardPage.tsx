@@ -11,6 +11,7 @@ import {
 import { getDashboard, type DashboardDays } from "@/api/dashboard";
 import { LIVE_REFETCH_MS } from "@/lib/invalidate";
 import { getStoredUser } from "@/store/authStore";
+import RefreshButton from "@/components/ui/RefreshButton";
 import Button from "@/components/ui/Button";
 import Panel from "@/components/dashboard/Panel";
 import KpiTile, { Delta } from "@/components/dashboard/KpiTile";
@@ -101,6 +102,7 @@ export default function DashboardPage() {
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-3">
+        <RefreshButton />
         {data && (
           <span className="text-xs text-ink-3">
             Actualizado{" "}

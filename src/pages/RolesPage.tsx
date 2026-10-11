@@ -29,7 +29,6 @@ import {
   CardActions,
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
-import { useDiscardGuard } from "@/hooks/useDiscardGuard";
 
 // Deben coincidir con los módulos de `authorizePermission("<módulo>")` en el backend.
 const ALL_PERMISSIONS = [
@@ -159,10 +158,8 @@ export default function RolesPage() {
     reset,
     setValue,
     control,
-    formState: { isDirty },
   } = useForm<CreateRoleInput>();
-  // Cerrar con cambios sin guardar pide confirmación.
-  const requestClose = useDiscardGuard(isDirty, () => setModalOpen(false));
+  const requestClose = () => setModalOpen(false);
   const watchedPerms =
     useWatch({ control, name: "permissions", defaultValue: {} }) ?? {};
 

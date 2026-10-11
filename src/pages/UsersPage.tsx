@@ -43,6 +43,7 @@ export default function UsersPage() {
   const confirm = useConfirm();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatus] = useState<StatusFilter>("all");
+  const [roleFilter, setRoleFilter] = useState("");
   const [view, setView] = useViewMode();
 
   // Modal: `formKey` cambia en cada apertura para que el formulario empiece limpio.
@@ -54,9 +55,11 @@ export default function UsersPage() {
   // los conteos de las tarjetas respetan la búsqueda.
   const debouncedSearch = useDebouncedValue(search.trim());
   const active = statusFilter === "all" ? undefined : statusFilter === "active";
+  const role = roleFilter || undefined;
   const pager = useCursorPagination(
-    ["users", { search: debouncedSearch, active }],
-    (cursor) => getUsersPage(cursor, { search: debouncedSearch, active }),
+    ["users", { search: debouncedSearch, active, role }],
+    (cursor) =>
+      getUsersPage(cursor, { search: debouncedSearch, active, role }),
   );
   const { items: users, isLoading, counts } = pager;
   const { data: roles = [] } = useQuery({
@@ -144,9 +147,10 @@ export default function UsersPage() {
     if (ok) deleteMut.mutate(u.id);
   };
 
-  const emptyText = debouncedSearch
-    ? `Sin resultados para "${debouncedSearch}"`
-    : "No hay usuarios registrados";
+  const emptyText =
+    debouncedSearch || role
+      ? "Sin resultados con los filtros aplicados"
+      : "No hay usuarios registrados";
 
   return (
     <div>
@@ -204,6 +208,19 @@ export default function UsersPage() {
             {STATUS_LABEL[f]}
           </button>
         ))}
+        <select
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value)}
+          aria-label="Filtrar por rol"
+          className="field min-h-10 w-full rounded-full py-2 sm:w-52"
+        >
+          <option value="">Todos los roles</option>
+          {roles.map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.name}
+            </option>
+          ))}
+        </select>
         <div className="ml-auto">
           <ViewToggle view={view} onChange={setView} />
         </div>

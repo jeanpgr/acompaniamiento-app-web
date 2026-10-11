@@ -30,7 +30,6 @@ import {
   CardActions,
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
-import { useDiscardGuard } from "@/hooks/useDiscardGuard";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 const REVIEW_THRESHOLD = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -104,10 +103,9 @@ export default function VehiclesPage() {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isDirty },
+    formState: { errors },
   } = useForm<CreateVehicleInput>();
-  // Cerrar con cambios sin guardar pide confirmación.
-  const requestClose = useDiscardGuard(isDirty, () => setModalOpen(false));
+  const requestClose = () => setModalOpen(false);
 
   const openCreate = () => {
     setEditTarget(null);
