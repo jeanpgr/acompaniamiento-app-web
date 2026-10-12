@@ -1,14 +1,9 @@
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, Clock, Video, ArrowLeft } from "lucide-react";
-import { toast } from "sonner";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { Link, useSearchParams } from "react-router-dom";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Plus, Pencil, Trash2, Users } from "lucide-react";
 import {
-  getDetailsTraining,
-  getDetailsTrainingByService,
+  getDetailsTrainingPage,
   createDetailTraining,
   updateDetailTraining,
   deleteDetailTraining,
@@ -16,56 +11,113 @@ import {
   type CreateDetailTrainingInput,
 } from "@/api/details-training";
 import { getServices } from "@/api/services";
-import { getErrorMessage } from "@/api/client";
+import { getSchedulesTraining } from "@/api/schedules";
+import { LIVE_REFETCH_MS } from "@/lib/invalidate";
+import Breadcrumb from "@/components/ui/Breadcrumb";
 import Button from "@/components/ui/Button";
-import Modal from "@/components/ui/Modal";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import TableSkeleton from "@/components/ui/TableSkeleton";
+import { useCursorPagination } from "@/hooks/useCursorPagination";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import SearchInput from "@/components/ui/SearchInput";
+import ViewToggle from "@/components/ui/ViewToggle";
+import { useViewMode } from "@/hooks/useViewMode";
+import CursorPagination from "@/components/ui/CursorPagination";
+import TrainingList from "@/components/training/TrainingList";
+import TrainingFormModal from "@/components/training/TrainingFormModal";
+import {
+  toPayload,
+  type TrainingFormValues,
+} from "@/components/training/trainingForm";
 
-const schema = z.object({
-  id_service: z.string().min(1, "Selecciona un servicio"),
-  topic: z.string().min(1, "El tema es requerido"),
-  description: z.string().min(1, "La descripción es requerida"),
-  date_time: z.string().min(1, "Fecha y hora requeridas"),
-  duration: z.number().int().positive("Debe ser un número positivo"),
-  link_meet: z.string().url("URL inválida").optional().or(z.literal("")),
-  price: z.number({ message: "Ingresa un número" }).nonnegative("Debe ser 0 o mayor").optional(),
-});
-
-type FormData = z.infer<typeof schema>;
+/** Botón a las inscripciones del taller, con cuántas esperan confirmar el pago. */
+function EnrollmentsLink({
+  trainingId,
+  pending,
+}: {
+  trainingId: string;
+  pending: number;
+}) {
+  return (
+    <Link
+      to={`${trainingId}/inscripciones`}
+      className={`inline-flex items-center justify-center gap-1.5 h-9 px-3.5 rounded-lg text-[13px] font-semibold whitespace-nowrap transition-colors ${
+        pending > 0
+          ? "bg-warning-bg text-warning-fg hover:brightness-95"
+          : "bg-surface border-[1.5px] border-line-strong text-primary hover:bg-primary-soft hover:border-primary/40"
+      }`}
+      aria-label={
+        pending > 0
+          ? `Inscripciones: ${pending} por confirmar`
+          : "Ver inscripciones de la capacitación"
+      }
+    >
+      <Users size={14} aria-hidden="true" /> Inscripciones
+      {pending > 0 && (
+        <span className="min-w-5 h-5 px-1.5 rounded-full bg-warning-fg text-white text-xs font-semibold inline-flex items-center justify-center tabular-nums">
+          {pending}
+        </span>
+      )}
+    </Link>
+  );
+}
 
 export default function TrainingDetailPage() {
-  const qc = useQueryClient();
-  const navigate = useNavigate();
+  const confirm = useConfirm();
   const [searchParams] = useSearchParams();
   const serviceId = searchParams.get("service");
+  const [search, setSearch] = useState("");
+  const [view, setView] = useViewMode();
 
+  // Modal: `formKey` cambia en cada apertura para que el formulario empiece limpio.
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<DetailTraining | null>(null);
+  const [formKey, setFormKey] = useState(0);
 
-  const { data: items = [], isLoading } = useQuery({
-    queryKey: serviceId ? ["detail-training", serviceId] : ["detail-training"],
-    queryFn: () =>
-      serviceId ? getDetailsTrainingByService(serviceId) : getDetailsTraining(),
-  });
+  // Con ?service= se listan solo las del servicio (filtro en el servidor).
+  const debouncedSearch = useDebouncedValue(search.trim());
+  const pager = useCursorPagination(
+    ["detail-training", { id_service: serviceId, search: debouncedSearch }],
+    (cursor) =>
+      getDetailsTrainingPage(cursor, {
+        id_service: serviceId ?? undefined,
+        search: debouncedSearch,
+      }),
+  );
+  const { items, isLoading } = pager;
 
   const { data: services = [] } = useQuery({
     queryKey: ["services"],
     queryFn: getServices,
   });
+  const currentService = serviceId
+    ? services.find((s) => s.id === serviceId)
+    : null;
 
-  const trainingServices = services.filter((s) => s.type === "CAPACITACION" && s.active);
-  const currentService = serviceId ? services.find((s) => s.id === serviceId) : null;
+  // Inscripciones que esperan confirmar el pago, por taller (aviso en "Inscripciones").
+  const { data: enrollments = [] } = useQuery({
+    queryKey: ["schedules-training"],
+    queryFn: getSchedulesTraining,
+    refetchInterval: LIVE_REFETCH_MS,
+  });
+  const pendingByTraining = new Map<string, number>();
+  for (const r of enrollments) {
+    if (r.status && r.status !== "PENDIENTE") continue;
+    pendingByTraining.set(
+      r.id_detail_training,
+      (pendingByTraining.get(r.id_detail_training) ?? 0) + 1,
+    );
+  }
 
+  // ── Mutaciones (refresco y avisos: lib/queryClient) ──────────
   const createMut = useMutation({
     mutationFn: createDetailTraining,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["detail-training"] });
-      setModalOpen(false);
-      toast.success("Capacitación creada correctamente");
+    meta: {
+      invalidates: "detail-training",
+      successMessage: "Capacitación creada correctamente",
+      errorMessage: "Error al crear la capacitación",
     },
-    onError: (err: unknown) =>
-      toast.error(
-        getErrorMessage(err, "Error al crear"),
-      ),
+    onSuccess: () => setModalOpen(false),
   });
 
   const updateMut = useMutation({
@@ -76,361 +128,132 @@ export default function TrainingDetailPage() {
       id: string;
       data: Partial<CreateDetailTrainingInput>;
     }) => updateDetailTraining(id, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["detail-training"] });
-      setModalOpen(false);
-      toast.success("Capacitación actualizada");
+    meta: {
+      invalidates: "detail-training",
+      successMessage: "Capacitación actualizada",
+      errorMessage: "Error al actualizar la capacitación",
     },
-    onError: (err: unknown) =>
-      toast.error(
-        getErrorMessage(err, "Error al actualizar"),
-      ),
+    onSuccess: () => setModalOpen(false),
   });
 
   const deleteMut = useMutation({
     mutationFn: deleteDetailTraining,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["detail-training"] });
-      toast.success("Capacitación eliminada");
+    meta: {
+      invalidates: "detail-training",
+      successMessage: "Capacitación eliminada",
+      errorMessage: "Error al eliminar la capacitación",
     },
-    onError: (err: unknown) =>
-      toast.error(
-        getErrorMessage(err, "Error al eliminar"),
-      ),
   });
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<FormData>({ resolver: zodResolver(schema) });
-
-  const openCreate = () => {
-    setEditTarget(null);
-    reset({
-      id_service: serviceId ?? "",
-      topic: "",
-      description: "",
-      date_time: "",
-      duration: 60,
-      link_meet: "",
-      price: undefined,
-    });
-    setModalOpen(true);
-  };
-
-  const openEdit = (item: DetailTraining) => {
+  const openForm = (item: DetailTraining | null) => {
     setEditTarget(item);
-    reset({
-      id_service: item.id_service,
-      topic: item.topic,
-      description: item.description ?? "",
-      date_time: item.date_time?.slice(0, 16) ?? "",
-      duration: item.duration,
-      link_meet: item.link_meet ?? "",
-      price: item.price != null ? Number(item.price) : undefined,
-    });
+    setFormKey((k) => k + 1);
     setModalOpen(true);
   };
 
-  const onSubmit = (data: FormData) => {
-    const payload: CreateDetailTrainingInput = {
-      id_service: data.id_service,
-      topic: data.topic,
-      description: data.description,
-      date_time: new Date(data.date_time).toISOString(),
-      duration: data.duration,
-      ...(data.link_meet ? { link_meet: data.link_meet } : {}),
-      ...(data.price !== undefined ? { price: data.price.toFixed(2) } : {}),
-    };
-    if (editTarget) {
-      updateMut.mutate({ id: editTarget.id, data: payload });
-    } else {
-      createMut.mutate(payload);
-    }
+  const submitForm = (data: TrainingFormValues) => {
+    const payload = toPayload(data, editTarget);
+    if (editTarget) updateMut.mutate({ id: editTarget.id, data: payload });
+    else createMut.mutate(payload);
   };
 
-  const isPending = createMut.isPending || updateMut.isPending;
+  const confirmDelete = async (item: DetailTraining) => {
+    if (await confirm({ title: `¿Eliminar "${item.topic}"?` }))
+      deleteMut.mutate(item.id);
+  };
+
+  const emptyText = debouncedSearch
+    ? `Sin resultados para "${debouncedSearch}"`
+    : "No hay capacitaciones registradas";
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          {serviceId && (
-            <button
-              onClick={() => navigate("/services")}
-              className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 mb-1 transition-colors"
-            >
-              <ArrowLeft size={12} /> Volver a servicios
-            </button>
-          )}
-          <h1 className="text-xl font-semibold text-slate-800">
-            {currentService ? `Capacitación · ${currentService.name}` : "Detalles de capacitación"}
+          <Breadcrumb
+            items={[
+              { label: "Gestión servicios", to: "/services" },
+              { label: currentService?.name ?? "Capacitación" },
+            ]}
+          />
+          <h1 className="text-xl sm:text-2xl font-bold text-ink">
+            {currentService
+              ? `Capacitación · ${currentService.name}`
+              : "Detalles de capacitación"}
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-[15px] text-ink-3 mt-1">
             {serviceId
               ? "Talleres y sesiones de este servicio de capacitación"
               : "Gestiona talleres y cursos de formación"}
           </p>
         </div>
-        <Button onClick={openCreate}>
-          <Plus size={14} /> Nueva capacitación
+        <Button onClick={() => openForm(null)}>
+          <Plus size={16} /> Nueva capacitación
         </Button>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-        {isLoading ? (
-          <div className="p-8 text-center text-slate-400 text-sm">Cargando capacitaciones...</div>
-        ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/60">
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">Tema</th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">Fecha y hora</th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
-                  <div className="flex items-center gap-1">
-                    <Clock size={12} /> Duración (min)
-                  </div>
-                </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">Precio</th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
-                  <div className="flex items-center gap-1">
-                    <Video size={12} /> Enlace Meet
-                  </div>
-                </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item) => (
-                <tr key={item.id} className="border-b border-slate-50 hover:bg-slate-50/50">
-                  <td className="px-5 py-3.5">
-                    <p className="font-medium text-slate-800 text-sm">{item.topic}</p>
-                    {item.description && (
-                      <p className="text-xs text-slate-400 truncate max-w-52">{item.description}</p>
-                    )}
-                  </td>
-                  <td className="px-5 py-3.5 text-sm text-slate-500">
-                    {new Date(item.date_time).toLocaleString("es-CO", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </td>
-                  <td className="px-5 py-3.5 text-sm text-slate-600">{item.duration}</td>
-                  <td className="px-5 py-3.5 text-sm">
-                    {item.price != null ? (
-                      <span className="font-medium text-slate-700">
-                        ${Number(item.price).toFixed(2)}
-                      </span>
-                    ) : (
-                      <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 font-medium">
-                        Gratuito
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-5 py-3.5">
-                    {item.link_meet ? (
-                      <a
-                        href={item.link_meet}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-blue-600 hover:underline truncate max-w-36 block"
-                      >
-                        {item.link_meet}
-                      </a>
-                    ) : (
-                      <span className="text-slate-300 italic text-xs">—</span>
-                    )}
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={() => openEdit(item)}>
-                        <Pencil size={12} /> Editar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        loading={deleteMut.isPending && deleteMut.variables === item.id}
-                        onClick={() => {
-                          if (window.confirm(`¿Eliminar "${item.topic}"?`))
-                            deleteMut.mutate(item.id);
-                        }}
-                      >
-                        <Trash2 size={12} /> Eliminar
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {items.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-5 py-8 text-center text-slate-400 text-sm">
-                    No hay capacitaciones registradas
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        )}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Buscar por tema o descripción"
+          label="Buscar capacitaciones"
+        />
+        <ViewToggle view={view} onChange={setView} />
       </div>
 
-      {/* Modal */}
-      <Modal
+      <div className="card overflow-x-auto">
+        {isLoading ? (
+          <TableSkeleton label="Cargando capacitaciones…" />
+        ) : (
+          <TrainingList
+            items={items}
+            view={view}
+            emptyText={emptyText}
+            renderActions={(item) => (
+              <>
+                <EnrollmentsLink
+                  trainingId={item.id}
+                  pending={pendingByTraining.get(item.id) ?? 0}
+                />
+                <Button
+                  size="icon"
+                  aria-label={`Editar ${item.topic}`}
+                  title="Editar"
+                  variant="secondary"
+                  onClick={() => openForm(item)}
+                >
+                  <Pencil size={16} aria-hidden="true" />
+                </Button>
+                <Button
+                  size="icon"
+                  aria-label={`Eliminar ${item.topic}`}
+                  title="Eliminar"
+                  variant="danger-soft"
+                  loading={
+                    deleteMut.isPending && deleteMut.variables === item.id
+                  }
+                  onClick={() => confirmDelete(item)}
+                >
+                  <Trash2 size={16} aria-hidden="true" />
+                </Button>
+              </>
+            )}
+          />
+        )}
+        {!isLoading && <CursorPagination pager={pager} />}
+      </div>
+
+      <TrainingFormModal
+        key={formKey}
         open={modalOpen}
-        onClose={() => !isPending && setModalOpen(false)}
-        title={editTarget ? "Editar capacitación" : "Nueva capacitación"}
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setModalOpen(false)} disabled={isPending}>
-              Cancelar
-            </Button>
-            <Button loading={isPending} onClick={handleSubmit(onSubmit)}>
-              {editTarget ? "Guardar cambios" : "Crear capacitación"}
-            </Button>
-          </>
-        }
-      >
-        <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-          {/* Servicio — oculto si viene del contexto de servicio */}
-          {!serviceId && (
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Servicio <span className="text-red-500">*</span>
-              </label>
-              <select
-                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none ${
-                  errors.id_service ? "border-red-400 bg-red-50" : "border-slate-200"
-                }`}
-                {...register("id_service")}
-              >
-                <option value="">Seleccionar servicio</option>
-                {trainingServices.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-              {errors.id_service && (
-                <p className="text-red-500 text-xs mt-1">{errors.id_service.message}</p>
-              )}
-            </div>
-          )}
-
-          {/* Tema */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Tema <span className="text-red-500">*</span>
-            </label>
-            <input
-              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none ${
-                errors.topic ? "border-red-400 bg-red-50" : "border-slate-200"
-              }`}
-              placeholder="Manejo de tecnología"
-              {...register("topic")}
-            />
-            {errors.topic && <p className="text-red-500 text-xs mt-1">{errors.topic.message}</p>}
-          </div>
-
-          {/* Descripción */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Descripción <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              rows={2}
-              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none resize-none ${
-                errors.description ? "border-red-400 bg-red-50" : "border-slate-200"
-              }`}
-              placeholder="Descripción del tema"
-              {...register("description")}
-            />
-            {errors.description && (
-              <p className="text-red-500 text-xs mt-1">{errors.description.message}</p>
-            )}
-          </div>
-
-          {/* Fecha + Duración */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Fecha y hora <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="datetime-local"
-                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none ${
-                  errors.date_time ? "border-red-400 bg-red-50" : "border-slate-200"
-                }`}
-                {...register("date_time")}
-              />
-              {errors.date_time && (
-                <p className="text-red-500 text-xs mt-1">{errors.date_time.message}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Duración (min) <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                min={1}
-                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none ${
-                  errors.duration ? "border-red-400 bg-red-50" : "border-slate-200"
-                }`}
-                {...register("duration", { valueAsNumber: true })}
-              />
-              {errors.duration && (
-                <p className="text-red-500 text-xs mt-1">{errors.duration.message}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Precio */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Precio</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">
-                $
-              </span>
-              <input
-                type="number"
-                min={0}
-                step="0.01"
-                placeholder="0.00"
-                className={`w-full border rounded-lg pl-6 pr-3 py-2 text-sm focus:outline-none ${
-                  errors.price ? "border-red-400 bg-red-50" : "border-slate-200"
-                }`}
-                {...register("price", {
-                  setValueAs: (v) =>
-                    v === "" || v === null || Number.isNaN(Number(v)) ? undefined : Number(v),
-                })}
-              />
-            </div>
-            {errors.price && <p className="text-red-500 text-xs mt-1">{errors.price.message}</p>}
-            <p className="text-xs text-slate-400 mt-1">Deja vacío si el taller es gratuito</p>
-          </div>
-
-          {/* Enlace Meet */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Enlace Meet</label>
-            <input
-              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none ${
-                errors.link_meet ? "border-red-400 bg-red-50" : "border-slate-200"
-              }`}
-              placeholder="https://meet.google.com/..."
-              {...register("link_meet")}
-            />
-            {errors.link_meet && (
-              <p className="text-red-500 text-xs mt-1">{errors.link_meet.message}</p>
-            )}
-          </div>
-        </form>
-      </Modal>
+        item={editTarget}
+        serviceId={serviceId}
+        services={services}
+        pending={createMut.isPending || updateMut.isPending}
+        onClose={() => setModalOpen(false)}
+        onSubmit={submitForm}
+      />
     </div>
   );
 }

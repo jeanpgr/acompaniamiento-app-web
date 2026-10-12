@@ -1,76 +1,104 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import { Settings, HelpCircle } from "lucide-react";
+import type { ComponentType } from "react";
 import Layout from "@/components/layout/Layout";
-import RequireAuth from "@/components/RequireAuth";
-import LoginPage from "@/pages/LoginPage";
-import DashboardPage from "@/pages/DashboardPage";
-import RolesPage from "@/pages/RolesPage";
-import UsersPage from "@/pages/UsersPage";
-import ServicesPage from "@/pages/ServicesPage";
-import VehiclesPage from "@/pages/VehiclesPage";
-import DistributionPage from "@/pages/DistributionPage";
-import AssignStaffPage from "@/pages/AssignStaffPage";
-import ServiceStatusPage from "@/pages/ServiceStatusPage";
-import PlaceholderPage from "@/pages/PlaceholderPage";
-import TourismDetailPage from "@/pages/TourismDetailPage";
-import TrainingDetailPage from "@/pages/TrainingDetailPage";
-import DaycareDetailPage from "@/pages/DaycareDetailPage";
-import FAQPage from "@/pages/FAQPage";
-import CategoriesPage from "@/pages/CategoriesPage";
-import ProductsPage from "@/pages/ProductsPage";
-import DiscountCouponsPage from "@/pages/DiscountCouponsPage";
-import SalesPage from "@/pages/SalesPage";
+import { guestOnlyLoader, requireAuthLoader } from "@/store/authStore";
+import HomeRedirect from "@/components/layout/HomeRedirect";
+
+// Cada página se descarga bajo demanda (un chunk por ruta) en lugar de
+// empaquetar todo el panel en un único bundle: el navegador solo baja el
+// código de las secciones que realmente se visitan. Con `lazy` el router
+// espera al chunk antes de navegar, así que no hace falta <Suspense>.
+const page = (load: () => Promise<{ default: ComponentType }>) => async () => ({
+  Component: (await load()).default,
+});
 
 export const router = createBrowserRouter([
   {
     path: "/login",
-    element: <LoginPage />,
+    loader: guestOnlyLoader,
+    lazy: page(() => import("@/pages/LoginPage")),
   },
   {
     path: "/",
-    element: (
-      <RequireAuth>
-        <Layout />
-      </RequireAuth>
-    ),
+    // Sin sesión redirige a /login antes de pintar el panel.
+    loader: requireAuthLoader,
+    element: <Layout />,
     children: [
-      { index: true, element: <Navigate to="/dashboard" replace /> },
-      { path: "dashboard", element: <DashboardPage /> },
-      { path: "roles", element: <RolesPage /> },
-      { path: "users", element: <UsersPage /> },
-      { path: "services", element: <ServicesPage /> },
-      { path: "distribution", element: <DistributionPage /> },
-      { path: "acompanamiento", element: <ServiceStatusPage /> },
-      { path: "assign-staff", element: <AssignStaffPage /> },
-      { path: "vehicles", element: <VehiclesPage /> },
-      { path: "tourism-details", element: <TourismDetailPage /> },
-      { path: "training-details", element: <TrainingDetailPage /> },
-      { path: "daycare-details", element: <DaycareDetailPage /> },
-      { path: "faqs", element: <FAQPage /> },
-      { path: "categories", element: <CategoriesPage /> },
-      { path: "products", element: <ProductsPage /> },
-      { path: "discount-coupons", element: <DiscountCouponsPage /> },
-      { path: "sales", element: <SalesPage /> },
+      { index: true, element: <HomeRedirect /> },
+      { path: "dashboard", lazy: page(() => import("@/pages/DashboardPage")) },
+      { path: "roles", lazy: page(() => import("@/pages/RolesPage")) },
+      { path: "users", lazy: page(() => import("@/pages/UsersPage")) },
+      { path: "services", lazy: page(() => import("@/pages/ServicesPage")) },
       {
-        path: "settings",
-        element: (
-          <PlaceholderPage
-            icon={Settings}
-            title="Ajustes"
-            subtitle="Configuración general de la plataforma"
-          />
-        ),
+        path: "distribution",
+        children: [
+          { index: true, lazy: page(() => import("@/pages/DistributionPage")) },
+          // Página hija: todas las citas con su estado, sin el calendario.
+          {
+            path: "servicios",
+            lazy: page(() => import("@/pages/DistributionServicesPage")),
+          },
+        ],
       },
       {
-        path: "help",
-        element: (
-          <PlaceholderPage
-            icon={HelpCircle}
-            title="Ayuda"
-            subtitle="Centro de ayuda y preguntas frecuentes"
-          />
-        ),
+        path: "acompanamiento",
+        lazy: page(() => import("@/pages/ServiceStatusPage")),
       },
+      { path: "vehicles", lazy: page(() => import("@/pages/VehiclesPage")) },
+      {
+        path: "tourism-details",
+        children: [
+          {
+            index: true,
+            lazy: page(() => import("@/pages/TourismDetailPage")),
+          },
+          // Página hija: reservas de una excursión para confirmar pagos.
+          {
+            path: ":tripId/reservas",
+            lazy: page(() => import("@/pages/TourismReservationsPage")),
+          },
+        ],
+      },
+      {
+        path: "training-details",
+        children: [
+          {
+            index: true,
+            lazy: page(() => import("@/pages/TrainingDetailPage")),
+          },
+          // Página hija: inscripciones de un taller para confirmar pagos.
+          {
+            path: ":trainingId/inscripciones",
+            lazy: page(() => import("@/pages/TrainingEnrollmentsPage")),
+          },
+        ],
+      },
+      {
+        path: "daycare-details",
+        children: [
+          {
+            index: true,
+            lazy: page(() => import("@/pages/DaycareDetailPage")),
+          },
+          // Página hija: solicitudes de un plan para confirmar pagos.
+          {
+            path: ":planId/solicitudes",
+            lazy: page(() => import("@/pages/DaycareRequestsPage")),
+          },
+        ],
+      },
+      { path: "faqs", lazy: page(() => import("@/pages/FAQPage")) },
+      {
+        path: "categories",
+        lazy: page(() => import("@/pages/CategoriesPage")),
+      },
+      { path: "products", lazy: page(() => import("@/pages/ProductsPage")) },
+      {
+        path: "discount-coupons",
+        lazy: page(() => import("@/pages/DiscountCouponsPage")),
+      },
+      { path: "sales", lazy: page(() => import("@/pages/SalesPage")) },
+      { path: "settings", lazy: page(() => import("@/pages/SettingsPage")) },
     ],
   },
   { path: "*", element: <Navigate to="/" replace /> },

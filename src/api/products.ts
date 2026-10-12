@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { pageParams, type CursorPage } from "./pagination";
 
 export interface Product {
   id: string;
@@ -19,6 +20,15 @@ const BASE = "/products";
 
 export const getProducts = () =>
   apiClient.get<Product[]>(BASE).then((r) => r.data);
+
+/** Página por cursor (created_at DESC) para la tabla del panel. */
+export const getProductsPage = (
+  cursor: string | null,
+  filters: { id_category?: string; search?: string } = {},
+) =>
+  apiClient
+    .get<CursorPage<Product>>(BASE, { params: pageParams(cursor, filters) })
+    .then((r) => r.data);
 
 export const getProductById = (id: string) =>
   apiClient.get<Product>(`${BASE}/${id}`).then((r) => r.data);

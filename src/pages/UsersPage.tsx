@@ -1,20 +1,15 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   Users,
   CheckCircle,
   UserX,
-  Search,
   Pencil,
   Trash2,
   UserPlus,
 } from "lucide-react";
-import { toast } from "sonner";
-import { useForm, type Resolver } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import {
-  getUsers,
+  getUsersPage,
   createUser,
   updateUser,
   deleteUser,
@@ -23,533 +18,268 @@ import {
   type UpdateUserInput,
 } from "@/api/users";
 import { getRoles } from "@/api/roles";
-import { getErrorMessage } from "@/api/client";
 import StatCard from "@/components/ui/StatCard";
-import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
-import Modal from "@/components/ui/Modal";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import TableSkeleton from "@/components/ui/TableSkeleton";
+import { useCursorPagination } from "@/hooks/useCursorPagination";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import SearchInput from "@/components/ui/SearchInput";
+import ViewToggle from "@/components/ui/ViewToggle";
+import { useViewMode } from "@/hooks/useViewMode";
+import CursorPagination from "@/components/ui/CursorPagination";
+import UsersList from "@/components/users/UsersList";
+import UserFormModal from "@/components/users/UserFormModal";
+import { sanitize, type CreateFormData } from "@/components/users/userForm";
 
-// ── Validation ─────────────────────────────────────────────────
-const baseSchema = z.object({
-  name: z.string().min(2, "Mínimo 2 caracteres").max(50),
-  lastname: z.string().min(2, "Mínimo 2 caracteres").max(50),
-  email: z.string().email("Email inválido").max(100),
-  id_role: z.string().uuid().optional().or(z.literal("")),
-  cedula: z.string().max(15).optional().or(z.literal("")),
-  phone: z.string().max(10).optional().or(z.literal("")),
-  address: z.string().max(250).optional().or(z.literal("")),
-});
+type StatusFilter = "all" | "active" | "inactive";
+const STATUS_LABEL: Record<StatusFilter, string> = {
+  all: "Todos",
+  active: "Activo",
+  inactive: "Inactivo",
+};
 
-const createSchema = baseSchema.extend({
-  password: z.string().min(8, "Mínimo 8 caracteres").max(128),
-});
-
-const editSchema = baseSchema;
-
-type CreateFormData = z.infer<typeof createSchema>;
-type EditFormData = z.infer<typeof editSchema>;
-
-// ── Avatar ─────────────────────────────────────────────────────
-const COLORS = [
-  "#3B82F6",
-  "#22C55E",
-  "#F59E0B",
-  "#EF4444",
-  "#8B5CF6",
-  "#06B6D4",
-  "#F97316",
-  "#EC4899",
-];
-
-function Avatar({
-  name,
-  lastname,
-  idx,
-}: {
-  name: string;
-  lastname: string | null;
-  idx: number;
-}) {
-  const bg = COLORS[idx % COLORS.length];
-  const initials = `${name[0] ?? ""}${(lastname ?? "")[0] ?? ""}`.toUpperCase();
-  return (
-    <div
-      className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-      style={{ backgroundColor: bg }}
-    >
-      {initials}
-    </div>
-  );
-}
-
-// ── Helpers ─────────────────────────────────────────────────────
-function sanitize(data: Record<string, unknown>): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(data)) {
-    if (v !== undefined && v !== null && v !== "") {
-      out[k] = typeof v === "string" ? v.trim() : v;
-    }
-  }
-  return out;
-}
-
-// ── Page ───────────────────────────────────────────────────────
 export default function UsersPage() {
-  const qc = useQueryClient();
+  const confirm = useConfirm();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatus] = useState<"all" | "active" | "inactive">(
-    "all",
-  );
+  const [statusFilter, setStatus] = useState<StatusFilter>("all");
+  const [roleFilter, setRoleFilter] = useState("");
+  const [view, setView] = useViewMode();
+
+  // Modal: `formKey` cambia en cada apertura para que el formulario empiece limpio.
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<User | null>(null);
+  const [formKey, setFormKey] = useState(0);
 
-  const { data: users = [], isLoading } = useQuery({
-    queryKey: ["users"],
-    queryFn: getUsers,
-  });
+  // Búsqueda y estado se filtran en el servidor (paginación por cursor);
+  // los conteos de las tarjetas respetan la búsqueda.
+  const debouncedSearch = useDebouncedValue(search.trim());
+  const active = statusFilter === "all" ? undefined : statusFilter === "active";
+  const role = roleFilter || undefined;
+  const pager = useCursorPagination(
+    ["users", { search: debouncedSearch, active, role }],
+    (cursor) =>
+      getUsersPage(cursor, { search: debouncedSearch, active, role }),
+  );
+  const { items: users, isLoading, counts } = pager;
   const { data: roles = [] } = useQuery({
     queryKey: ["roles"],
     queryFn: getRoles,
   });
   const roleMap = Object.fromEntries(roles.map((r) => [r.id, r.name]));
 
-  const activeCount = users.filter((u) => u.active).length;
-  const inactiveCount = users.filter((u) => !u.active).length;
+  const activeCount = counts?.active ?? 0;
+  const inactiveCount = counts?.inactive ?? 0;
 
-  // ── Mutations ────────────────────────────────────────────────
+  // ── Mutaciones (refresco y avisos: lib/queryClient) ──────────
   const createMut = useMutation({
-    mutationFn: createUser,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["users"] });
-      setModalOpen(false);
-      toast.success("Usuario creado correctamente");
+    mutationFn: ({
+      data,
+      photo,
+    }: {
+      data: CreateUserInput;
+      photo: File | null;
+    }) => createUser(data, photo),
+    meta: {
+      // Incluye roles: su conteo de usuarios depende de esto.
+      invalidates: "users",
+      successMessage: "Usuario creado correctamente",
+      errorMessage: "Error al crear el usuario",
     },
-    onError: (err: unknown) =>
-      toast.error(getErrorMessage(err, "Error al crear el usuario")),
+    onSuccess: () => setModalOpen(false),
   });
 
   const updateMut = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: EditFormData }) =>
-      updateUser(id, sanitize(data) as UpdateUserInput),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["users"] });
-      setModalOpen(false);
-      toast.success("Usuario actualizado correctamente");
+    mutationFn: ({
+      id,
+      data,
+      photo,
+    }: {
+      id: string;
+      data: UpdateUserInput;
+      photo: File | null;
+    }) => updateUser(id, data, photo),
+    meta: {
+      // Incluye roles: su conteo de usuarios depende de esto.
+      invalidates: "users",
+      successMessage: "Usuario actualizado correctamente",
+      errorMessage: "Error al actualizar el usuario",
     },
-    onError: (err: unknown) =>
-      toast.error(getErrorMessage(err, "Error al actualizar el usuario")),
+    onSuccess: () => setModalOpen(false),
   });
 
   const deleteMut = useMutation({
     mutationFn: deleteUser,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["users"] });
-      toast.success("Usuario desactivado");
+    meta: {
+      invalidates: "users",
+      successMessage: "Usuario desactivado",
+      errorMessage: "Error al eliminar el usuario",
     },
-    onError: (err: unknown) =>
-      toast.error(getErrorMessage(err, "Error al eliminar el usuario")),
   });
 
-  // ── Form ─────────────────────────────────────────────────────
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<CreateFormData>({
-    resolver: zodResolver(
-      editTarget ? editSchema : createSchema,
-    ) as unknown as Resolver<CreateFormData>,
-  });
-
-  const openCreate = () => {
-    setEditTarget(null);
-    reset({
-      name: "",
-      lastname: "",
-      email: "",
-      password: "",
-      id_role: "",
-      cedula: "",
-      phone: "",
-      address: "",
-    });
+  const openForm = (user: User | null) => {
+    setEditTarget(user);
+    setFormKey((k) => k + 1);
     setModalOpen(true);
   };
 
-  const openEdit = (u: User) => {
-    setEditTarget(u);
-    reset({
-      name: u.name ?? "",
-      lastname: u.lastname ?? "",
-      email: u.email ?? "",
-      id_role: u.id_role ?? "",
-      cedula: u.cedula ?? "",
-      phone: u.phone ?? "",
-      address: u.address ?? "",
-    });
-    setModalOpen(true);
-  };
-
-  const onSubmit = (data: CreateFormData) => {
+  const submitForm = (data: CreateFormData, photo: File | null) => {
     if (editTarget) {
-      updateMut.mutate({ id: editTarget.id, data });
+      updateMut.mutate({
+        id: editTarget.id,
+        data: sanitize(data) as UpdateUserInput,
+        photo,
+      });
     } else {
-      createMut.mutate(sanitize(data) as unknown as CreateUserInput);
+      createMut.mutate({
+        data: sanitize(data) as unknown as CreateUserInput,
+        photo,
+      });
     }
   };
 
-  // ── Filter ───────────────────────────────────────────────────
-  const filtered = users.filter((u) => {
-    const matchSearch =
-      !search ||
-      `${u.name} ${u.lastname ?? ""}`
-        .toLowerCase()
-        .includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase());
-    const matchStatus =
-      statusFilter === "all" ||
-      (statusFilter === "active" && u.active) ||
-      (statusFilter === "inactive" && !u.active);
-    return matchSearch && matchStatus;
-  });
+  const confirmDelete = async (u: User) => {
+    const ok = await confirm({
+      title: `¿Desactivar a ${u.name} ${u.lastname ?? ""}?`,
+      message: "El usuario quedará inactivo y no podrá acceder.",
+      confirmLabel: "Desactivar",
+    });
+    if (ok) deleteMut.mutate(u.id);
+  };
 
-  const isPending = createMut.isPending || updateMut.isPending;
+  const emptyText =
+    debouncedSearch || role
+      ? "Sin resultados con los filtros aplicados"
+      : "No hay usuarios registrados";
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-slate-800">
+          <h1 className="text-xl sm:text-2xl font-bold text-ink">
             Usuarios · Talento humano
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-[15px] text-ink-3 mt-1">
             Gestiona el personal de la plataforma y los roles asignados
           </p>
         </div>
-        <Button onClick={openCreate}>
-          <UserPlus size={14} /> Agregar usuario
+        <Button onClick={() => openForm(null)}>
+          <UserPlus size={16} /> Agregar usuario
         </Button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-3 gap-2.5 sm:gap-4 mb-6">
         <StatCard
           icon={Users}
-          iconBg="#EFF6FF"
-          iconColor="#3B82F6"
-          value={users.length}
+          tone="info"
+          value={activeCount + inactiveCount}
           label="Total usuarios"
         />
         <StatCard
           icon={CheckCircle}
-          iconBg="#F0FDF4"
-          iconColor="#22C55E"
+          tone="success"
           value={activeCount}
           label="Activos"
         />
         <StatCard
           icon={UserX}
-          iconBg="#FEF2F2"
-          iconColor="#EF4444"
+          tone="danger"
           value={inactiveCount}
           label="Inactivos"
         />
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="relative">
-          <Search
-            size={13}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-          />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar personal..."
-            className="pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none w-48"
-          />
-        </div>
-        {(["all", "active", "inactive"] as const).map((f) => (
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Buscar por nombre, email, cédula o teléfono"
+          label="Buscar usuarios"
+          className="w-full sm:w-80"
+        />
+        {(Object.keys(STATUS_LABEL) as StatusFilter[]).map((f) => (
           <button
             key={f}
+            type="button"
             onClick={() => setStatus(f)}
-            className={`px-4 py-1.5 rounded-full text-sm transition-colors ${
-              f === statusFilter
-                ? "text-white"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-            }`}
-            style={f === statusFilter ? { backgroundColor: "#1D3461" } : {}}
+            className="chip"
+            aria-pressed={f === statusFilter}
           >
-            {f === "all" ? "Todos" : f === "active" ? "Activo" : "Inactivo"}
+            {STATUS_LABEL[f]}
           </button>
         ))}
+        <select
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value)}
+          aria-label="Filtrar por rol"
+          className="field min-h-10 w-full rounded-full py-2 sm:w-52"
+        >
+          <option value="">Todos los roles</option>
+          {roles.map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.name}
+            </option>
+          ))}
+        </select>
+        <div className="ml-auto">
+          <ViewToggle view={view} onChange={setView} />
+        </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="card overflow-x-auto">
         {isLoading ? (
-          <div className="p-8 text-center text-slate-400 text-sm">
-            Cargando usuarios...
-          </div>
+          <TableSkeleton label="Cargando usuarios…" />
         ) : (
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/60">
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
-                  Nombre
-                </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
-                  Rol
-                </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
-                  Cédula
-                </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
-                  Teléfono
-                </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
-                  Estado
-                </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((u, i) => (
-                <tr
-                  key={u.id}
-                  className="border-b border-slate-50 hover:bg-slate-50/50"
+          <UsersList
+            users={users}
+            view={view}
+            emptyText={emptyText}
+            renderRole={(u) =>
+              u.id_role ? (
+                <span className="text-xs font-semibold bg-info-bg text-info-fg px-2.5 py-0.5 rounded-full">
+                  {u.role_name ?? roleMap[u.id_role] ?? "Rol desconocido"}
+                </span>
+              ) : (
+                <span className="text-ink-3 text-xs">Sin rol</span>
+              )
+            }
+            renderActions={(u) => (
+              <>
+                <Button
+                  size="icon"
+                  aria-label={`Editar ${u.name}`}
+                  title="Editar"
+                  variant="secondary"
+                  onClick={() => openForm(u)}
                 >
-                  <td className="px-5 py-3.5">
-                    <div className="flex items-center gap-3">
-                      <Avatar name={u.name} lastname={u.lastname} idx={i} />
-                      <div>
-                        <p className="font-medium text-slate-800 text-sm">
-                          {u.name} {u.lastname}
-                        </p>
-                        <p className="text-xs text-slate-400">{u.email}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-5 py-3.5">
-                    {u.id_role ? (
-                      <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">
-                        {roleMap[u.id_role] ?? "Sin rol"}
-                      </span>
-                    ) : (
-                      <span className="text-slate-300 text-xs italic">—</span>
-                    )}
-                  </td>
-                  <td className="px-5 py-3.5 text-sm text-slate-500">
-                    {u.cedula ?? (
-                      <span className="text-slate-300 italic text-xs">—</span>
-                    )}
-                  </td>
-                  <td className="px-5 py-3.5 text-sm text-slate-500">
-                    {u.phone ?? (
-                      <span className="text-slate-300 italic text-xs">—</span>
-                    )}
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <Badge variant={u.active ? "success" : "default"}>
-                      {u.active ? "Activo" : "Inactivo"}
-                    </Badge>
-                  </td>
-                  <td className="px-5 py-3.5">
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={() => openEdit(u)}>
-                        <Pencil size={12} /> Editar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        loading={
-                          deleteMut.isPending && deleteMut.variables === u.id
-                        }
-                        onClick={() => {
-                          if (
-                            window.confirm(
-                              `¿Desactivar al usuario "${u.name} ${u.lastname ?? ""}"?`,
-                            )
-                          ) {
-                            deleteMut.mutate(u.id);
-                          }
-                        }}
-                      >
-                        <Trash2 size={12} /> Eliminar
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filtered.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={6}
-                    className="px-5 py-8 text-center text-slate-400 text-sm"
-                  >
-                    No se encontraron usuarios
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                  <Pencil size={16} aria-hidden="true" />
+                </Button>
+                <Button
+                  size="icon"
+                  aria-label={`Desactivar a ${u.name}`}
+                  title="Desactivar"
+                  variant="danger-soft"
+                  loading={deleteMut.isPending && deleteMut.variables === u.id}
+                  onClick={() => confirmDelete(u)}
+                >
+                  <Trash2 size={16} aria-hidden="true" />
+                </Button>
+              </>
+            )}
+          />
         )}
+        {!isLoading && <CursorPagination pager={pager} />}
       </div>
 
-      {/* Modal */}
-      <Modal
+      <UserFormModal
+        key={formKey}
         open={modalOpen}
-        onClose={() => !isPending && setModalOpen(false)}
-        title={editTarget ? "Editar usuario" : "Nuevo usuario"}
-        footer={
-          <>
-            <Button
-              variant="secondary"
-              onClick={() => setModalOpen(false)}
-              disabled={isPending}
-            >
-              Cancelar
-            </Button>
-            <Button loading={isPending} onClick={handleSubmit(onSubmit)}>
-              {editTarget ? "Guardar cambios" : "Crear usuario"}
-            </Button>
-          </>
-        }
-      >
-        <form className="space-y-3" onSubmit={(e) => e.preventDefault()}>
-          {/* Name + Lastname */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Nombre <span className="text-red-500">*</span>
-              </label>
-              <input
-                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 ${errors.name ? "border-red-400 bg-red-50" : "border-slate-200"}`}
-                placeholder="Nombre"
-                {...register("name")}
-              />
-              {errors.name && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.name.message}
-                </p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Apellido <span className="text-red-500">*</span>
-              </label>
-              <input
-                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 ${errors.lastname ? "border-red-400 bg-red-50" : "border-slate-200"}`}
-                placeholder="Apellido"
-                {...register("lastname")}
-              />
-              {errors.lastname && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.lastname.message}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Email */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Correo electrónico <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="email"
-              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 ${errors.email ? "border-red-400 bg-red-50" : "border-slate-200"}`}
-              placeholder="correo@ejemplo.com"
-              {...register("email")}
-            />
-            {errors.email && (
-              <p className="text-red-500 text-xs mt-1">
-                {errors.email.message}
-              </p>
-            )}
-          </div>
-
-          {/* Password — solo en creación */}
-          {!editTarget && (
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Contraseña <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="password"
-                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 ${errors.password ? "border-red-400 bg-red-50" : "border-slate-200"}`}
-                placeholder="Mínimo 8 caracteres"
-                {...register("password")}
-              />
-              {errors.password && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.password.message}
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Role + Cedula */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Rol
-              </label>
-              <select
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
-                {...register("id_role")}
-              >
-                <option value="">Sin rol</option>
-                {roles
-                  .filter((r) => r.active)
-                  .map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.name}
-                    </option>
-                  ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Cédula
-              </label>
-              <input
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
-                placeholder="Cédula"
-                {...register("cedula")}
-              />
-            </div>
-          </div>
-
-          {/* Phone + Address */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Teléfono
-              </label>
-              <input
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
-                placeholder="Teléfono"
-                {...register("phone")}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">
-                Dirección
-              </label>
-              <input
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
-                placeholder="Dirección"
-                {...register("address")}
-              />
-            </div>
-          </div>
-        </form>
-      </Modal>
+        user={editTarget}
+        roles={roles}
+        pending={createMut.isPending || updateMut.isPending}
+        onClose={() => setModalOpen(false)}
+        onSubmit={submitForm}
+      />
     </div>
   );
 }

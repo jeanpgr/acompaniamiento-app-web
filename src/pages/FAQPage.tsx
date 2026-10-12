@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import RefreshButton from "@/components/ui/RefreshButton";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, HelpCircle } from "lucide-react";
-import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -15,6 +15,9 @@ import {
 } from "@/api/frequently-questions";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
+import TableSkeleton from "@/components/ui/TableSkeleton";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import SearchInput from "@/components/ui/SearchInput";
 
 const schema = z.object({
   question: z.string().min(5, "La pregunta debe tener al menos 5 caracteres"),
@@ -24,9 +27,10 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function FAQPage() {
-  const qc = useQueryClient();
+  const confirm = useConfirm();
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<FrequentlyQuestion | null>(null);
+  const [search, setSearch] = useState("");
 
   const { data: faqs = [], isLoading } = useQuery({
     queryKey: ["frequently-questions"],
@@ -36,16 +40,12 @@ export default function FAQPage() {
   const createMut = useMutation({
     mutationFn: (data: CreateFrequentlyQuestionInput) =>
       createFrequentlyQuestion(data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["frequently-questions"] });
-      setModalOpen(false);
-      toast.success("Pregunta creada correctamente");
+    meta: {
+      invalidates: "frequently-questions",
+      successMessage: "Pregunta creada correctamente",
+      errorMessage: "Error al crear",
     },
-    onError: (err: unknown) =>
-      toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Error al crear",
-      ),
+    onSuccess: () => setModalOpen(false),
   });
 
   const updateMut = useMutation({
@@ -56,29 +56,21 @@ export default function FAQPage() {
       id: string;
       data: Partial<CreateFrequentlyQuestionInput>;
     }) => updateFrequentlyQuestion(id, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["frequently-questions"] });
-      setModalOpen(false);
-      toast.success("Pregunta actualizada");
+    meta: {
+      invalidates: "frequently-questions",
+      successMessage: "Pregunta actualizada",
+      errorMessage: "Error al actualizar",
     },
-    onError: (err: unknown) =>
-      toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Error al actualizar",
-      ),
+    onSuccess: () => setModalOpen(false),
   });
 
   const deleteMut = useMutation({
     mutationFn: deleteFrequentlyQuestion,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["frequently-questions"] });
-      toast.success("Pregunta eliminada");
+    meta: {
+      invalidates: "frequently-questions",
+      successMessage: "Pregunta eliminada",
+      errorMessage: "Error al eliminar",
     },
-    onError: (err: unknown) =>
-      toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Error al eliminar",
-      ),
   });
 
   const {
@@ -89,6 +81,7 @@ export default function FAQPage() {
   } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
+  const requestClose = () => setModalOpen(false);
 
   const openCreate = () => {
     setEditTarget(null);
@@ -125,76 +118,104 @@ export default function FAQPage() {
     return JSON.stringify(faq.response);
   };
 
+  // Pocas preguntas y sin paginar: la búsqueda filtra en el navegador.
+  const q = search.trim().toLowerCase();
+  const visible = q
+    ? faqs.filter(
+        (faq) =>
+          faq.question.toLowerCase().includes(q) ||
+          displayResponse(faq).toLowerCase().includes(q),
+      )
+    : faqs;
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-slate-800">
+          <h1 className="text-xl sm:text-2xl font-bold text-ink">
             Preguntas frecuentes
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-[15px] text-ink-3 mt-1">
             Gestiona las FAQ que se muestran en la app móvil
           </p>
         </div>
         <Button onClick={openCreate}>
-          <Plus size={14} /> Nueva pregunta
+          <Plus size={16} /> Nueva pregunta
         </Button>
       </div>
 
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Buscar en preguntas y respuestas"
+          label="Buscar preguntas frecuentes"
+        />
+        <RefreshButton />
+      </div>
+
       {isLoading ? (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-8 text-center text-slate-400 text-sm">
-          Cargando preguntas...
+        <div className="card">
+          <TableSkeleton rows={4} label="Cargando preguntas…" />
         </div>
       ) : faqs.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-12 text-center">
-          <HelpCircle size={36} className="text-slate-200 mx-auto mb-3" />
-          <p className="text-slate-400 text-sm">
+        <div className="card p-12 text-center">
+          <HelpCircle size={36} className="text-line-strong mx-auto mb-3" />
+          <p className="text-ink-3 text-sm">
             No hay preguntas frecuentes registradas
           </p>
           <Button className="mt-4" onClick={openCreate}>
-            <Plus size={14} /> Agregar primera pregunta
+            <Plus size={16} /> Agregar primera pregunta
           </Button>
+        </div>
+      ) : visible.length === 0 ? (
+        <div className="card p-12 text-center">
+          <p className="text-ink-3 text-sm">
+            Sin resultados para "{search.trim()}"
+          </p>
         </div>
       ) : (
         <div className="space-y-3">
-          {faqs.map((faq, idx) => (
-            <div
-              key={faq.id}
-              className="bg-white rounded-xl shadow-sm border border-slate-100 p-5"
-            >
+          {visible.map((faq, idx) => (
+            <div key={faq.id} className="card p-5">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <span
-                    className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white mt-0.5"
-                    style={{ backgroundColor: "#2A5298" }}
-                  >
+                  <span className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white bg-primary">
                     {idx + 1}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-slate-800 text-sm mb-1">
+                    <p className="font-bold text-ink text-base mb-1">
                       {faq.question}
                     </p>
-                    <p className="text-slate-500 text-sm leading-relaxed">
+                    <p className="text-ink-3 text-[15px] leading-relaxed">
                       {displayResponse(faq)}
                     </p>
                   </div>
                 </div>
                 <div className="flex gap-2 shrink-0">
-                  <Button size="sm" onClick={() => openEdit(faq)}>
-                    <Pencil size={12} /> Editar
+                  <Button
+                    size="icon"
+                    aria-label={"Editar pregunta"}
+                    title="Editar"
+                    variant="secondary"
+                    onClick={() => openEdit(faq)}
+                  >
+                    <Pencil size={16} aria-hidden="true" />
                   </Button>
                   <Button
-                    size="sm"
-                    variant="danger"
+                    size="icon"
+                    aria-label={"Eliminar pregunta"}
+                    title="Eliminar"
+                    variant="danger-soft"
                     loading={
                       deleteMut.isPending && deleteMut.variables === faq.id
                     }
-                    onClick={() => {
-                      if (window.confirm("¿Eliminar esta pregunta?"))
+                    onClick={async () => {
+                      if (await confirm({ title: "¿Eliminar esta pregunta?" }))
                         deleteMut.mutate(faq.id);
                     }}
                   >
-                    <Trash2 size={12} /> Eliminar
+                    <Trash2 size={16} aria-hidden="true" />
                   </Button>
                 </div>
               </div>
@@ -205,13 +226,13 @@ export default function FAQPage() {
 
       <Modal
         open={modalOpen}
-        onClose={() => !isPending && setModalOpen(false)}
+        onClose={() => !isPending && requestClose()}
         title={editTarget ? "Editar pregunta" : "Nueva pregunta frecuente"}
         footer={
           <>
             <Button
               variant="secondary"
-              onClick={() => setModalOpen(false)}
+              onClick={requestClose}
               disabled={isPending}
             >
               Cancelar
@@ -224,33 +245,43 @@ export default function FAQPage() {
       >
         <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Pregunta <span className="text-red-500">*</span>
+            <label
+              htmlFor="faq-question"
+              className="block text-sm font-semibold text-ink mb-1.5"
+            >
+              Pregunta <span className="text-danger-fg">*</span>
             </label>
             <input
-              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none ${errors.question ? "border-red-400 bg-red-50" : "border-slate-200"}`}
+              id="faq-question"
+              className="field"
+              aria-invalid={!!errors.question}
               placeholder="¿Cómo agendo un servicio?"
               {...register("question")}
             />
             {errors.question && (
-              <p className="text-red-500 text-xs mt-1">
+              <p className="text-danger-fg text-xs font-semibold mt-1">
                 {errors.question.message}
               </p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Respuesta <span className="text-red-500">*</span>
+            <label
+              htmlFor="faq-response"
+              className="block text-sm font-semibold text-ink mb-1.5"
+            >
+              Respuesta <span className="text-danger-fg">*</span>
             </label>
             <textarea
+              id="faq-response"
               rows={4}
-              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none resize-none ${errors.response ? "border-red-400 bg-red-50" : "border-slate-200"}`}
+              className="field resize-none"
+              aria-invalid={!!errors.response}
               placeholder="Puede agendar el servicio desde la pantalla principal..."
               {...register("response")}
             />
             {errors.response && (
-              <p className="text-red-500 text-xs mt-1">
+              <p className="text-danger-fg text-xs font-semibold mt-1">
                 {errors.response.message}
               </p>
             )}

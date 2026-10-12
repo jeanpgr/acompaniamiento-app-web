@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useForm, useWatch } from "react-hook-form";
 import { Pencil, Trash2, Plus, Shield } from "lucide-react";
+import { toast } from "sonner";
 import {
-  getRoles,
+  getRolesPage,
   createRole,
   updateRole,
   deleteRole,
@@ -13,61 +14,54 @@ import {
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import TableSkeleton from "@/components/ui/TableSkeleton";
+import { useCursorPagination } from "@/hooks/useCursorPagination";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import SearchInput from "@/components/ui/SearchInput";
+import ViewToggle from "@/components/ui/ViewToggle";
+import { useViewMode } from "@/hooks/useViewMode";
+import {
+  CardGrid,
+  GridCard,
+  CardFields,
+  CardField,
+  CardActions,
+} from "@/components/ui/CardGrid";
+import CursorPagination from "@/components/ui/CursorPagination";
+import { PERMISSION_GROUPS } from "@/lib/permissionCatalog";
 
-const ALL_PERMISSIONS = [
-  "users",
-  "roles",
-  "services",
-  "vehicles",
-  "schedule-acompan",
-  "detail-tourism",
-  "schedule-tourism",
-  "detail-training",
-  "schedule-training",
-  "detail-daycare",
-  "schedule-daycare",
-  "customer-reviews",
-  "frequently-questions",
-];
-
-const PERM_LABELS: Record<string, string> = {
-  users: "Gestión de usuarios",
-  roles: "Gestión de roles",
-  services: "Gestión servicios",
-  vehicles: "Gestión vehículos",
-  "schedule-acompan": "Acompañamiento",
-  "detail-tourism": "Turismo (detalles)",
-  "schedule-tourism": "Turismo (agendas)",
-  "detail-training": "Capacitación (detalles)",
-  "schedule-training": "Capacitación (agendas)",
-  "detail-daycare": "Guardería (detalles)",
-  "schedule-daycare": "Guardería (agendas)",
-  "customer-reviews": "Ver métricas",
-  "frequently-questions": "Preguntas frecuentes",
-};
-
-function userCount() {
-  return Math.floor(Math.random() * 14) + 1;
+function usersLabel(n: number) {
+  return n === 1 ? "1 persona" : `${n} personas`;
 }
 
 export default function RolesPage() {
-  const qc = useQueryClient();
-  const [selected, setSelected] = useState<Role | null>(null);
+  const confirm = useConfirm();
+  // Se guarda el id (no el objeto) para que el panel refleje los datos
+  // actualizados después de cada refetch.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Role | null>(null);
   const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");
 
-  const { data: roles = [], isLoading } = useQuery({
-    queryKey: ["roles"],
-    queryFn: getRoles,
-  });
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search.trim());
+  // Búsqueda y estado se filtran en el servidor (paginación por cursor).
+  const active = filter === "all" ? undefined : filter === "active";
+  const pager = useCursorPagination(
+    ["roles", { active, search: debouncedSearch }],
+    (cursor) => getRolesPage(cursor, { active, search: debouncedSearch }),
+  );
+  const { items: filtered, isLoading, counts } = pager;
 
   const createMut = useMutation({
     mutationFn: createRole,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["roles"] });
-      setModalOpen(false);
+    meta: {
+      invalidates: "roles",
+      successMessage: "Rol creado correctamente",
+      errorMessage: "Error al crear el rol",
     },
+    onSuccess: () => setModalOpen(false),
   });
   const updateMut = useMutation({
     mutationFn: ({
@@ -77,21 +71,51 @@ export default function RolesPage() {
       id: string;
       data: Partial<CreateRoleInput>;
     }) => updateRole(id, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["roles"] });
-      setModalOpen(false);
+    meta: {
+      invalidates: "roles",
+      successMessage: "Rol actualizado correctamente",
+      errorMessage: "Error al actualizar el rol",
     },
+    onSuccess: () => setModalOpen(false),
   });
   const deleteMut = useMutation({
     mutationFn: deleteRole,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["roles"] });
+    meta: {
+      invalidates: "roles",
+      successMessage: "Rol eliminado",
+      errorMessage: "Error al eliminar el rol",
     },
   });
 
-  const { register, handleSubmit, reset, setValue, control } =
-    useForm<CreateRoleInput>();
-  const watchedPerms = useWatch({ control, name: "permissions", defaultValue: {} }) ?? {};
+  const onDelete = async (role: Role) => {
+    const count = role.users_count ?? 0;
+    if (count > 0) {
+      toast.error(
+        `No se puede eliminar "${role.name}": tiene ${usersLabel(count)} asignada(s). Reasígnalas primero.`,
+      );
+      return;
+    }
+    if (
+      await confirm({
+        title: `¿Eliminar el rol ${role.name}?`,
+        message: "Esta acción no se puede deshacer.",
+        confirmLabel: "Eliminar",
+      })
+    ) {
+      deleteMut.mutate(role.id);
+    }
+  };
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    control,
+  } = useForm<CreateRoleInput>();
+  const requestClose = () => setModalOpen(false);
+  const watchedPerms =
+    useWatch({ control, name: "permissions", defaultValue: {} }) ?? {};
 
   const openCreate = () => {
     setEditTarget(null);
@@ -117,75 +141,152 @@ export default function RolesPage() {
     }
   };
 
-  const filtered = roles.filter((r) => {
-    if (filter === "active") return r.active;
-    if (filter === "inactive") return !r.active;
-    return true;
-  });
+  // El panel lateral muestra los permisos del rol seleccionado (clic en la
+  // fila o en el selector); por defecto, el primero de la lista filtrada.
+  const displayRole = filtered.find((r) => r.id === selectedId) ?? filtered[0];
+  const [view, setView] = useViewMode();
+  const emptyText = debouncedSearch
+    ? `Sin resultados para "${debouncedSearch}"`
+    : "No hay roles disponibles";
 
-  const displayRole = selected ?? filtered[0];
+  const renderActions = (role: Role) => (
+    <>
+      <Button
+        size="icon"
+        aria-label={`Editar rol ${role.name}`}
+        title="Editar"
+        variant="secondary"
+        onClick={(e) => {
+          e.stopPropagation();
+          openEdit(role);
+        }}
+      >
+        <Pencil size={16} aria-hidden="true" />
+      </Button>
+      <Button
+        size="icon"
+        title="Eliminar"
+        variant="danger-soft"
+        loading={deleteMut.isPending && deleteMut.variables === role.id}
+        aria-label={`Eliminar rol ${role.name}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete(role);
+        }}
+      >
+        <Trash2 size={16} aria-hidden="true" />
+      </Button>
+    </>
+  );
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-slate-800">
+          <h1 className="text-xl sm:text-2xl font-bold text-ink">
             Roles y permisos
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-[15px] text-ink-3 mt-1">
             Configura los roles del sistema y sus permisos de acceso
           </p>
         </div>
         <Button onClick={openCreate}>
-          <Plus size={14} /> Nuevo rol
+          <Plus size={16} /> Nuevo rol
         </Button>
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-2 mb-4">
-        <span className="text-xs text-slate-500 bg-slate-100 rounded-full px-3 py-1">
-          {roles.length} roles
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Buscar por nombre o descripción"
+          label="Buscar roles"
+        />
+        <span className="text-xs font-semibold text-ink-2 bg-surface-2 ring-1 ring-line rounded-full px-3 py-1">
+          {(counts?.active ?? 0) + (counts?.inactive ?? 0)} roles
         </span>
         {(["all", "active", "inactive"] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-4 py-1.5 rounded-full text-sm transition-colors ${
-              filter === f
-                ? "text-white"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-            }`}
-            style={filter === f ? { backgroundColor: "#1D3461" } : {}}
+            className="chip"
+            aria-pressed={filter === f}
           >
             {f === "all" ? "Todos" : f === "active" ? "Activos" : "Inactivos"}
           </button>
         ))}
+        <div className="ml-auto">
+          <ViewToggle view={view} onChange={setView} />
+        </div>
       </div>
 
-      <div className="flex gap-5">
+      {/* En pantallas angostas el panel de permisos pasa debajo del listado */}
+      <div className="flex flex-col xl:flex-row gap-5">
         {/* Table */}
-        <div className="flex-1 bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+        <div className="flex-1 card overflow-x-auto">
           {isLoading ? (
-            <div className="p-8 text-center text-slate-400 text-sm">
-              Cargando roles...
-            </div>
+            <TableSkeleton label="Cargando roles…" />
+          ) : view === "grid" ? (
+            <CardGrid empty={filtered.length === 0 && emptyText}>
+              {filtered.map((role) => (
+                <GridCard
+                  key={role.id}
+                  selected={role.id === displayRole?.id}
+                  onClick={() => setSelectedId(role.id)}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <h2 className="font-bold text-ink text-base">
+                      {role.name}
+                    </h2>
+                    <Badge variant={role.active ? "success" : "default"}>
+                      {role.active ? "Activo" : "Inactivo"}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-ink-3 line-clamp-3">
+                    {role.description ?? "Sin descripción"}
+                  </p>
+                  <CardFields>
+                    <CardField label="Usuarios">
+                      <span className="text-xs font-semibold bg-info-bg text-info-fg px-2.5 py-0.5 rounded-full">
+                        {usersLabel(role.users_count ?? 0)}
+                      </span>
+                    </CardField>
+                  </CardFields>
+                  <CardActions>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      aria-pressed={role.id === displayRole?.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedId(role.id);
+                      }}
+                    >
+                      <Shield size={14} /> Permisos
+                    </Button>
+                    {renderActions(role)}
+                  </CardActions>
+                </GridCard>
+              ))}
+            </CardGrid>
           ) : (
-            <table className="w-full">
+            <table className="w-full min-w-160">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/60">
-                  <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                <tr className="border-b border-line bg-surface-2">
+                  <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                     Rol
                   </th>
-                  <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                  <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                     Descripción
                   </th>
-                  <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                  <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                     Usuarios
                   </th>
-                  <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                  <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                     Estado
                   </th>
-                  <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                  <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                     Acciones
                   </th>
                 </tr>
@@ -194,47 +295,33 @@ export default function RolesPage() {
                 {filtered.map((role) => (
                   <tr
                     key={role.id}
-                    className="border-b border-slate-50 hover:bg-slate-50/50 cursor-pointer"
-                    onClick={() => setSelected(role)}
+                    className={`border-b border-line/70 cursor-pointer ${
+                      role.id === displayRole?.id
+                        ? "bg-primary-soft"
+                        : "hover:bg-primary-soft/50"
+                    }`}
+                    onClick={() => setSelectedId(role.id)}
+                    aria-selected={role.id === displayRole?.id}
+                    title="Ver permisos de este rol"
                   >
-                    <td className="px-5 py-3.5 font-medium text-slate-800 text-sm">
+                    <td className="px-4 py-3.5 font-semibold text-ink text-sm">
                       {role.name}
                     </td>
-                    <td className="px-5 py-3.5 text-sm text-slate-500">
+                    <td className="px-4 py-3.5 text-sm text-ink-3">
                       {role.description ?? "—"}
                     </td>
-                    <td className="px-5 py-3.5">
-                      <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">
-                        {userCount()} personas
+                    <td className="px-4 py-3.5">
+                      <span className="text-xs font-semibold bg-info-bg text-info-fg px-2.5 py-0.5 rounded-full">
+                        {usersLabel(role.users_count ?? 0)}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5">
+                    <td className="px-4 py-3.5">
                       <Badge variant={role.active ? "success" : "default"}>
                         {role.active ? "Activo" : "Inactivo"}
                       </Badge>
                     </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openEdit(role);
-                          }}
-                        >
-                          <Pencil size={12} /> Editar
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="danger"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteMut.mutate(role.id);
-                          }}
-                        >
-                          <Trash2 size={12} />
-                        </Button>
-                      </div>
+                    <td className="px-4 py-3.5">
+                      <div className="flex gap-2">{renderActions(role)}</div>
                     </td>
                   </tr>
                 ))}
@@ -242,57 +329,65 @@ export default function RolesPage() {
                   <tr>
                     <td
                       colSpan={5}
-                      className="px-5 py-8 text-center text-slate-400 text-sm"
+                      className="px-4 py-10 text-center text-ink-3 text-[15px]"
                     >
-                      No hay roles disponibles
+                      {emptyText}
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
           )}
+          {!isLoading && <CursorPagination pager={pager} />}
         </div>
 
         {/* Permissions panel */}
         {displayRole && (
-          <div className="w-64 shrink-0 bg-white rounded-xl p-5 shadow-sm border border-slate-100 h-fit">
+          <div className="w-full xl:w-64 shrink-0 card p-5 h-fit">
             <div className="flex items-center gap-2 mb-4">
-              <Shield size={15} className="text-yellow-500" />
-              <h3 className="font-semibold text-slate-700 text-sm">
+              <Shield size={18} className="text-primary" />
+              <h3 className="font-semibold text-ink text-sm">
                 Permisos · {displayRole.name}
               </h3>
             </div>
-            <div className="space-y-2">
-              {ALL_PERMISSIONS.map((p) => {
-                const has = !!(
-                  displayRole.permissions as Record<string, boolean> | null
-                )?.[p];
-                return (
-                  <div key={p} className="flex items-center gap-2 text-sm">
-                    <span
-                      className={`text-xs ${has ? "text-green-500" : "text-slate-300"}`}
-                    >
-                      {has ? "✓" : "✗"}
-                    </span>
-                    <span className={has ? "text-slate-700" : "text-slate-400"}>
-                      {PERM_LABELS[p]}
-                    </span>
-                  </div>
-                );
-              })}
+            <p className="text-xs text-ink-3 mb-3">
+              Módulos a los que puede acceder este rol. Haz clic en otro rol
+              para ver sus permisos.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-1">
+              {PERMISSION_GROUPS.map((group) => (
+                <div key={group.module} className="min-w-0">
+                  <p className="text-xs font-bold text-ink-3 mb-1">
+                    {group.module}
+                  </p>
+                  {group.items.map(({ key, label }) => {
+                    const has = !!(
+                      displayRole.permissions as Record<string, boolean> | null
+                    )?.[key];
+                    return (
+                      <div key={key} className="flex items-start gap-2 text-sm">
+                        <span
+                          className={`text-xs mt-0.5 ${has ? "text-success-fg" : "text-ink-3"}`}
+                        >
+                          {has ? "✓" : "✗"}
+                        </span>
+                        <span className={has ? "text-ink" : "text-ink-3"}>
+                          {label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
-            <div className="mt-4 pt-4 border-t border-slate-100">
-              <p className="text-xs text-slate-500 mb-2">Selector de rol</p>
+            <div className="mt-4 pt-4 border-t border-line">
+              <p className="text-xs text-ink-3 mb-2">Selector de rol</p>
               <select
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none"
+                className="field"
                 value={displayRole.id}
-                onChange={(e) =>
-                  setSelected(
-                    roles.find((r) => r.id === e.target.value) ?? null,
-                  )
-                }
+                onChange={(e) => setSelectedId(e.target.value)}
               >
-                {roles.map((r) => (
+                {filtered.map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.name}
                   </option>
@@ -306,11 +401,11 @@ export default function RolesPage() {
       {/* Create/Edit modal */}
       <Modal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={requestClose}
         title={editTarget ? "Editar rol" : "Nuevo rol"}
         footer={
           <>
-            <Button variant="secondary" onClick={() => setModalOpen(false)}>
+            <Button variant="secondary" onClick={requestClose}>
               Cancelar
             </Button>
             <Button
@@ -324,46 +419,68 @@ export default function RolesPage() {
       >
         <form className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label
+              htmlFor="roles-name"
+              className="block text-sm font-semibold text-ink mb-1.5"
+            >
               Nombre
             </label>
             <input
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
+              id="roles-name"
+              className="field"
               {...register("name", { required: true })}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label
+              htmlFor="roles-description"
+              className="block text-sm font-semibold text-ink mb-1.5"
+            >
               Descripción
             </label>
             <input
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
+              id="roles-description"
+              className="field"
               {...register("description")}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <p
+              id="roles-permisos"
+              className="block text-sm font-semibold text-ink mb-2"
+            >
               Permisos
-            </label>
-            <div className="space-y-1.5 max-h-48 overflow-y-auto">
-              {ALL_PERMISSIONS.map((p) => (
-                <label
-                  key={p}
-                  className="flex items-center gap-2 text-sm cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={!!watchedPerms[p]}
-                    onChange={(e) => {
-                      setValue("permissions", {
-                        ...watchedPerms,
-                        [p]: e.target.checked,
-                      });
-                    }}
-                    className="rounded"
-                  />
-                  <span className="text-slate-700">{PERM_LABELS[p]}</span>
-                </label>
+            </p>
+            <div
+              role="group"
+              aria-labelledby="roles-permisos"
+              className="max-h-64 overflow-y-auto"
+            >
+              {PERMISSION_GROUPS.map((group) => (
+                <div key={group.module}>
+                  <p className="text-xs font-bold text-ink-3 mt-2 mb-0.5">
+                    {group.module}
+                  </p>
+                  {group.items.map(({ key, label }) => (
+                    <label
+                      key={key}
+                      className="flex items-center gap-2.5 text-sm cursor-pointer py-0.5"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={!!watchedPerms[key]}
+                        onChange={(e) => {
+                          setValue("permissions", {
+                            ...watchedPerms,
+                            [key]: e.target.checked,
+                          });
+                        }}
+                        className="rounded accent-primary w-5 h-5"
+                      />
+                      <span className="text-ink">{label}</span>
+                    </label>
+                  ))}
+                </div>
               ))}
             </div>
           </div>

@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { pageParams, type CursorPage, type ActiveCounts } from "./pagination";
 
 export interface Vehicle {
   id: string;
@@ -26,21 +27,29 @@ export interface CreateVehicleInput {
 const BASE = "/vehicles";
 
 export const getVehicles = () =>
-  apiClient.get<{ data: Vehicle[] }>(BASE).then((r) => r.data.data ?? r.data);
+  apiClient.get<Vehicle[]>(BASE).then((r) => r.data);
+
+export interface VehicleCounts extends ActiveCounts {
+  /** Revisión técnica en los próximos 7 días o vencida. */
+  review_due: number;
+}
+
+/** Página por cursor (created_at DESC) para la tabla del panel. */
+export const getVehiclesPage = (
+  cursor: string | null,
+  filters: { search?: string } = {},
+) =>
+  apiClient
+    .get<
+      CursorPage<Vehicle, VehicleCounts>
+    >(BASE, { params: pageParams(cursor, filters) })
+    .then((r) => r.data);
 export const getVehicleById = (id: string) =>
-  apiClient
-    .get<{ data: Vehicle }>(`${BASE}/${id}`)
-    .then((r) => r.data.data ?? r.data);
+  apiClient.get<Vehicle>(`${BASE}/${id}`).then((r) => r.data);
 export const getVehiclesByDriver = (driverId: string) =>
-  apiClient
-    .get<{ data: Vehicle[] }>(`${BASE}/driver/${driverId}`)
-    .then((r) => r.data.data ?? r.data);
+  apiClient.get<Vehicle[]>(`${BASE}/driver/${driverId}`).then((r) => r.data);
 export const createVehicle = (body: CreateVehicleInput) =>
-  apiClient
-    .post<{ data: Vehicle }>(BASE, body)
-    .then((r) => r.data.data ?? r.data);
+  apiClient.post<Vehicle>(BASE, body).then((r) => r.data);
 export const updateVehicle = (id: string, body: Partial<CreateVehicleInput>) =>
-  apiClient
-    .put<{ data: Vehicle }>(`${BASE}/${id}`, body)
-    .then((r) => r.data.data ?? r.data);
+  apiClient.put<Vehicle>(`${BASE}/${id}`, body).then((r) => r.data);
 export const deleteVehicle = (id: string) => apiClient.delete(`${BASE}/${id}`);

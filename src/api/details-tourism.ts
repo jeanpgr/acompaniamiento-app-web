@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { pageParams, type CursorPage } from "./pagination";
 
 /** Tarifas por categoría de persona */
 export interface TourismPrices {
@@ -18,6 +19,9 @@ export interface DetailTourism {
   quotas_available: number;
   itinerary: { hour?: string; place?: string }[] | null;
   meeting_point_address: string | null;
+  /** Punto elegido en el mapa del panel (la app abre su mapa ahí). */
+  meeting_point_lat: number | null;
+  meeting_point_lng: number | null;
   prices: TourismPrices | null;
   active: boolean;
   created_at: string;
@@ -33,38 +37,43 @@ export interface CreateDetailTourismInput {
   quotas_available: number;
   itinerary?: { hour?: string; place?: string }[];
   meeting_point_address?: string;
-  prices?: TourismPrices;
+  meeting_point_lat?: number | null;
+  meeting_point_lng?: number | null;
+  /** null borra las tarifas al editar. */
+  prices?: TourismPrices | null;
 }
 
 const BASE = "/detail-tourism";
 
 export const getDetailsTourism = () =>
+  apiClient.get<DetailTourism[]>(BASE).then((r) => r.data);
+
+/** Página por cursor (created_at DESC) para la tabla del panel. */
+export const getDetailsTourismPage = (
+  cursor: string | null,
+  filters: { id_service?: string; search?: string } = {},
+) =>
   apiClient
-    .get<{ data: DetailTourism[] }>(BASE)
-    .then((r) => r.data.data ?? r.data);
+    .get<
+      CursorPage<DetailTourism>
+    >(BASE, { params: pageParams(cursor, filters) })
+    .then((r) => r.data);
 
 export const getDetailTourism = (id: string) =>
-  apiClient
-    .get<{ data: DetailTourism }>(`${BASE}/${id}`)
-    .then((r) => r.data.data ?? r.data);
+  apiClient.get<DetailTourism>(`${BASE}/${id}`).then((r) => r.data);
 
 export const getDetailsTourismByService = (id_service: string) =>
   apiClient
-    .get<{ data: DetailTourism[] }>(`${BASE}/service/${id_service}`)
-    .then((r) => r.data.data ?? r.data);
+    .get<DetailTourism[]>(`${BASE}/service/${id_service}`)
+    .then((r) => r.data);
 
 export const createDetailTourism = (data: CreateDetailTourismInput) =>
-  apiClient
-    .post<{ data: DetailTourism }>(BASE, data)
-    .then((r) => r.data.data ?? r.data);
+  apiClient.post<DetailTourism>(BASE, data).then((r) => r.data);
 
 export const updateDetailTourism = (
   id: string,
   data: Partial<CreateDetailTourismInput>,
-) =>
-  apiClient
-    .put<{ data: DetailTourism }>(`${BASE}/${id}`, data)
-    .then((r) => r.data.data ?? r.data);
+) => apiClient.put<DetailTourism>(`${BASE}/${id}`, data).then((r) => r.data);
 
 export const deleteDetailTourism = (id: string) =>
   apiClient.delete(`${BASE}/${id}`);

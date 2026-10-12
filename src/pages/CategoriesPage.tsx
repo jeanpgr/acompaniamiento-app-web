@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2 } from "lucide-react";
-import { toast } from "sonner";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
-  getCategories,
+  getCategoriesPage,
   createCategory,
   updateCategory,
   deleteCategory,
@@ -16,6 +15,23 @@ import {
 } from "@/api/categories";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
+import Switch from "@/components/ui/Switch";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import TableSkeleton from "@/components/ui/TableSkeleton";
+import Badge from "@/components/ui/Badge";
+import { useCursorPagination } from "@/hooks/useCursorPagination";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import SearchInput from "@/components/ui/SearchInput";
+import ViewToggle from "@/components/ui/ViewToggle";
+import { useViewMode } from "@/hooks/useViewMode";
+import {
+  CardGrid,
+  GridCard,
+  CardFields,
+  CardField,
+  CardActions,
+} from "@/components/ui/CardGrid";
+import CursorPagination from "@/components/ui/CursorPagination";
 
 const schema = z.object({
   name: z.string().min(1, "Nombre requerido").max(30),
@@ -26,55 +42,46 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function CategoriesPage() {
-  const qc = useQueryClient();
+  const confirm = useConfirm();
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Category | null>(null);
 
-  const { data: categories = [], isLoading } = useQuery({
-    queryKey: ["categories"],
-    queryFn: getCategories,
-  });
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search.trim());
+  const pager = useCursorPagination(
+    ["categories", { search: debouncedSearch }],
+    (cursor) => getCategoriesPage(cursor, { search: debouncedSearch }),
+  );
+  const { items: categories, isLoading } = pager;
 
   const createMut = useMutation({
     mutationFn: (data: CreateCategoryInput) => createCategory(data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["categories"] });
-      setModalOpen(false);
-      toast.success("Categoría creada");
+    meta: {
+      invalidates: "categories",
+      successMessage: "Categoría creada",
+      errorMessage: "Error al crear",
     },
-    onError: (err: unknown) =>
-      toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Error al crear",
-      ),
+    onSuccess: () => setModalOpen(false),
   });
 
   const updateMut = useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateCategoryInput }) =>
       updateCategory(id, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["categories"] });
-      setModalOpen(false);
-      toast.success("Categoría actualizada");
+    meta: {
+      invalidates: "categories",
+      successMessage: "Categoría actualizada",
+      errorMessage: "Error al actualizar",
     },
-    onError: (err: unknown) =>
-      toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Error al actualizar",
-      ),
+    onSuccess: () => setModalOpen(false),
   });
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => deleteCategory(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["categories"] });
-      toast.success("Categoría eliminada");
+    meta: {
+      invalidates: "categories",
+      successMessage: "Categoría eliminada",
+      errorMessage: "Error al eliminar",
     },
-    onError: (err: unknown) =>
-      toast.error(
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Error al eliminar",
-      ),
   });
 
   const {
@@ -85,6 +92,7 @@ export default function CategoriesPage() {
     control,
     formState: { errors },
   } = useForm<FormData>({ resolver: zodResolver(schema) });
+  const requestClose = () => setModalOpen(false);
 
   const activeField = useWatch({ control, name: "active", defaultValue: true });
 
@@ -114,47 +122,107 @@ export default function CategoriesPage() {
   };
 
   const isPending = createMut.isPending || updateMut.isPending;
-  const activeList = categories.filter((c) => c.active);
-  const inactive = categories.filter((c) => !c.active);
+  const [view, setView] = useViewMode();
+  const emptyText = debouncedSearch
+    ? `Sin resultados para "${debouncedSearch}"`
+    : "No hay categorías registradas";
+
+  const renderActions = (c: Category) => (
+    <>
+      <Button
+        size="icon"
+        aria-label={`Editar ${c.name}`}
+        title="Editar"
+        variant="secondary"
+        onClick={() => openEdit(c)}
+      >
+        <Pencil size={16} aria-hidden="true" />
+      </Button>
+      <Button
+        size="icon"
+        aria-label={`Eliminar ${c.name}`}
+        title="Eliminar"
+        variant="danger-soft"
+        loading={deleteMut.isPending && deleteMut.variables === c.id}
+        onClick={async () => {
+          if (await confirm({ title: `¿Eliminar "${c.name}"?` }))
+            deleteMut.mutate(c.id);
+        }}
+      >
+        <Trash2 size={16} aria-hidden="true" />
+      </Button>
+    </>
+  );
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-slate-800">
+          <h1 className="text-xl sm:text-2xl font-bold text-ink">
             Categorías de productos
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            {activeList.length} activas · {inactive.length} inactivas
+          <p className="text-[15px] text-ink-3 mt-1">
+            {pager.counts?.active ?? 0} activas · {pager.counts?.inactive ?? 0}{" "}
+            inactivas
           </p>
         </div>
         <Button onClick={openCreate}>
-          <Plus size={14} /> Nueva categoría
+          <Plus size={16} /> Nueva categoría
         </Button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Buscar por nombre o descripción"
+          label="Buscar categorías"
+        />
+        <ViewToggle view={view} onChange={setView} />
+      </div>
+
+      <div className="card overflow-x-auto">
         {isLoading ? (
-          <div className="p-8 text-center text-slate-400 text-sm">
-            Cargando categorías...
-          </div>
+          <TableSkeleton label="Cargando categorías…" />
+        ) : view === "grid" ? (
+          <CardGrid empty={categories.length === 0 && emptyText}>
+            {categories.map((c) => (
+              <GridCard key={c.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <h2 className="font-bold text-ink text-base">{c.name}</h2>
+                  <Badge variant={c.active ? "success" : "danger"}>
+                    {c.active ? "Activa" : "Inactiva"}
+                  </Badge>
+                </div>
+                <p className="text-sm text-ink-3 line-clamp-3">
+                  {c.description ?? "Sin descripción"}
+                </p>
+                <CardFields>
+                  <CardField label="Creación">
+                    {new Date(c.created_at).toLocaleDateString("es-CO")}
+                  </CardField>
+                </CardFields>
+                <CardActions>{renderActions(c)}</CardActions>
+              </GridCard>
+            ))}
+          </CardGrid>
         ) : (
-          <table className="w-full">
+          <table className="w-full min-w-160">
             <thead>
-              <tr className="border-b border-slate-100 bg-slate-50/60">
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+              <tr className="border-b border-line bg-surface-2">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Nombre
                 </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Descripción
                 </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Estado
                 </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Creación
                 </th>
-                <th className="text-left text-xs font-medium text-slate-500 px-5 py-3">
+                <th className="text-left text-[13px] font-semibold text-ink-2 px-4 py-3">
                   Acciones
                 </th>
               </tr>
@@ -163,50 +231,26 @@ export default function CategoriesPage() {
               {categories.map((c) => (
                 <tr
                   key={c.id}
-                  className="border-b border-slate-50 hover:bg-slate-50/50"
+                  className="border-b border-line/70 transition-colors hover:bg-primary-soft/50"
                 >
-                  <td className="px-5 py-3.5 font-medium text-slate-800 text-sm">
+                  <td className="px-4 py-3.5 font-semibold text-ink text-sm">
                     {c.name}
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-slate-500 max-w-50 truncate">
+                  <td className="px-4 py-3.5 text-sm text-ink-3 max-w-50 truncate">
                     {c.description ?? (
-                      <span className="text-slate-300 italic text-xs">—</span>
+                      <span className="text-ink-3 text-xs">—</span>
                     )}
                   </td>
-                  <td className="px-5 py-3.5">
-                    <span
-                      className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
-                      style={
-                        c.active
-                          ? { backgroundColor: "#D1FAE5", color: "#065F46" }
-                          : { backgroundColor: "#FEE2E2", color: "#991B1B" }
-                      }
-                    >
+                  <td className="px-4 py-3.5">
+                    <Badge variant={c.active ? "success" : "danger"}>
                       {c.active ? "Activa" : "Inactiva"}
-                    </span>
+                    </Badge>
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-slate-500">
+                  <td className="px-4 py-3.5 text-sm text-ink-3">
                     {new Date(c.created_at).toLocaleDateString("es-CO")}
                   </td>
-                  <td className="px-5 py-3.5">
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={() => openEdit(c)}>
-                        <Pencil size={12} /> Editar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        loading={
-                          deleteMut.isPending && deleteMut.variables === c.id
-                        }
-                        onClick={() => {
-                          if (window.confirm(`¿Eliminar "${c.name}"?`))
-                            deleteMut.mutate(c.id);
-                        }}
-                      >
-                        <Trash2 size={12} /> Eliminar
-                      </Button>
-                    </div>
+                  <td className="px-4 py-3.5">
+                    <div className="flex gap-2">{renderActions(c)}</div>
                   </td>
                 </tr>
               ))}
@@ -214,26 +258,27 @@ export default function CategoriesPage() {
                 <tr>
                   <td
                     colSpan={5}
-                    className="px-5 py-8 text-center text-slate-400 text-sm"
+                    className="px-4 py-10 text-center text-ink-3 text-[15px]"
                   >
-                    No hay categorías registradas
+                    {emptyText}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         )}
+        {!isLoading && <CursorPagination pager={pager} />}
       </div>
 
       <Modal
         open={modalOpen}
-        onClose={() => !isPending && setModalOpen(false)}
+        onClose={() => !isPending && requestClose()}
         title={editTarget ? "Editar categoría" : "Nueva categoría"}
         footer={
           <>
             <Button
               variant="secondary"
-              onClick={() => setModalOpen(false)}
+              onClick={requestClose}
               disabled={isPending}
             >
               Cancelar
@@ -246,58 +291,57 @@ export default function CategoriesPage() {
       >
         <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Nombre <span className="text-red-500">*</span>
+            <label
+              htmlFor="categories-name"
+              className="block text-sm font-semibold text-ink mb-1.5"
+            >
+              Nombre <span className="text-danger-fg">*</span>
             </label>
             <input
-              className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 ${
-                errors.name ? "border-red-400 bg-red-50" : "border-slate-200"
-              }`}
+              id="categories-name"
+              className="field"
+              aria-invalid={!!errors.name}
               placeholder="Ropa deportiva"
               {...register("name")}
             />
             {errors.name && (
-              <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>
+              <p className="text-danger-fg text-xs font-semibold mt-1">
+                {errors.name.message}
+              </p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label
+              htmlFor="categories-description"
+              className="block text-sm font-semibold text-ink mb-1.5"
+            >
               Descripción
             </label>
             <textarea
+              id="categories-description"
               rows={3}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 resize-none"
+              className="field resize-none"
               placeholder="Descripción opcional"
               {...register("description")}
             />
           </div>
 
           {editTarget && (
-            <div className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+            <div className="flex items-center justify-between rounded-lg border border-line px-4 py-3">
               <div>
-                <p className="text-sm font-medium text-slate-700">
-                  Estado activo
-                </p>
-                <p className="text-xs text-slate-400">
+                <p className="text-sm font-semibold text-ink">Estado activo</p>
+                <p className="text-xs text-ink-3">
                   La categoría aparece disponible en la app
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() =>
-                  setValue("active", !activeField, { shouldValidate: true })
+              <Switch
+                checked={activeField}
+                label="Estado activo"
+                onChange={(v) =>
+                  setValue("active", v, { shouldValidate: true })
                 }
-                className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
-                  activeField ? "bg-emerald-500" : "bg-slate-300"
-                }`}
-              >
-                <span
-                  className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
-                    activeField ? "translate-x-4" : "translate-x-1"
-                  }`}
-                />
-              </button>
+              />
             </div>
           )}
         </form>

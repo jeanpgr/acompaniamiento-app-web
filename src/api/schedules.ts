@@ -1,14 +1,39 @@
 import { apiClient } from "./client";
+import { pageParams, type CursorPage } from "./pagination";
 
-export type ScheduleStatus = "PENDIENTE" | "EN CURSO" | "COMPLETADO";
+export type ScheduleStatus =
+  | "PENDIENTE"
+  | "EN CURSO"
+  | "COMPLETADO"
+  | "OLVIDADA"
+  | "CANCELADA";
+
+export type RefundStatus = "EN_PROCESO" | "REALIZADO";
+
+/** Campos de reembolso presentes en las 4 tablas de agendamiento. */
+export interface RefundFields {
+  id_user?: string | null;
+  refund_status: RefundStatus | null;
+  refund_bank_name: string | null;
+  refund_bank_account: string | null;
+  refund_account_type: string | null;
+  refund_holder_cedula: string | null;
+  cancelled_at: string | null;
+}
 
 // ─── Acompañamiento ──────────────────────────────────────────────────────────
-export interface ScheduleAcompan {
+export interface ScheduleAcompan extends RefundFields {
   id: string;
   id_service: string;
-  id_vehicle: string;
+  /** null hasta que el administrador asigna un vehículo. */
+  id_vehicle: string | null;
   origin_address: string;
   destination_address: string;
+  /** Puntos elegidos en el mapa de la app (null si se escribió a mano). */
+  origin_lat: number | null;
+  origin_lng: number | null;
+  destination_lat: number | null;
+  destination_lng: number | null;
   date_time: string;
   name_contact_emergency: string;
   contact_emergency: string;
@@ -23,7 +48,7 @@ export interface ScheduleAcompan {
 
 export interface CreateScheduleAcompanInput {
   id_service: string;
-  id_vehicle: string;
+  id_vehicle?: string | null;
   origin_address: string;
   destination_address: string;
   date_time: string;
@@ -34,29 +59,56 @@ export interface CreateScheduleAcompanInput {
 }
 
 export const getSchedulesAcompan = () =>
+  apiClient.get<ScheduleAcompan[]>("/schedule-acompan").then((r) => r.data);
+
+/** Página por cursor (created_at DESC) para la tabla del panel. */
+export const getSchedulesAcompanPage = (
+  cursor: string | null,
+  filters: { status?: ScheduleStatus; search?: string } = {},
+) =>
   apiClient
-    .get<{ data: ScheduleAcompan[] }>("/schedule-acompan")
-    .then((r) => r.data.data ?? r.data);
+    .get<
+      CursorPage<ScheduleAcompan, Record<ScheduleStatus, number>>
+    >("/schedule-acompan", { params: pageParams(cursor, filters) })
+    .then((r) => r.data);
+/**
+ * Módulo Acompañamiento: quien administra las citas ve todas; un conductor,
+ * solo las de sus vehículos (con el servicio y el vehículo incluidos).
+ */
+export const getAssignedSchedulesAcompan = () =>
+  apiClient
+    .get<ScheduleAcompan[]>("/schedule-acompan/assigned")
+    .then((r) => r.data);
+/** Cambia el estado de una cita desde el módulo Acompañamiento. */
+export const updateAssignedStatusAcompan = (id: string, status: ScheduleStatus) =>
+  apiClient
+    .put<ScheduleAcompan>(`/schedule-acompan/${id}/status`, { status })
+    .then((r) => r.data);
 export const createScheduleAcompan = (body: CreateScheduleAcompanInput) =>
   apiClient
-    .post<{ data: ScheduleAcompan }>("/schedule-acompan", body)
-    .then((r) => r.data.data ?? r.data);
+    .post<ScheduleAcompan>("/schedule-acompan", body)
+    .then((r) => r.data);
 export const updateScheduleAcompan = (
   id: string,
   body: Partial<ScheduleAcompan>,
 ) =>
   apiClient
-    .put<{ data: ScheduleAcompan }>(`/schedule-acompan/${id}`, body)
-    .then((r) => r.data.data ?? r.data);
+    .put<ScheduleAcompan>(`/schedule-acompan/${id}`, body)
+    .then((r) => r.data);
+export const markRefundCompleteAcompan = (id: string) =>
+  apiClient
+    .put<ScheduleAcompan>(`/schedule-acompan/${id}/refund-complete`)
+    .then((r) => r.data);
 export const deleteScheduleAcompan = (id: string) =>
   apiClient.delete(`/schedule-acompan/${id}`);
 
 // ─── Turismo ─────────────────────────────────────────────────────────────────
-export interface ScheduleTourism {
+export interface ScheduleTourism extends RefundFields {
   id: string;
   id_detail_tourism: string;
   id_vehicle: string;
-  names_persons: string[];
+  /** `{ name, tier }` por persona (ver lib/persons). */
+  names_persons: unknown;
   quotas: number;
   phone_responsible: string;
   price_pay: string | null;
@@ -68,20 +120,42 @@ export interface ScheduleTourism {
   vehicle?: { id: string; name: string; license_plate: string };
 }
 
+/** Reserva con la cuenta que la hizo (listado por viaje). */
+export interface ScheduleTourismWithUser extends ScheduleTourism {
+  user: { name: string; lastname: string; phone: string; email: string } | null;
+}
+
 export const getSchedulesTourism = () =>
+  apiClient.get<ScheduleTourism[]>("/schedule-tourism").then((r) => r.data);
+/** Reservas de una excursión. */
+export const getSchedulesTourismByDetail = (idDetail: string) =>
   apiClient
-    .get<{ data: ScheduleTourism[] }>("/schedule-tourism")
-    .then((r) => r.data.data ?? r.data);
+    .get<ScheduleTourismWithUser[]>(`/schedule-tourism/detail/${idDetail}`)
+    .then((r) => r.data);
+/** Pago verificado: PENDIENTE → EN CURSO ("Confirmada"). */
+export const confirmScheduleTourism = (id: string) =>
+  apiClient
+    .put<ScheduleTourism>(`/schedule-tourism/${id}/confirm`)
+    .then((r) => r.data);
+/** Deshace una confirmación: EN CURSO → PENDIENTE. */
+export const unconfirmScheduleTourism = (id: string) =>
+  apiClient
+    .put<ScheduleTourism>(`/schedule-tourism/${id}/unconfirm`)
+    .then((r) => r.data);
 export const updateScheduleTourism = (
   id: string,
   body: Partial<ScheduleTourism>,
 ) =>
   apiClient
-    .put<{ data: ScheduleTourism }>(`/schedule-tourism/${id}`, body)
-    .then((r) => r.data.data ?? r.data);
+    .put<ScheduleTourism>(`/schedule-tourism/${id}`, body)
+    .then((r) => r.data);
+export const markRefundCompleteTourism = (id: string) =>
+  apiClient
+    .put<ScheduleTourism>(`/schedule-tourism/${id}/refund-complete`)
+    .then((r) => r.data);
 
 // ─── Capacitación ────────────────────────────────────────────────────────────
-export interface ScheduleTraining {
+export interface ScheduleTraining extends RefundFields {
   id: string;
   id_detail_training: string;
   name: string;
@@ -94,27 +168,53 @@ export interface ScheduleTraining {
   detail?: { id: string; topic: string; date_time: string; link_meet: string };
 }
 
+/** Inscripción con la cuenta que la hizo (listado por taller). */
+export interface ScheduleTrainingWithUser extends ScheduleTraining {
+  user: { name: string; lastname: string; phone: string; email: string } | null;
+}
+
 export const getSchedulesTraining = () =>
+  apiClient.get<ScheduleTraining[]>("/schedule-training").then((r) => r.data);
+/** Inscripciones de una capacitación. */
+export const getSchedulesTrainingByDetail = (idDetail: string) =>
   apiClient
-    .get<{ data: ScheduleTraining[] }>("/schedule-training")
-    .then((r) => r.data.data ?? r.data);
+    .get<ScheduleTrainingWithUser[]>(`/schedule-training/detail/${idDetail}`)
+    .then((r) => r.data);
+/** Pago verificado: PENDIENTE → EN CURSO; la app muestra "Unirse". */
+export const confirmScheduleTraining = (id: string) =>
+  apiClient
+    .put<ScheduleTraining>(`/schedule-training/${id}/confirm`)
+    .then((r) => r.data);
+/** Deshace una confirmación: EN CURSO → PENDIENTE. */
+export const unconfirmScheduleTraining = (id: string) =>
+  apiClient
+    .put<ScheduleTraining>(`/schedule-training/${id}/unconfirm`)
+    .then((r) => r.data);
 export const updateScheduleTraining = (
   id: string,
   body: Partial<ScheduleTraining>,
 ) =>
   apiClient
-    .put<{ data: ScheduleTraining }>(`/schedule-training/${id}`, body)
-    .then((r) => r.data.data ?? r.data);
+    .put<ScheduleTraining>(`/schedule-training/${id}`, body)
+    .then((r) => r.data);
+export const markRefundCompleteTraining = (id: string) =>
+  apiClient
+    .put<ScheduleTraining>(`/schedule-training/${id}/refund-complete`)
+    .then((r) => r.data);
 
 // ─── Guardería ───────────────────────────────────────────────────────────────
-export interface ScheduleDaycare {
+export interface ScheduleDaycare extends RefundFields {
   id: string;
   id_detail_daycare: string;
-  id_vehicle: string;
+  /** Null hasta que se asigna; solo hace falta con recogida (PICK_HOME). */
+  id_vehicle: string | null;
   name: string | null;
   lastname: string | null;
   transfer: "PICK_HOME" | "TO_CARRY" | null;
   address_pick_home: string | null;
+  /** Punto de recogida elegido en el mapa de la app. */
+  pick_home_lat: number | null;
+  pick_home_lng: number | null;
   status: ScheduleStatus | null;
   active: boolean;
   created_at: string;
@@ -123,14 +223,57 @@ export interface ScheduleDaycare {
   vehicle?: { id: string; name: string; license_plate: string };
 }
 
+/** Solicitud con la cuenta que la hizo y su vehículo (listado por plan). */
+export interface ScheduleDaycareWithUser extends Omit<
+  ScheduleDaycare,
+  "vehicle"
+> {
+  vehicle: { id: string; name: string; license_plate: string } | null;
+  user: { name: string; lastname: string; phone: string; email: string } | null;
+}
+
 export const getSchedulesDaycare = () =>
+  apiClient.get<ScheduleDaycare[]>("/schedule-daycare").then((r) => r.data);
+/** Solicitudes de un plan de guardería. */
+export const getSchedulesDaycareByDetail = (idDetail: string) =>
   apiClient
-    .get<{ data: ScheduleDaycare[] }>("/schedule-daycare")
-    .then((r) => r.data.data ?? r.data);
+    .get<ScheduleDaycareWithUser[]>(`/schedule-daycare/detail/${idDetail}`)
+    .then((r) => r.data);
+/**
+ * Pago verificado: PENDIENTE → EN CURSO. Con recogida a domicilio hace falta
+ * vehículo (`id_vehicle`) si la solicitud aún no tiene uno.
+ */
+export const confirmScheduleDaycare = ({
+  id,
+  id_vehicle,
+}: {
+  id: string;
+  id_vehicle?: string;
+}) =>
+  apiClient
+    .put<ScheduleDaycare>(
+      `/schedule-daycare/${id}/confirm`,
+      id_vehicle ? { id_vehicle } : {},
+    )
+    .then((r) => r.data);
+/** Deshace una confirmación: EN CURSO → PENDIENTE. */
+export const unconfirmScheduleDaycare = (id: string) =>
+  apiClient
+    .put<ScheduleDaycare>(`/schedule-daycare/${id}/unconfirm`)
+    .then((r) => r.data);
+/** Finaliza el servicio (continuo, sin fecha de fin): EN CURSO → COMPLETADO. */
+export const completeScheduleDaycare = (id: string) =>
+  apiClient
+    .put<ScheduleDaycare>(`/schedule-daycare/${id}/complete`)
+    .then((r) => r.data);
 export const updateScheduleDaycare = (
   id: string,
   body: Partial<ScheduleDaycare>,
 ) =>
   apiClient
-    .put<{ data: ScheduleDaycare }>(`/schedule-daycare/${id}`, body)
-    .then((r) => r.data.data ?? r.data);
+    .put<ScheduleDaycare>(`/schedule-daycare/${id}`, body)
+    .then((r) => r.data);
+export const markRefundCompleteDaycare = (id: string) =>
+  apiClient
+    .put<ScheduleDaycare>(`/schedule-daycare/${id}/refund-complete`)
+    .then((r) => r.data);
