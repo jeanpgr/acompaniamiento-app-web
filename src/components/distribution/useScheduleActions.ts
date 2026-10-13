@@ -3,6 +3,7 @@ import type { Vehicle } from "@/api/vehicles";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import {
   assignSchedule,
+  confirmPaymentSchedule,
   markRefundComplete,
   type Unified,
 } from "./schedules";
@@ -21,8 +22,17 @@ export function useScheduleActions(vehicles: Vehicle[]) {
       assignSchedule(s, vehicleId),
     meta: {
       invalidates: "schedules",
-      successMessage: "Cita confirmada",
+      successMessage: "Listo",
       errorMessage: "No se pudo confirmar. Intenta de nuevo.",
+    },
+  });
+
+  const payMut = useMutation({
+    mutationFn: (s: Unified) => confirmPaymentSchedule(s),
+    meta: {
+      invalidates: "schedules",
+      successMessage: "Pago confirmado",
+      errorMessage: "No se pudo confirmar el pago. Intenta de nuevo.",
     },
   });
 
@@ -43,11 +53,29 @@ export function useScheduleActions(vehicles: Vehicle[]) {
       title: vehicle
         ? `¿Asignar ${vehicle.name} (${vehicle.license_plate})?`
         : "¿Confirmar este servicio?",
-      message: `${s.title} · ${s.personName}. La cita quedará confirmada y el cliente lo verá en la app.`,
-      confirmLabel: vehicle ? "Asignar y confirmar" : "Confirmar",
+      message:
+        s.originalType === "acompan"
+          ? `${s.title} · ${s.personName}. El conductor de ese vehículo verá el servicio al iniciar sesión y será quien lo marque en ruta o completado.`
+          : s.needsVehicle
+            ? `${s.title} · ${s.personName}. El pago ya está confirmado; el vehículo queda asignado al servicio.`
+            : `${s.title} · ${s.personName}. La cita quedará como pagada y el cliente lo verá en la app.`,
+      confirmLabel: vehicle ? "Asignar vehículo" : "Confirmar",
       tone: "primary",
     });
     if (ok) assignMut.mutate({ s, vehicleId });
+  };
+
+  const confirmPayment = async (s: Unified) => {
+    const ok = await confirm({
+      title: "¿Confirmar el pago?",
+      message:
+        s.originalType === "acompan"
+          ? `${s.title} · ${s.personName}. Se registra el pago; el estado del servicio lo sigue cambiando el conductor.`
+          : `${s.title} · ${s.personName}. La cita quedará como pagada y el cliente lo verá en la app.`,
+      confirmLabel: "Confirmar pago",
+      tone: "primary",
+    });
+    if (ok) payMut.mutate(s);
   };
 
   const markRefunded = async (s: Unified) => {
@@ -69,7 +97,9 @@ export function useScheduleActions(vehicles: Vehicle[]) {
 
   return {
     assign,
+    confirmPayment,
     markRefunded,
+    payingId: payMut.isPending ? payMut.variables?.id : undefined,
     assigningId: assignMut.isPending ? assignMut.variables?.s.id : undefined,
     refundingId: refundMut.isPending ? refundMut.variables?.id : undefined,
   };

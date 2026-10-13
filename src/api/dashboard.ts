@@ -75,7 +75,7 @@ export interface DashboardData {
 export interface DriverServiceItem {
   id: string;
   dateTime: string;
-  status: "EN CURSO" | "COMPLETADO" | "OLVIDADA";
+  status: "PENDIENTE" | "PAGADO" | "EN CURSO" | "COMPLETADO" | "OLVIDADA";
   service: string | null;
   origin: string;
   destination: string;

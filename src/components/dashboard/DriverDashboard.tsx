@@ -38,6 +38,8 @@ const SERIES = [
 ];
 
 const STATUS_BADGE = {
+  PENDIENTE: { label: "Por iniciar", variant: "warning" },
+  PAGADO: { label: "Por iniciar", variant: "warning" },
   "EN CURSO": { label: "En ruta", variant: "info" },
   COMPLETADO: { label: "Completado", variant: "success" },
   OLVIDADA: { label: "No asistido", variant: "default" },
@@ -267,7 +269,7 @@ export default function DriverDashboard() {
           />
           <ServiceList
             title="Por marcar"
-            subtitle="Ya pasó su hora y siguen en ruta: márcalos en Acompañamiento"
+            subtitle="Ya pasó su hora y no los marcaste: ciérralos en Acompañamiento"
             items={data.toClose}
             showDay
           />

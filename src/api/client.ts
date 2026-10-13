@@ -44,10 +44,19 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error) => {
-    if (error.response?.status === 401) {
+    // 401 con sesión = el token venció: se limpia y se vuelve al login. Un 401
+    // del propio inicio de sesión (credenciales incorrectas) o sin sesión no
+    // debe recargar la página: la pantalla muestra el error por su cuenta.
+    const isSignIn = String(error.config?.url ?? "").includes("/auth/sign-in");
+    if (
+      error.response?.status === 401 &&
+      !isSignIn &&
+      localStorage.getItem("auth_token")
+    ) {
       localStorage.removeItem("auth_token");
       localStorage.removeItem("auth_user");
-      window.location.href = "/login";
+      if (window.location.pathname !== "/login")
+        window.location.href = "/login";
     }
     return Promise.reject(error);
   },

@@ -5,6 +5,7 @@ import {
   Clock,
   Truck,
   CheckCircle,
+  BadgeCheck,
   Phone,
   User,
   ChevronDown,
@@ -41,6 +42,12 @@ const STATUS_CONFIG: Record<
     icon: Clock,
     dot: "bg-warning",
   },
+  PAGADO: {
+    label: "Pagado",
+    variant: "success",
+    icon: BadgeCheck,
+    dot: "bg-success",
+  },
   "EN CURSO": {
     label: "En ruta",
     variant: "info",
@@ -70,6 +77,7 @@ const STATUS_CONFIG: Record<
 const STATUS_TABS: (ScheduleStatus | "all")[] = [
   "all",
   "PENDIENTE",
+  "PAGADO",
   "EN CURSO",
   "COMPLETADO",
   "OLVIDADA",
@@ -150,6 +158,7 @@ export default function ServiceStatusPage() {
     filter === "all" ? items : items.filter((i) => i.status === filter);
   const counts: Record<ScheduleStatus, number> = {
     PENDIENTE: items.filter((i) => i.status === "PENDIENTE").length,
+    PAGADO: items.filter((i) => i.status === "PAGADO").length,
     "EN CURSO": items.filter((i) => i.status === "EN CURSO").length,
     COMPLETADO: items.filter((i) => i.status === "COMPLETADO").length,
     OLVIDADA: items.filter((i) => i.status === "OLVIDADA").length,
@@ -171,12 +180,18 @@ export default function ServiceStatusPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4 mb-5">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 mb-5">
         <StatCard
           icon={Clock}
           tone="warning"
           value={counts["PENDIENTE"]}
           label="Pendientes"
+        />
+        <StatCard
+          icon={BadgeCheck}
+          tone="success"
+          value={counts["PAGADO"]}
+          label="Pagados"
         />
         <StatCard
           icon={Truck}
@@ -308,12 +323,15 @@ export default function ServiceStatusPage() {
 
                 {/* Status update — solo para estados que aún pueden avanzar */}
                 {item.status !== "COMPLETADO" &&
-                  item.status !== "CANCELADA" &&
-                  (canManageAll || item.status !== "PENDIENTE") && (
+                  item.status !== "CANCELADA" && (
                     <div className="mt-3">
                       {updatingId === item.id ? (
                         <div className="flex gap-2">
-                          {(["EN CURSO", "COMPLETADO"] as ScheduleStatus[])
+                          {(
+                            (canManageAll
+                              ? ["PAGADO", "EN CURSO", "COMPLETADO"]
+                              : ["EN CURSO", "COMPLETADO"]) as ScheduleStatus[]
+                          )
                             .filter((s) => s !== item.status)
                             .map((s) => (
                               <button
@@ -325,7 +343,9 @@ export default function ServiceStatusPage() {
                                       message:
                                         s === "COMPLETADO"
                                           ? `${item.title}. El servicio quedará como completado y el cliente podrá calificarlo.`
-                                          : `${item.title}. El cliente verá el nuevo estado en la app.`,
+                                          : s === "PAGADO"
+                                            ? `${item.title}. Se registrará el pago como confirmado.`
+                                            : `${item.title}. El cliente verá el nuevo estado en la app.`,
                                       confirmLabel: "Cambiar estado",
                                       tone: "primary",
                                     })

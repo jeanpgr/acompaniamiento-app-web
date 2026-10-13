@@ -79,7 +79,13 @@ export default function DistributionPage() {
     meta: { errorMessage: "No se pudo asignar. Intenta de nuevo." },
     onSuccess: (_data, { s }) => {
       setLeaving((prev) => new Set(prev).add(s.id));
-      toast.success("Asignado · la cita pasa a En ruta");
+      toast.success(
+        s.originalType === "acompan"
+          ? "Vehículo asignado · el conductor verá el servicio"
+          : s.needsVehicle
+            ? "Vehículo asignado"
+            : "Pago confirmado · la cita queda pagada",
+      );
       const reduced = window.matchMedia(
         "(prefers-reduced-motion: reduce)",
       ).matches;
@@ -105,8 +111,13 @@ export default function DistributionPage() {
       title: vehicle
         ? `¿Asignar ${vehicle.name} (${vehicle.license_plate})?`
         : "¿Confirmar este servicio?",
-      message: `${s.title} · ${s.personName}. La cita quedará confirmada y el cliente lo verá en la app.`,
-      confirmLabel: vehicle ? "Asignar y confirmar" : "Confirmar",
+      message:
+        s.originalType === "acompan"
+          ? `${s.title} · ${s.personName}. El conductor de ese vehículo verá el servicio al iniciar sesión y será quien lo marque en ruta o completado.`
+          : s.needsVehicle
+            ? `${s.title} · ${s.personName}. El pago ya está confirmado; el vehículo queda asignado al servicio.`
+            : `${s.title} · ${s.personName}. La cita quedará como pagada y el cliente lo verá en la app.`,
+      confirmLabel: vehicle ? "Asignar vehículo" : "Confirmar",
       tone: "primary",
     });
     if (ok) assignMut.mutate({ s, vehicleId });

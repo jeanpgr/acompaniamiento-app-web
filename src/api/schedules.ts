@@ -3,6 +3,7 @@ import { pageParams, type CursorPage } from "./pagination";
 
 export type ScheduleStatus =
   | "PENDIENTE"
+  | "PAGADO"
   | "EN CURSO"
   | "COMPLETADO"
   | "OLVIDADA"
@@ -80,7 +81,10 @@ export const getAssignedSchedulesAcompan = () =>
     .get<ScheduleAcompan[]>("/schedule-acompan/assigned")
     .then((r) => r.data);
 /** Cambia el estado de una cita desde el módulo Acompañamiento. */
-export const updateAssignedStatusAcompan = (id: string, status: ScheduleStatus) =>
+export const updateAssignedStatusAcompan = (
+  id: string,
+  status: ScheduleStatus,
+) =>
   apiClient
     .put<ScheduleAcompan>(`/schedule-acompan/${id}/status`, { status })
     .then((r) => r.data);
@@ -132,12 +136,12 @@ export const getSchedulesTourismByDetail = (idDetail: string) =>
   apiClient
     .get<ScheduleTourismWithUser[]>(`/schedule-tourism/detail/${idDetail}`)
     .then((r) => r.data);
-/** Pago verificado: PENDIENTE → EN CURSO ("Confirmada"). */
+/** Pago verificado: PENDIENTE → PAGADO ("Pagado"). */
 export const confirmScheduleTourism = (id: string) =>
   apiClient
     .put<ScheduleTourism>(`/schedule-tourism/${id}/confirm`)
     .then((r) => r.data);
-/** Deshace una confirmación: EN CURSO → PENDIENTE. */
+/** Deshace una confirmación: PAGADO → PENDIENTE. */
 export const unconfirmScheduleTourism = (id: string) =>
   apiClient
     .put<ScheduleTourism>(`/schedule-tourism/${id}/unconfirm`)
@@ -180,12 +184,12 @@ export const getSchedulesTrainingByDetail = (idDetail: string) =>
   apiClient
     .get<ScheduleTrainingWithUser[]>(`/schedule-training/detail/${idDetail}`)
     .then((r) => r.data);
-/** Pago verificado: PENDIENTE → EN CURSO; la app muestra "Unirse". */
+/** Pago verificado: PENDIENTE → PAGADO; la app muestra "Unirse". */
 export const confirmScheduleTraining = (id: string) =>
   apiClient
     .put<ScheduleTraining>(`/schedule-training/${id}/confirm`)
     .then((r) => r.data);
-/** Deshace una confirmación: EN CURSO → PENDIENTE. */
+/** Deshace una confirmación: PAGADO → PENDIENTE. */
 export const unconfirmScheduleTraining = (id: string) =>
   apiClient
     .put<ScheduleTraining>(`/schedule-training/${id}/unconfirm`)
@@ -240,7 +244,7 @@ export const getSchedulesDaycareByDetail = (idDetail: string) =>
     .get<ScheduleDaycareWithUser[]>(`/schedule-daycare/detail/${idDetail}`)
     .then((r) => r.data);
 /**
- * Pago verificado: PENDIENTE → EN CURSO. Con recogida a domicilio hace falta
+ * Pago verificado: PENDIENTE → PAGADO. Con recogida a domicilio hace falta
  * vehículo (`id_vehicle`) si la solicitud aún no tiene uno.
  */
 export const confirmScheduleDaycare = ({
@@ -256,12 +260,12 @@ export const confirmScheduleDaycare = ({
       id_vehicle ? { id_vehicle } : {},
     )
     .then((r) => r.data);
-/** Deshace una confirmación: EN CURSO → PENDIENTE. */
+/** Deshace una confirmación: PAGADO → PENDIENTE. */
 export const unconfirmScheduleDaycare = (id: string) =>
   apiClient
     .put<ScheduleDaycare>(`/schedule-daycare/${id}/unconfirm`)
     .then((r) => r.data);
-/** Finaliza el servicio (continuo, sin fecha de fin): EN CURSO → COMPLETADO. */
+/** Finaliza el servicio (continuo, sin fecha de fin): PAGADO → COMPLETADO. */
 export const completeScheduleDaycare = (id: string) =>
   apiClient
     .put<ScheduleDaycare>(`/schedule-daycare/${id}/complete`)
