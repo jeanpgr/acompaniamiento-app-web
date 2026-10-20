@@ -161,29 +161,34 @@ export function combineSchedules(
   return { schedules, isLoading: results.some((r) => r.isLoading) };
 }
 
-/** Cita que todavía espera asignación (vehículo / confirmación). */
+const awaitingStatus = (s: Unified) => !s.status || s.status === "PENDIENTE";
+
+/**
+ * Cola "Sin asignar": servicios con el pago confirmado (PAGADO) que necesitan
+ * vehículo y aún no lo tienen. Una vez asignado, el conductor lo ve y lo pasa
+ * a EN CURSO y COMPLETADO.
+ */
 export function isPending(s: Unified) {
-  return !s.status || s.status === "PENDIENTE";
+  return s.needsVehicle && s.status === "PAGADO" && !s.vehicleId;
+}
+
+/** Recién contratado: el equipo confirma el pago al recibir el comprobante. */
+export function awaitingPayment(s: Unified) {
+  return awaitingStatus(s);
 }
 
 export const STATUS_LABEL: Record<ScheduleStatus, string> = {
   PENDIENTE: "Pendiente",
+  PAGADO: "Pagado",
   "EN CURSO": "En ruta",
   COMPLETADO: "Completado",
   OLVIDADA: "Olvidada",
   CANCELADA: "Cancelada",
 };
 
-/**
- * Etiqueta del estado de una cita concreta. "En ruta" solo aplica a
- * acompañamiento; en turismo, capacitación y guardería "EN CURSO" significa
- * que el pago se confirmó (páginas Reservas / Inscripciones / Solicitudes).
- */
+/** Etiqueta del estado de una cita ("En ruta" = EN CURSO, solo acompañamiento). */
 export function statusLabelOf(s: Pick<Unified, "status" | "originalType">) {
-  const status = s.status ?? "PENDIENTE";
-  if (s.originalType !== "acompan" && status === "EN CURSO")
-    return "Confirmada";
-  return STATUS_LABEL[status];
+  return STATUS_LABEL[s.status ?? "PENDIENTE"];
 }
 
 /** Color del distintivo de cada estado (variantes de <Badge>). */
@@ -192,6 +197,7 @@ export const STATUS_VARIANT: Record<
   "warning" | "info" | "success" | "danger" | "default"
 > = {
   PENDIENTE: "warning",
+  PAGADO: "success",
   "EN CURSO": "info",
   COMPLETADO: "success",
   OLVIDADA: "default",
@@ -200,33 +206,45 @@ export const STATUS_VARIANT: Record<
 
 // ── Acciones por tipo de cita ──
 
-/** Asigna el vehículo (si aplica) y pasa la cita a "EN CURSO". */
+/**
+ * Asigna el vehículo (si aplica) sin tocar el estado: el pago se confirma
+ * aparte ("PAGADO") y en acompañamiento el conductor la pasa a "EN CURSO".
+ * Si la cita no usa vehículo, asignar equivale a confirmar el pago.
+ */
 export function assignSchedule(
   s: Unified,
   vehicleId: string,
 ): Promise<unknown> {
   switch (s.originalType) {
     case "acompan":
-      return updateScheduleAcompan(s.id, {
-        id_vehicle: vehicleId,
-        status: "EN CURSO",
-      });
+      // Solo asigna el vehículo: el estado ("En ruta", "Completado") lo
+      // cambia el conductor de ese vehículo desde su módulo Acompañamiento.
+      return updateScheduleAcompan(s.id, { id_vehicle: vehicleId });
     case "tourism":
-      return updateScheduleTourism(s.id, {
-        id_vehicle: vehicleId,
-        status: "EN CURSO",
-      });
+      return updateScheduleTourism(s.id, { id_vehicle: vehicleId });
     case "daycare":
       // Con recogida se asigna vehículo; si la familia lo lleva, solo se confirma.
       return updateScheduleDaycare(
         s.id,
-        s.needsVehicle
-          ? { id_vehicle: vehicleId, status: "EN CURSO" }
-          : { status: "EN CURSO" },
+        s.needsVehicle ? { id_vehicle: vehicleId } : { status: "PAGADO" },
       );
     case "training":
       // Capacitación no usa vehículo: solo se confirma.
-      return updateScheduleTraining(s.id, { status: "EN CURSO" });
+      return updateScheduleTraining(s.id, { status: "PAGADO" });
+  }
+}
+
+/** Confirma el pago de cualquier servicio: la cita pasa a "PAGADO". */
+export function confirmPaymentSchedule(s: Unified): Promise<unknown> {
+  switch (s.originalType) {
+    case "tourism":
+      return updateScheduleTourism(s.id, { status: "PAGADO" });
+    case "daycare":
+      return updateScheduleDaycare(s.id, { status: "PAGADO" });
+    case "training":
+      return updateScheduleTraining(s.id, { status: "PAGADO" });
+    case "acompan":
+      return updateScheduleAcompan(s.id, { status: "PAGADO" });
   }
 }
 

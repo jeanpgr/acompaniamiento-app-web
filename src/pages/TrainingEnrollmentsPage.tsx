@@ -51,21 +51,21 @@ import { whatsappUrl } from "@/lib/whatsapp";
 type Enrollment = ScheduleTrainingWithUser;
 
 // ── Estados de una inscripción ──
-// El backend guarda "EN CURSO" cuando el pago se confirmó: desde ahí la app
+// El backend guarda "PAGADO" cuando el pago se confirmó: desde ahí la app
 // muestra "Unirse a la reunión" en lugar de "Ver datos de pago".
 type Group = "pending" | "confirmed" | "cancelled" | "past";
 
 function groupOf(r: Enrollment): Group {
   const s: ScheduleStatus = r.status ?? "PENDIENTE";
   if (s === "PENDIENTE") return "pending";
-  if (s === "EN CURSO" || s === "COMPLETADO") return "confirmed";
+  if (s === "PAGADO" || s === "COMPLETADO") return "confirmed";
   if (s === "CANCELADA") return "cancelled";
   return "past"; // OLVIDADA: el taller empezó sin que se confirmara
 }
 
 const TABS: { key: Group | "all"; label: string }[] = [
   { key: "pending", label: "Por confirmar" },
-  { key: "confirmed", label: "Confirmadas" },
+  { key: "confirmed", label: "Pagadas" },
   { key: "cancelled", label: "Canceladas" },
   { key: "past", label: "Sin confirmar (taller pasado)" },
   { key: "all", label: "Todas" },
@@ -93,7 +93,7 @@ function StatusBadge({ r }: { r: Enrollment }) {
     case "confirmed":
       return (
         <Badge variant="success">
-          {r.status === "COMPLETADO" ? "Asistió" : "Confirmada"}
+          {r.status === "COMPLETADO" ? "Asistió" : "Pagada"}
         </Badge>
       );
     case "cancelled":
@@ -258,7 +258,7 @@ export default function TrainingEnrollmentsPage() {
           <BadgeCheck size={15} /> {isFree ? "Confirmar" : "Confirmar pago"}
         </Button>
       );
-    if (group === "confirmed" && r.status === "EN CURSO")
+    if (group === "confirmed" && r.status === "PAGADO")
       return (
         <Button
           size="sm"
@@ -373,7 +373,7 @@ export default function TrainingEnrollmentsPage() {
           icon={BadgeCheck}
           tone="success"
           value={confirmed.length}
-          label="Confirmadas"
+          label="Pagadas"
         />
         <StatCard
           icon={Video}

@@ -31,6 +31,7 @@ import {
   STATUS_LABEL,
   STATUS_VARIANT,
   statusLabelOf,
+  awaitingPayment,
   isPending,
   formatTime,
   type FilterTab,
@@ -41,6 +42,7 @@ type StatusFilter = ScheduleStatus | "all";
 const STATUS_FILTERS: StatusFilter[] = [
   "all",
   "PENDIENTE",
+  "PAGADO",
   "EN CURSO",
   "COMPLETADO",
   "OLVIDADA",
@@ -166,9 +168,18 @@ export default function DistributionServicesPage() {
    * vehículo (citas sin asignar) o marcar el reembolso (canceladas).
    */
   const actionsCell = (s: Unified) => {
-    if (isPending(s)) {
+    if (isPending(s) || awaitingPayment(s)) {
       const busy = actions.assigningId === s.id;
-      return s.needsVehicle ? (
+      const payButton = awaitingPayment(s) && (
+        <Button
+          size="sm"
+          loading={actions.payingId === s.id}
+          onClick={() => actions.confirmPayment(s)}
+        >
+          Confirmar pago
+        </Button>
+      );
+      const picker = isPending(s) && (
         <select
           aria-label={`Asignar vehículo a ${s.title}`}
           className="field min-h-9 w-48 max-w-full px-2.5 py-1.5 text-sm"
@@ -177,7 +188,7 @@ export default function DistributionServicesPage() {
           onChange={(e) => actions.assign(s, e.target.value)}
         >
           <option value="" disabled>
-            {busy ? "Confirmando…" : "Asignar vehículo…"}
+            {busy ? "Asignando…" : "Asignar vehículo…"}
           </option>
           {activeVehicles.map((v) => (
             <option key={v.id} value={v.id}>
@@ -185,16 +196,12 @@ export default function DistributionServicesPage() {
             </option>
           ))}
         </select>
-      ) : (
-        <Button
-          size="sm"
-          loading={busy}
-          onClick={() => actions.assign(s, "")}
-        >
-          {s.originalType === "training"
-            ? "Confirmar inscripción"
-            : "Confirmar servicio"}
-        </Button>
+      );
+      return (
+        <div className="flex flex-wrap items-center gap-2">
+          {picker}
+          {payButton}
+        </div>
       );
     }
     if (s.status === "CANCELADA" && s.refundStatus === "EN_PROCESO")
@@ -227,7 +234,8 @@ export default function DistributionServicesPage() {
           Servicios y estados
         </h1>
         <p className="text-[15px] text-ink-3 mt-1">
-          Todas las citas agendadas con su estado, vehículo y reembolso · Confirma pagos, asigna vehículos y marca reembolsos
+          Todas las citas agendadas con su estado, vehículo y reembolso ·
+          Confirma pagos, asigna vehículos y marca reembolsos
         </p>
       </div>
 
@@ -268,13 +276,7 @@ export default function DistributionServicesPage() {
               aria-pressed={status === f}
               className="chip"
             >
-              {/* EN CURSO mezcla servicios: "En ruta" (acompañamiento) y
-                  "Confirmada" (el resto). */}
-              {f === "all"
-                ? "Todos"
-                : f === "EN CURSO"
-                  ? "En ruta / Confirmada"
-                  : STATUS_LABEL[f]}{" "}
+              {f === "all" ? "Todos" : STATUS_LABEL[f]}{" "}
               <span className="tabular-nums opacity-70">
                 ({countByStatus(f)})
               </span>
@@ -310,7 +312,9 @@ export default function DistributionServicesPage() {
                   )}
                 </CardFields>
                 {s.mapPoints && locationCell(s)}
-                {(isPending(s) || s.refundStatus === "EN_PROCESO") && (
+                {(isPending(s) ||
+                  awaitingPayment(s) ||
+                  s.refundStatus === "EN_PROCESO") && (
                   <div className="mt-3">{actionsCell(s)}</div>
                 )}
               </GridCard>

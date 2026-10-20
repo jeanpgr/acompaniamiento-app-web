@@ -23,11 +23,9 @@ import {
   type ScheduleStatus,
   type ScheduleDaycareWithUser,
 } from "@/api/schedules";
-import { getVehicles } from "@/api/vehicles";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
-import Modal from "@/components/ui/Modal";
 import StatCard from "@/components/ui/StatCard";
 import TableSkeleton from "@/components/ui/TableSkeleton";
 import {
@@ -52,21 +50,21 @@ import { whatsappUrl } from "@/lib/whatsapp";
 type Request = ScheduleDaycareWithUser;
 
 // ── Estados de una solicitud de guardería ──
-// El backend guarda "EN CURSO" cuando el pago se confirmó (y, con recogida,
+// El backend guarda "PAGADO" cuando el pago se confirmó (y, con recogida,
 // el vehículo está asignado): la app deja de mostrar "Ver datos de pago".
 type Group = "pending" | "confirmed" | "cancelled" | "past";
 
 function groupOf(r: Request): Group {
   const s: ScheduleStatus = r.status ?? "PENDIENTE";
   if (s === "PENDIENTE") return "pending";
-  if (s === "EN CURSO" || s === "COMPLETADO") return "confirmed";
+  if (s === "PAGADO" || s === "COMPLETADO") return "confirmed";
   if (s === "CANCELADA") return "cancelled";
   return "past";
 }
 
 const TABS: { key: Group | "all"; label: string }[] = [
   { key: "pending", label: "Por confirmar" },
-  { key: "confirmed", label: "Confirmadas" },
+  { key: "confirmed", label: "Pagadas" },
   { key: "cancelled", label: "Canceladas" },
   { key: "past", label: "No confirmadas" },
   { key: "all", label: "Todas" },
@@ -122,7 +120,7 @@ function StatusBadge({ r }: { r: Request }) {
     case "confirmed":
       return (
         <Badge variant="success">
-          {r.status === "COMPLETADO" ? "Completada" : "Confirmada"}
+          {r.status === "COMPLETADO" ? "Completada" : "Pagada"}
         </Badge>
       );
     case "cancelled":
@@ -170,11 +168,6 @@ export default function DaycareRequestsPage() {
     // Llegan solicitudes nuevas desde la app mientras la pantalla está abierta.
     refetchInterval: LIVE_REFETCH_MS,
   });
-  const { data: vehicles = [] } = useQuery({
-    queryKey: ["vehicles"],
-    queryFn: getVehicles,
-  });
-  const activeVehicles = vehicles.filter((v) => v.active);
   const items = requests.data ?? [];
 
   const pendingCount = items.filter((r) => groupOf(r) === "pending").length;
@@ -209,8 +202,6 @@ export default function DaycareRequestsPage() {
   const income = confirmed.reduce((sum, r) => sum + (priceOf(r) ?? 0), 0);
 
   // Solicitud con recogida que espera elegir vehículo para confirmarse.
-  const [vehicleTarget, setVehicleTarget] = useState<Request | null>(null);
-  const [vehicleId, setVehicleId] = useState("");
 
   // ── Mutaciones (refresco y avisos: lib/queryClient) ──
   const confirmMut = useMutation({
@@ -221,7 +212,6 @@ export default function DaycareRequestsPage() {
         "Solicitud confirmada. El cliente ya no ve los datos de pago en la app.",
       errorMessage: "No se pudo confirmar la solicitud",
     },
-    onSuccess: () => setVehicleTarget(null),
   });
   const unconfirmMut = useMutation({
     mutationFn: unconfirmScheduleDaycare,
@@ -255,12 +245,6 @@ export default function DaycareRequestsPage() {
   };
 
   const askConfirm = async (r: Request) => {
-    // Con recogida y sin vehículo, se elige el vehículo en el mismo paso.
-    if (isPickup(r) && !r.id_vehicle) {
-      setVehicleId("");
-      setVehicleTarget(r);
-      return;
-    }
     if (
       await confirm({
         title: "¿Confirmar el pago de esta solicitud?",
@@ -329,7 +313,7 @@ export default function DaycareRequestsPage() {
         </Button>
       );
     // Servicio continuo: sigue activo hasta que el panel lo finaliza.
-    if (group === "confirmed" && r.status === "EN CURSO")
+    if (group === "confirmed" && r.status === "PAGADO")
       return (
         <div className="inline-flex flex-wrap justify-end gap-2">
           <Button
@@ -461,7 +445,7 @@ export default function DaycareRequestsPage() {
           icon={BadgeCheck}
           tone="success"
           value={confirmed.length}
-          label="Confirmadas"
+          label="Pagadas"
         />
         <StatCard
           icon={Wallet}
@@ -576,78 +560,6 @@ export default function DaycareRequestsPage() {
           </>
         )}
       </div>
-
-      {/* Confirmar pago + vehículo (solicitudes con recogida a domicilio) */}
-      <Modal
-        open={!!vehicleTarget}
-        onClose={() => !confirmMut.isPending && setVehicleTarget(null)}
-        title="Confirmar pago y asignar vehículo"
-        footer={
-          <>
-            <Button
-              variant="secondary"
-              onClick={() => setVehicleTarget(null)}
-              disabled={confirmMut.isPending}
-            >
-              Cancelar
-            </Button>
-            <Button
-              loading={confirmMut.isPending}
-              disabled={!vehicleId}
-              onClick={() =>
-                vehicleTarget &&
-                confirmMut.mutate({
-                  id: vehicleTarget.id,
-                  id_vehicle: vehicleId,
-                })
-              }
-            >
-              Confirmar pago
-            </Button>
-          </>
-        }
-      >
-        {vehicleTarget && (
-          <div className="space-y-4">
-            <p className="text-sm text-ink-2">
-              {summary(vehicleTarget)}. Confírmala solo si ya revisaste el
-              comprobante en WhatsApp.
-            </p>
-            {vehicleTarget.address_pick_home && (
-              <p className="text-sm text-ink-3">
-                Recogida en: {vehicleTarget.address_pick_home}
-              </p>
-            )}
-            <div>
-              <label
-                htmlFor="daycare-request-vehicle"
-                className="block text-sm font-semibold text-ink mb-1.5"
-              >
-                Vehículo para la recogida{" "}
-                <span className="text-danger-fg">*</span>
-              </label>
-              <select
-                id="daycare-request-vehicle"
-                className="field"
-                value={vehicleId}
-                onChange={(e) => setVehicleId(e.target.value)}
-              >
-                <option value="">Seleccionar vehículo</option>
-                {activeVehicles.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.name} · {v.license_plate}
-                  </option>
-                ))}
-              </select>
-              {activeVehicles.length === 0 && (
-                <p className="text-danger-fg text-xs font-semibold mt-1">
-                  No hay vehículos activos. Registra uno en Vehículos.
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-      </Modal>
     </div>
   );
 }

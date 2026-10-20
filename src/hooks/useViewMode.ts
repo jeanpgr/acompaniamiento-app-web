@@ -28,10 +28,11 @@ const IS_NARROW = {
 };
 
 /**
- * Vista de un listado: por defecto lista (tabla) en pantallas anchas y
- * cuadrícula en angostas, siguiendo los cambios de tamaño de la ventana.
- * Si el usuario elige una vista con el selector, se respeta mientras siga
- * en el módulo.
+ * Vista de un listado: lista (tabla) en pantallas anchas y cuadrícula en
+ * angostas, y sigue los cambios de tamaño de la ventana por sí sola. El
+ * selector lista / cuadrícula es un ajuste momentáneo: se respeta mientras
+ * la pantalla no cruce el punto de corte; al cruzarlo (girar el dispositivo,
+ * redimensionar) vuelve a elegirse automáticamente según el tamaño.
  */
 export function useViewMode(tableFrom: TableBreakpoint = "xl") {
   const narrow = useSyncExternalStore(
@@ -39,7 +40,13 @@ export function useViewMode(tableFrom: TableBreakpoint = "xl") {
     IS_NARROW[tableFrom],
     () => false,
   );
-  const [chosen, setChosen] = useState<ViewMode | null>(null);
-  const view: ViewMode = chosen ?? (narrow ? "grid" : "list");
-  return [view, setChosen] as const;
+  // La elección manual recuerda con qué tamaño se hizo.
+  const [chosen, setChosen] = useState<{
+    view: ViewMode;
+    narrow: boolean;
+  } | null>(null);
+  const manual = chosen && chosen.narrow === narrow ? chosen.view : null;
+  const view: ViewMode = manual ?? (narrow ? "grid" : "list");
+  const setView = (next: ViewMode) => setChosen({ view: next, narrow });
+  return [view, setView] as const;
 }

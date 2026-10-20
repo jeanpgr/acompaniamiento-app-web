@@ -52,21 +52,21 @@ import { personNames } from "@/lib/persons";
 type Reservation = ScheduleTourismWithUser;
 
 // ── Estados de una reserva de excursión ──
-// El backend guarda "EN CURSO" cuando el pago se confirmó; aquí y en la app
+// El backend guarda "PAGADO" cuando el pago se confirmó; aquí y en la app
 // se muestra como "Confirmada".
 type Group = "pending" | "confirmed" | "cancelled" | "past";
 
 function groupOf(r: Reservation): Group {
   const s: ScheduleStatus = r.status ?? "PENDIENTE";
   if (s === "PENDIENTE") return "pending";
-  if (s === "EN CURSO" || s === "COMPLETADO") return "confirmed";
+  if (s === "PAGADO" || s === "COMPLETADO") return "confirmed";
   if (s === "CANCELADA") return "cancelled";
   return "past"; // OLVIDADA: el viaje salió sin que se confirmara
 }
 
 const TABS: { key: Group | "all"; label: string }[] = [
   { key: "pending", label: "Por confirmar" },
-  { key: "confirmed", label: "Confirmadas" },
+  { key: "confirmed", label: "Pagadas" },
   { key: "cancelled", label: "Canceladas" },
   { key: "past", label: "Sin confirmar (viaje pasado)" },
   { key: "all", label: "Todas" },
@@ -96,7 +96,7 @@ function StatusBadge({ r }: { r: Reservation }) {
     case "pending":
       return <Badge variant="warning">Por confirmar</Badge>;
     case "confirmed":
-      return <Badge variant="success">Confirmada</Badge>;
+      return <Badge variant="success">Pagada</Badge>;
     case "cancelled":
       return (
         <div className="flex flex-col items-start gap-1">
@@ -261,7 +261,7 @@ export default function TourismReservationsPage() {
           <BadgeCheck size={15} /> Confirmar pago
         </Button>
       );
-    if (group === "confirmed" && r.status === "EN CURSO")
+    if (group === "confirmed" && r.status === "PAGADO")
       return (
         <Button
           size="sm"
@@ -359,7 +359,7 @@ export default function TourismReservationsPage() {
           icon={BadgeCheck}
           tone="success"
           value={confirmed.length}
-          label={`Confirmadas · ${seats(confirmed)} cupos`}
+          label={`Pagadas · ${seats(confirmed)} cupos`}
         />
         <StatCard
           icon={Ticket}

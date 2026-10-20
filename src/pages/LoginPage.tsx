@@ -24,8 +24,13 @@ export default function LoginPage() {
   const {
     register,
     handleSubmit,
+    resetField,
+    setFocus,
     formState: { errors, isSubmitting },
-  } = useForm<FormData>({ resolver: zodResolver(schema) });
+  } = useForm<FormData>({
+    resolver: zodResolver(schema),
+    defaultValues: { email: "", password: "" },
+  });
 
   const onSubmit = async (data: FormData) => {
     setApiError(null);
@@ -37,6 +42,9 @@ export default function LoginPage() {
       setApiError(
         getErrorMessage(err, "Credenciales incorrectas. Intenta de nuevo."),
       );
+      // Se conserva el correo; la contraseña se limpia y recibe el foco.
+      resetField("password");
+      setFocus("password");
     }
   };
 
@@ -95,6 +103,7 @@ export default function LoginPage() {
 
           <form
             onSubmit={handleSubmit(onSubmit)}
+            onChange={() => apiError && setApiError(null)}
             className="space-y-4"
             noValidate
           >
