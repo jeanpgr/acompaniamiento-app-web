@@ -1,10 +1,14 @@
 import { useDeferredValue, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Copy } from "lucide-react";
 import type { ScheduleStatus } from "@/api/schedules";
 import { getVehicles } from "@/api/vehicles";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import Badge from "@/components/ui/Badge";
+import CouponTag from "@/components/ui/CouponTag";
 import Button from "@/components/ui/Button";
+import Modal from "@/components/ui/Modal";
 import SearchInput from "@/components/ui/SearchInput";
 import ViewToggle from "@/components/ui/ViewToggle";
 import TableSkeleton from "@/components/ui/TableSkeleton";
@@ -26,6 +30,7 @@ import { useViewMode } from "@/hooks/useViewMode";
 import { useClientPagination } from "@/hooks/useClientPagination";
 import { useDistributionSchedules } from "@/components/distribution/useDistributionSchedules";
 import { useScheduleActions } from "@/components/distribution/useScheduleActions";
+import { vehicleLabel, driverName } from "@/components/distribution/vehicleLabel";
 import {
   FILTER_TABS,
   STATUS_LABEL,
@@ -78,14 +83,111 @@ function StatusBadge({ s }: { s: Unified }) {
   return <Badge variant={STATUS_VARIANT[status]}>{statusLabelOf(s)}</Badge>;
 }
 
-function RefundBadge({ s }: { s: Unified }) {
+function RefundBadge({
+  s,
+  onView,
+}: {
+  s: Unified;
+  onView: (s: Unified) => void;
+}) {
   if (s.status !== "CANCELADA") return <EmptyCell />;
   // Cancelada antes de confirmar el pago: no hubo cobro.
   if (!s.refundStatus) return <Badge>Sin cobro</Badge>;
-  return s.refundStatus === "REALIZADO" ? (
-    <Badge variant="success">Realizado</Badge>
-  ) : (
-    <Badge variant="warning">Por hacer</Badge>
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {s.refundStatus === "REALIZADO" ? (
+        <Badge variant="success">Realizado</Badge>
+      ) : (
+        <Badge variant="warning">Por hacer</Badge>
+      )}
+      <button
+        type="button"
+        onClick={() => onView(s)}
+        className="text-xs font-semibold text-primary underline underline-offset-2 hover:text-primary-hover"
+      >
+        {s.refundAccount ? "Ver cuenta" : "Sin cuenta"}
+      </button>
+    </div>
+  );
+}
+
+/** Copia un dato de la cuenta de reembolso al portapapeles. */
+async function copyText(text: string, what: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast.success(`${what} copiado`);
+  } catch {
+    toast.error("No se pudo copiar");
+  }
+}
+
+/** Cuenta que el usuario ingresó al cancelar, para hacer el reembolso. */
+function RefundDetailsModal({
+  s,
+  onClose,
+}: {
+  s: Unified | null;
+  onClose: () => void;
+}) {
+  const rows: [string, string | null | undefined][] = s
+    ? [
+        ["Banco", s.refundBank],
+        ["Tipo de cuenta", s.refundAccountType],
+        ["Número de cuenta", s.refundAccount],
+        ["Cédula del titular", s.refundHolderCedula],
+      ]
+    : [];
+  return (
+    <Modal
+      open={s !== null}
+      onClose={onClose}
+      title="Datos de reembolso"
+      footer={
+        <Button variant="secondary" onClick={onClose}>
+          Cerrar
+        </Button>
+      }
+    >
+      {s && (
+        <div className="space-y-3">
+          <p className="text-sm text-ink-2">
+            {s.title} · {s.personName}
+          </p>
+          {s.refundAccount ? (
+            <dl className="space-y-2">
+              {rows
+                .filter(([, v]) => v)
+                .map(([label, value]) => (
+                  <div
+                    key={label}
+                    className="flex items-center justify-between gap-3 bg-surface-2 rounded-lg px-3 py-2"
+                  >
+                    <div className="min-w-0">
+                      <dt className="text-xs text-ink-3">{label}</dt>
+                      <dd className="text-sm font-semibold text-ink break-all">
+                        {value}
+                      </dd>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => copyText(value!, label)}
+                      aria-label={`Copiar ${label}`}
+                      className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-primary hover:bg-primary-soft"
+                    >
+                      <Copy size={16} aria-hidden="true" />
+                    </button>
+                  </div>
+                ))}
+            </dl>
+          ) : (
+            <p className="text-sm text-ink-3">
+              El usuario canceló sin ingresar los datos de su cuenta. Pídele
+              los datos por WhatsApp.
+            </p>
+          )}
+        </div>
+      )}
+    </Modal>
   );
 }
 
@@ -116,9 +218,9 @@ export default function DistributionServicesPage() {
   });
   const actions = useScheduleActions(vehicles);
   const activeVehicles = vehicles.filter((v) => v.active);
-  const vehicleName = new Map(
-    vehicles.map((v) => [v.id, `${v.name} · ${v.license_plate}`]),
-  );
+  const vehicleById = new Map(vehicles.map((v) => [v.id, v]));
+  // Cuenta de reembolso abierta en el modal.
+  const [refundView, setRefundView] = useState<Unified | null>(null);
 
   const byType =
     tab === "todos"
@@ -151,7 +253,19 @@ export default function DistributionServicesPage() {
     !s.needsVehicle ? (
       <span className="text-xs text-ink-3">No aplica</span>
     ) : s.vehicleId ? (
-      (vehicleName.get(s.vehicleId) ?? "Vehículo asignado")
+      vehicleById.get(s.vehicleId) ? (
+        <div>
+          <div>
+            {vehicleById.get(s.vehicleId)!.name} ·{" "}
+            {vehicleById.get(s.vehicleId)!.license_plate}
+          </div>
+          <div className="text-xs text-ink-3">
+            {driverName(vehicleById.get(s.vehicleId))}
+          </div>
+        </div>
+      ) : (
+        "Vehículo asignado"
+      )
     ) : (
       <span className="text-xs text-ink-3">Sin asignar</span>
     );
@@ -192,7 +306,7 @@ export default function DistributionServicesPage() {
           </option>
           {activeVehicles.map((v) => (
             <option key={v.id} value={v.id}>
-              {v.name} — {v.license_plate}
+              {vehicleLabel(v)}
             </option>
           ))}
         </select>
@@ -297,7 +411,10 @@ export default function DistributionServicesPage() {
               <GridCard key={`${s.originalType}-${s.id}`}>
                 <div className="flex items-start justify-between gap-3">
                   <ServiceCell s={s} />
-                  <StatusBadge s={s} />
+                  <div className="flex flex-col items-start gap-1">
+                    <StatusBadge s={s} />
+                    <CouponTag code={s.couponCode} discount={s.discountAmount} />
+                  </div>
                 </div>
                 <CardFields>
                   <CardField label="Persona">{s.personName}</CardField>
@@ -307,7 +424,7 @@ export default function DistributionServicesPage() {
                   <CardField label="Vehículo">{vehicleCell(s)}</CardField>
                   {s.status === "CANCELADA" && (
                     <CardField label="Reembolso">
-                      <RefundBadge s={s} />
+                      <RefundBadge s={s} onView={setRefundView} />
                     </CardField>
                   )}
                 </CardFields>
@@ -339,14 +456,17 @@ export default function DistributionServicesPage() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
+                    <div className="flex flex-col items-start gap-1">
                     <StatusBadge s={s} />
+                    <CouponTag code={s.couponCode} discount={s.discountAmount} />
+                  </div>
                   </td>
                   <td className="px-4 py-3 text-sm text-ink-2">
                     {vehicleCell(s)}
                   </td>
                   <td className="px-4 py-3">{locationCell(s)}</td>
                   <td className="px-4 py-3">
-                    <RefundBadge s={s} />
+                    <RefundBadge s={s} onView={setRefundView} />
                   </td>
                   <td className="px-4 py-3">{actionsCell(s)}</td>
                 </TableRow>
@@ -359,6 +479,8 @@ export default function DistributionServicesPage() {
         )}
         {!isLoading && <CursorPagination pager={pager} pageSize={PAGE_SIZE} />}
       </div>
+
+      <RefundDetailsModal s={refundView} onClose={() => setRefundView(null)} />
     </div>
   );
 }

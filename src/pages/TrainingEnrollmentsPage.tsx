@@ -23,6 +23,7 @@ import {
 } from "@/api/schedules";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import Badge from "@/components/ui/Badge";
+import CouponTag from "@/components/ui/CouponTag";
 import Button from "@/components/ui/Button";
 import StatCard from "@/components/ui/StatCard";
 import TableSkeleton from "@/components/ui/TableSkeleton";
@@ -438,7 +439,10 @@ export default function TrainingEnrollmentsPage() {
                           {formatCreated(r.created_at)}
                         </p>
                       </div>
-                      <StatusBadge r={r} />
+                      <div className="flex flex-col items-start gap-1">
+                          <StatusBadge r={r} />
+                          <CouponTag code={r.coupon_code} discount={r.discount_amount} />
+                        </div>
                     </div>
                     <CardFields>
                       <CardField label="Contacto">{contact(r)}</CardField>
@@ -469,7 +473,10 @@ export default function TrainingEnrollmentsPage() {
                     </td>
                     <td className="px-4 py-3.5">{contact(r)}</td>
                     <td className="px-4 py-3.5">
-                      <StatusBadge r={r} />
+                      <div className="flex flex-col items-start gap-1">
+                          <StatusBadge r={r} />
+                          <CouponTag code={r.coupon_code} discount={r.discount_amount} />
+                        </div>
                     </td>
                     <td className="px-4 py-3.5 text-right">
                       {renderActions(r)}

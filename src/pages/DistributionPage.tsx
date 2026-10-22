@@ -10,6 +10,8 @@ import { invalidateResource } from "@/lib/invalidate";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import WeekCalendar from "@/components/distribution/WeekCalendar";
 import PendingQueue from "@/components/distribution/PendingQueue";
+import VehiclesPanel from "@/components/distribution/VehiclesPanel";
+import { vehicleLabel } from "@/components/distribution/vehicleLabel";
 import RefundsPanel from "@/components/distribution/RefundsPanel";
 import ServiceTypeLegend from "@/components/distribution/ServiceTypeLegend";
 import { useDistributionSchedules } from "@/components/distribution/useDistributionSchedules";
@@ -50,6 +52,14 @@ export default function DistributionPage() {
   const [activeTab, setActiveTab] = useState<FilterTab>("todos");
   // Citas recién asignadas: se animan fuera de la cola antes de refrescar.
   const [leaving, setLeaving] = useState<ReadonlySet<string>>(() => new Set());
+  // Servicios marcados en "Sin asignar" para asignarlos juntos a un vehículo.
+  const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set());
+  const toggleSelect = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
 
   const { schedules, isLoading } = useDistributionSchedules();
   const { data: vehicles = [] } = useQuery({
@@ -62,6 +72,10 @@ export default function DistributionPage() {
       ? schedules
       : schedules.filter((s) => s.originalType === activeTab);
   const pending = filtered.filter(isPending);
+  // Solo cuentan los marcados que siguen en la cola (y usan vehículo).
+  const selectedItems = pending.filter(
+    (s) => s.needsVehicle && selected.has(s.id),
+  );
   const cancelled = filtered.filter((s) => s.status === "CANCELADA");
 
   // Los contadores de pestañas usan el mismo criterio que "Sin asignar".
@@ -101,6 +115,49 @@ export default function DistributionPage() {
   });
 
   const confirm = useConfirm();
+
+  // Asignación en lote: varios servicios al mismo vehículo, con un solo aviso.
+  const bulkMut = useMutation({
+    mutationFn: async ({
+      items,
+      vehicleId,
+    }: {
+      items: Unified[];
+      vehicleId: string;
+    }) => {
+      const results = await Promise.allSettled(
+        items.map((s) => assignSchedule(s, vehicleId)),
+      );
+      return items.filter((_, i) => results[i].status === "fulfilled");
+    },
+    meta: { errorMessage: "No se pudo asignar. Intenta de nuevo." },
+    onSuccess: (done, { items }) => {
+      if (done.length === items.length)
+        toast.success(
+          done.length === 1
+            ? "Vehículo asignado"
+            : `${done.length} servicios asignados`,
+        );
+      else
+        toast.error(
+          `Se asignaron ${done.length} de ${items.length} servicios; revisa los que quedaron sin asignar.`,
+        );
+      setSelected(new Set());
+      invalidateResource(qc, "schedules");
+    },
+  });
+
+  const handleAssignSelected = async (vehicleId: string) => {
+    const vehicle = vehicles.find((v) => v.id === vehicleId);
+    if (!vehicle || selectedItems.length === 0) return;
+    const ok = await confirm({
+      title: `¿Asignar ${selectedItems.length} ${selectedItems.length === 1 ? "servicio" : "servicios"} a ${vehicle.name}?`,
+      message: `${vehicleLabel(vehicle)}. El pago de cada servicio ya está confirmado; el vehículo queda asignado y el conductor los verá al iniciar sesión.`,
+      confirmLabel: "Asignar vehículo",
+      tone: "primary",
+    });
+    if (ok) bulkMut.mutate({ items: selectedItems, vehicleId });
+  };
 
   /** Devuelve false si el usuario se arrepiente (el selector se limpia). */
   const handleAssign = async (s: Unified, vehicleId: string) => {
@@ -200,6 +257,15 @@ export default function DistributionPage() {
             assigning={assignMut.isPending}
             leaving={leaving}
             onAssign={handleAssign}
+            selected={selected}
+            onToggleSelect={toggleSelect}
+          />
+          <VehiclesPanel
+            vehicles={vehicles.filter((v) => v.active)}
+            schedules={schedules}
+            selectedCount={selectedItems.length}
+            busy={bulkMut.isPending}
+            onAssignSelected={handleAssignSelected}
           />
           <RefundsPanel
             cancelled={cancelled}

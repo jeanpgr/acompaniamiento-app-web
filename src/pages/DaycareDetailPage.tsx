@@ -40,6 +40,8 @@ import {
 } from "@/components/ui/CardGrid";
 import CursorPagination from "@/components/ui/CursorPagination";
 import Badge from "@/components/ui/Badge";
+import ColorSwatches from "@/components/ui/ColorSwatches";
+import { planColorName } from "@/lib/planColors";
 
 const schema = z
   .object({
@@ -64,6 +66,7 @@ const schema = z
     // Detalle opcional que la app muestra en la tarjeta del plan.
     mode_price_period: z.enum(["", "dia", "semana", "mes"]),
     mode_description: z.string().max(300, "Máximo 300 caracteres"),
+    mode_color: z.string().regex(/^(#[0-9A-Fa-f]{6})?$/, "Color inválido"),
     mode_days: z.array(z.string()),
     mode_start_time: z.string(),
     mode_end_time: z.string(),
@@ -101,6 +104,7 @@ function formValues(
     address_point_lng: item?.address_point_lng ?? null,
     mode_price_period: m.price_period ?? "",
     mode_description: m.description ?? "",
+    mode_color: m.color ?? "",
     mode_days: m.days ?? [],
     mode_start_time: m.start_time ?? "",
     mode_end_time: m.end_time ?? "",
@@ -235,6 +239,7 @@ export default function DaycareDetailPage() {
     defaultValues: formValues(null, serviceId),
   });
   const requestClose = () => setModalOpen(false);
+  const modeColor = useWatch({ control, name: "mode_color" });
   const [pointAddress, pointLat, pointLng] = useWatch({
     control,
     name: ["address_point", "address_point_lat", "address_point_lng"],
@@ -283,6 +288,7 @@ export default function DaycareDetailPage() {
         price_period: data.mode_price_period as PricePeriod,
       }),
       ...(description && { description }),
+      ...(data.mode_color && { color: data.mode_color }),
       ...(days.length > 0 && { days: days as DaycareDay[] }),
       ...(data.mode_start_time && { start_time: data.mode_start_time }),
       ...(data.mode_end_time && { end_time: data.mode_end_time }),
@@ -389,7 +395,15 @@ export default function DaycareDetailPage() {
             {items.map((item) => (
               <GridCard key={item.id}>
                 <div className="flex items-start justify-between gap-3">
-                  <h2 className="font-bold text-ink text-base">
+                  <h2 className="font-bold text-ink text-base flex items-center gap-2">
+                    {item.service_mode?.color && (
+                      <span
+                        className="w-3 h-3 rounded-full shrink-0"
+                        style={{ backgroundColor: item.service_mode.color }}
+                        role="img"
+                        aria-label={`Color ${planColorName(item.service_mode.color)}`}
+                      />
+                    )}
                     {item.service_mode?.name ?? "Modalidad sin nombre"}
                   </h2>
                   <Badge variant={item.active ? "success" : "danger"}>
@@ -452,6 +466,14 @@ export default function DaycareDetailPage() {
                   className="border-b border-line/70 transition-colors hover:bg-primary-soft/50"
                 >
                   <td className="px-4 py-3.5 font-semibold text-ink text-sm">
+                    {item.service_mode?.color && (
+                      <span
+                        className="inline-block w-3 h-3 rounded-full mr-2 align-middle"
+                        style={{ backgroundColor: item.service_mode.color }}
+                        role="img"
+                        aria-label={`Color ${planColorName(item.service_mode.color)}`}
+                      />
+                    )}
                     {item.service_mode?.name ?? (
                       <span className="text-ink-3 text-xs">—</span>
                     )}
@@ -757,6 +779,23 @@ export default function DaycareDetailPage() {
                 {errors.mode_description.message}
               </p>
             )}
+
+            <fieldset className="mt-3">
+              <legend className="block text-[13px] font-semibold text-ink-2 mb-1">
+                Color del plan
+              </legend>
+              <p className="text-xs text-ink-3 mb-2">
+                La app pinta la tarjeta del plan con este color para distinguir
+                los planes entre sí.
+              </p>
+              <ColorSwatches
+                label="Color del plan"
+                value={modeColor}
+                onChange={(hex) =>
+                  setValue("mode_color", hex, { shouldDirty: true })
+                }
+              />
+            </fieldset>
 
             <fieldset className="mt-3">
               <legend className="block text-[13px] font-semibold text-ink-2 mb-1">

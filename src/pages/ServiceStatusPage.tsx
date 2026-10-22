@@ -20,6 +20,7 @@ import {
   type ScheduleStatus,
 } from "@/api/schedules";
 import Badge from "@/components/ui/Badge";
+import CouponTag from "@/components/ui/CouponTag";
 import AddressMapButton from "@/components/ui/AddressMapButton";
 import StatCard from "@/components/ui/StatCard";
 import { LIVE_REFETCH_MS } from "@/lib/invalidate";
@@ -121,6 +122,8 @@ export default function ServiceStatusPage() {
     id: s.id,
     title: s.service?.name ?? "Servicio",
     type: s.service?.type ?? "—",
+    couponCode: s.coupon_code,
+    discountAmount: s.discount_amount,
     person: s.reference,
     phone: s.contact_emergency,
     origin: s.origin_address,
@@ -274,10 +277,16 @@ export default function ServiceStatusPage() {
                       {item.type}
                     </span>
                   </div>
-                  <Badge variant={cfg.variant}>
-                    <Icon size={12} className="mr-1" />
-                    {cfg.label}
-                  </Badge>
+                  <div className="flex flex-col items-end gap-1">
+                    <Badge variant={cfg.variant}>
+                      <Icon size={12} className="mr-1" />
+                      {cfg.label}
+                    </Badge>
+                    <CouponTag
+                      code={item.couponCode}
+                      discount={item.discountAmount}
+                    />
+                  </div>
                 </div>
 
                 {/* Beneficiary */}

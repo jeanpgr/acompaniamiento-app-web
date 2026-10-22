@@ -188,12 +188,9 @@ export function toPayload(
   if (data.price_child !== undefined) prices.child = data.price_child;
   if (data.price_senior !== undefined) prices.senior = data.price_senior;
   const address = data.meeting_point_address?.trim() ?? "";
-  const quotasAvailable = editing
-    ? Math.min(
-        data.quotas,
-        Math.max(0, editing.quotas_available + (data.quotas - editing.quotas)),
-      )
-    : data.quotas;
+  // El servidor lleva los cupos disponibles (reservas y cancelaciones); al
+  // editar solo ajusta la diferencia del total, este valor se ignora.
+  const quotasAvailable = editing ? editing.quotas_available : data.quotas;
   return {
     id_service: data.id_service,
     name: data.name,

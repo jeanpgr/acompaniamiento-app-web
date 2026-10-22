@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Ticket } from "lucide-react";
 import {
   getDetailsTourismPage,
@@ -9,6 +10,8 @@ import {
   deleteDetailTourism,
   type DetailTourism,
   type CreateDetailTourismInput,
+  syncTourismPhotos,
+  type PhotoChanges,
 } from "@/api/details-tourism";
 import { getServices } from "@/api/services";
 import { getSchedulesTourism } from "@/api/schedules";
@@ -110,8 +113,29 @@ export default function TourismDetailPage() {
   }
 
   // ── Mutaciones (refresco y avisos: lib/queryClient) ──────────
+  /** Aplica los cambios de fotos; si fallan, la excursión ya quedó guardada. */
+  const savePhotos = async (id: string, photos: PhotoChanges) => {
+    try {
+      await syncTourismPhotos(id, photos);
+    } catch {
+      toast.error(
+        "La excursión se guardó, pero no se pudieron actualizar las fotos",
+      );
+    }
+  };
+
   const createMut = useMutation({
-    mutationFn: createDetailTourism,
+    mutationFn: async ({
+      data,
+      photos,
+    }: {
+      data: CreateDetailTourismInput;
+      photos: PhotoChanges;
+    }) => {
+      const created = await createDetailTourism(data);
+      await savePhotos(created.id, photos);
+      return created;
+    },
     meta: {
       invalidates: "detail-tourism",
       successMessage: "Excursión creada correctamente",
@@ -121,13 +145,19 @@ export default function TourismDetailPage() {
   });
 
   const updateMut = useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       id,
       data,
+      photos,
     }: {
       id: string;
       data: Partial<CreateDetailTourismInput>;
-    }) => updateDetailTourism(id, data),
+      photos: PhotoChanges;
+    }) => {
+      const updated = await updateDetailTourism(id, data);
+      await savePhotos(id, photos);
+      return updated;
+    },
     meta: {
       invalidates: "detail-tourism",
       successMessage: "Excursión actualizada",
@@ -151,10 +181,11 @@ export default function TourismDetailPage() {
     setModalOpen(true);
   };
 
-  const submitForm = (data: TourismFormValues) => {
+  const submitForm = (data: TourismFormValues, photos: PhotoChanges) => {
     const payload = toPayload(data, editTarget);
-    if (editTarget) updateMut.mutate({ id: editTarget.id, data: payload });
-    else createMut.mutate(payload);
+    if (editTarget)
+      updateMut.mutate({ id: editTarget.id, data: payload, photos });
+    else createMut.mutate({ data: payload, photos });
   };
 
   const confirmDelete = async (item: DetailTourism) => {

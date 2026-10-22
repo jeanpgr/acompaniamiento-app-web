@@ -23,6 +23,8 @@ export interface DetailTourism {
   meeting_point_lat: number | null;
   meeting_point_lng: number | null;
   prices: TourismPrices | null;
+  /** Fotos del lugar (URL firmada, máx. 3). */
+  photos: string[];
   active: boolean;
   created_at: string;
 }
@@ -77,3 +79,38 @@ export const updateDetailTourism = (
 
 export const deleteDetailTourism = (id: string) =>
   apiClient.delete(`${BASE}/${id}`);
+
+/** Sube fotos del lugar (entre todas, máx. 3 por excursión). */
+export const uploadTourismPhotos = (id: string, files: File[]) => {
+  const form = new FormData();
+  files.forEach((f) => form.append("photos", f));
+  return apiClient
+    .post<DetailTourism>(`${BASE}/${id}/photos`, form, {
+      headers: { "Content-Type": undefined },
+    })
+    .then((r) => r.data);
+};
+
+/** Quita una foto por su posición (0 = primera). */
+export const deleteTourismPhoto = (id: string, index: number) =>
+  apiClient
+    .delete<DetailTourism>(`${BASE}/${id}/photos/${index}`)
+    .then((r) => r.data);
+
+/** Cambios de fotos pedidos en el formulario. */
+export interface PhotoChanges {
+  /** Posiciones originales de las fotos guardadas que se quitan. */
+  remove: number[];
+  add: File[];
+}
+
+/**
+ * Aplica los cambios de fotos: primero quita (de mayor a menor posición, para
+ * que los índices sigan valiendo) y luego sube las nuevas.
+ */
+export async function syncTourismPhotos(id: string, changes: PhotoChanges) {
+  for (const index of [...changes.remove].sort((a, b) => b - a)) {
+    await deleteTourismPhoto(id, index);
+  }
+  if (changes.add.length) await uploadTourismPhotos(id, changes.add);
+}
