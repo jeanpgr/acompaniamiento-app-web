@@ -1,13 +1,14 @@
-import { useId } from "react";
+import { useId, useState } from "react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, X } from "lucide-react";
-import type { DetailTourism } from "@/api/details-tourism";
+import type { DetailTourism, PhotoChanges } from "@/api/details-tourism";
 import type { Service } from "@/api/services";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import FormField from "@/components/ui/FormField";
 import MapPickButton from "@/components/ui/MapPickButton";
+import PhotosZone from "./PhotosZone";
 import {
   formValues,
   tourismSchema,
@@ -24,7 +25,7 @@ interface Props {
   services: Service[];
   pending: boolean;
   onClose: () => void;
-  onSubmit: (data: TourismFormValues) => void;
+  onSubmit: (data: TourismFormValues, photos: PhotoChanges) => void;
 }
 
 const PRICE_FIELDS = [
@@ -52,6 +53,13 @@ export default function TourismFormModal({
 }: Props) {
   const formId = useId();
   const isEdit = item !== null;
+
+  // Fotos: las guardadas que se quitan (por posición) y las nuevas por subir.
+  const [removedPhotos, setRemovedPhotos] = useState<number[]>([]);
+  const [addedPhotos, setAddedPhotos] = useState<File[]>([]);
+  const savedPhotos = (item?.photos ?? [])
+    .map((url, index) => ({ url, index }))
+    .filter((p) => !removedPhotos.includes(p.index));
 
   const {
     register,
@@ -111,7 +119,9 @@ export default function TourismFormModal({
         id={formId}
         className="space-y-4"
         noValidate
-        onSubmit={handleSubmit(onSubmit)}
+        onSubmit={handleSubmit((data) =>
+          onSubmit(data, { remove: removedPhotos, add: addedPhotos }),
+        )}
       >
         {!serviceId && (
           <FormField
@@ -253,6 +263,16 @@ export default function TourismFormModal({
             />
           </div>
         </FormField>
+
+        <PhotosZone
+          saved={savedPhotos}
+          added={addedPhotos}
+          onAdd={(files) => setAddedPhotos((prev) => [...prev, ...files])}
+          onRemoveSaved={(index) => setRemovedPhotos((prev) => [...prev, index])}
+          onRemoveAdded={(position) =>
+            setAddedPhotos((prev) => prev.filter((_, i) => i !== position))
+          }
+        />
 
         {/* Tarifas por categoría */}
         <div>

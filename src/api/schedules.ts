@@ -22,8 +22,16 @@ export interface RefundFields {
   cancelled_at: string | null;
 }
 
+/** Cupón de descuento aplicado al contratar (null si no se usó). */
+export interface CouponFields {
+  coupon_code?: string | null;
+  original_amount?: string | null;
+  discount_amount?: string | null;
+  final_amount?: string | null;
+}
+
 // ─── Acompañamiento ──────────────────────────────────────────────────────────
-export interface ScheduleAcompan extends RefundFields {
+export interface ScheduleAcompan extends RefundFields, CouponFields {
   id: string;
   id_service: string;
   /** null hasta que el administrador asigna un vehículo. */
@@ -107,7 +115,7 @@ export const deleteScheduleAcompan = (id: string) =>
   apiClient.delete(`/schedule-acompan/${id}`);
 
 // ─── Turismo ─────────────────────────────────────────────────────────────────
-export interface ScheduleTourism extends RefundFields {
+export interface ScheduleTourism extends RefundFields, CouponFields {
   id: string;
   id_detail_tourism: string;
   id_vehicle: string;
@@ -159,7 +167,7 @@ export const markRefundCompleteTourism = (id: string) =>
     .then((r) => r.data);
 
 // ─── Capacitación ────────────────────────────────────────────────────────────
-export interface ScheduleTraining extends RefundFields {
+export interface ScheduleTraining extends RefundFields, CouponFields {
   id: string;
   id_detail_training: string;
   name: string;
@@ -207,7 +215,7 @@ export const markRefundCompleteTraining = (id: string) =>
     .then((r) => r.data);
 
 // ─── Guardería ───────────────────────────────────────────────────────────────
-export interface ScheduleDaycare extends RefundFields {
+export interface ScheduleDaycare extends RefundFields, CouponFields {
   id: string;
   id_detail_daycare: string;
   /** Null hasta que se asigna; solo hace falta con recogida (PICK_HOME). */

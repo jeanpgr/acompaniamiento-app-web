@@ -15,6 +15,7 @@ import {
   type ScheduleStatus,
   type RefundStatus,
   type RefundFields,
+  type CouponFields,
 } from "@/api/schedules";
 import type { MapPoint } from "@/components/ui/AddressMap";
 import { personNames } from "@/lib/persons";
@@ -41,7 +42,15 @@ export interface Unified {
   refundAccount: string | null;
   refundAccountType: string | null;
   refundHolderCedula: string | null;
+  /** Cupón con que se contrató (null = sin cupón). */
+  couponCode: string | null;
+  discountAmount: string | null;
 }
+
+const couponOf = (s: CouponFields) => ({
+  couponCode: s.coupon_code ?? null,
+  discountAmount: s.discount_amount ?? null,
+});
 
 const refundOf = (s: RefundFields) => ({
   refundStatus: s.refund_status,
@@ -78,6 +87,7 @@ function normalizeAcompan(s: ScheduleAcompan): Unified {
     needsVehicle: true,
     vehicleId: s.id_vehicle ?? undefined,
     ...refundOf(s),
+    ...couponOf(s),
   };
 }
 
@@ -93,6 +103,7 @@ function normalizeTourism(s: ScheduleTourism): Unified {
     needsVehicle: true,
     vehicleId: s.id_vehicle,
     ...refundOf(s),
+    ...couponOf(s),
   };
 }
 
@@ -107,6 +118,7 @@ function normalizeTraining(s: ScheduleTraining): Unified {
     status: s.status,
     needsVehicle: false,
     ...refundOf(s),
+    ...couponOf(s),
   };
 }
 
@@ -134,6 +146,7 @@ function normalizeDaycare(s: ScheduleDaycare): Unified {
     needsVehicle: s.transfer === "PICK_HOME",
     vehicleId: s.id_vehicle ?? undefined,
     ...refundOf(s),
+    ...couponOf(s),
   };
 }
 

@@ -12,7 +12,7 @@ export interface Vehicle {
   active: boolean;
   created_at: string;
   updated_at: string;
-  driver?: { id: string; name: string; lastname: string };
+  driver?: { id: string; name: string; lastname: string } | null;
 }
 
 export interface CreateVehicleInput {

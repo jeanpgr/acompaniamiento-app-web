@@ -4,6 +4,7 @@ import type { Vehicle } from "@/api/vehicles";
 import AddressMapButton from "@/components/ui/AddressMapButton";
 import { formatTime, type Unified } from "./schedules";
 import ServiceSections from "./ServiceSections";
+import { vehicleLabel } from "./vehicleLabel";
 
 interface Props {
   pending: Unified[];
@@ -15,6 +16,9 @@ interface Props {
   leaving: ReadonlySet<string>;
   /** Resuelve en false si no se confirmó (el selector vuelve a vacío). */
   onAssign: (s: Unified, vehicleId: string) => Promise<boolean>;
+  /** Servicios marcados para asignarlos juntos a un vehículo. */
+  selected: ReadonlySet<string>;
+  onToggleSelect: (id: string) => void;
 }
 
 /**
@@ -28,6 +32,8 @@ export default function PendingQueue({
   assigning,
   leaving,
   onAssign,
+  selected,
+  onToggleSelect,
 }: Props) {
   // Tarjeta con el selector de vehículo abierto.
   const [openCardId, setOpenCardId] = useState<string | null>(null);
@@ -55,6 +61,8 @@ export default function PendingQueue({
               open={openCardId === s.id}
               busy={assigning && openCardId === s.id}
               leaving={leaving.has(s.id)}
+              checked={selected.has(s.id)}
+              onToggleSelect={() => onToggleSelect(s.id)}
               onOpen={() => setOpenCardId(s.id)}
               onClose={() => setOpenCardId(null)}
               onAssign={(vehicleId) => onAssign(s, vehicleId)}
@@ -73,6 +81,8 @@ interface CardProps {
   open: boolean;
   busy: boolean;
   leaving: boolean;
+  checked: boolean;
+  onToggleSelect: () => void;
   onOpen: () => void;
   onClose: () => void;
   onAssign: (vehicleId: string) => Promise<boolean>;
@@ -85,6 +95,8 @@ function PendingCard({
   open,
   busy,
   leaving,
+  checked,
+  onToggleSelect,
   onOpen,
   onClose,
   onAssign,
@@ -95,10 +107,23 @@ function PendingCard({
       aria-hidden={leaving || undefined}
     >
       <div className="min-h-0 overflow-hidden">
-        <div className="bg-surface rounded-xl p-3.5 shadow-card">
-          <p className="font-semibold text-ink text-sm leading-tight">
-            {s.title}
-          </p>
+        <div
+          className={`bg-surface rounded-xl p-3.5 shadow-card ${checked ? "ring-2 ring-primary" : ""}`}
+        >
+          <div className="flex items-start gap-2.5">
+            {s.needsVehicle && (
+              <input
+                type="checkbox"
+                checked={checked}
+                onChange={onToggleSelect}
+                aria-label={`Marcar ${s.title} de ${s.personName} para asignar`}
+                className="mt-0.5 w-4 h-4 shrink-0 accent-primary"
+              />
+            )}
+            <p className="font-semibold text-ink text-sm leading-tight">
+              {s.title}
+            </p>
+          </div>
 
           <div className="mt-1.5 space-y-0.5">
             <div className="flex items-center gap-1.5 text-xs text-ink-3">
@@ -159,7 +184,7 @@ function PendingCard({
                     </option>
                     {vehicles.map((v) => (
                       <option key={v.id} value={v.id}>
-                        {v.name} — {v.license_plate}
+                        {vehicleLabel(v)}
                         {v.capacity ? ` (${v.capacity} pax)` : ""}
                       </option>
                     ))}

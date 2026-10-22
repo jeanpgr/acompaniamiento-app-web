@@ -28,6 +28,8 @@ export interface ServiceMode {
   price_period?: PricePeriod;
   /** Descripción breve del plan para el cliente. */
   description?: string;
+  /** Color del plan ("#RRGGBB" de la paleta): la app pinta la tarjeta con él. */
+  color?: string;
   days?: DaycareDay[];
   /** Horario de atención, "HH:mm". */
   start_time?: string;
