@@ -599,6 +599,24 @@ export default function DaycareDetailPage() {
             )}
           </div>
 
+          {/* Color del plan: distingue los planes entre sí en la app */}
+          <fieldset>
+            <legend className="block text-sm font-semibold text-ink mb-1">
+              Color del plan
+            </legend>
+            <p className="text-xs text-ink-3 mb-2">
+              La app pinta la tarjeta de este plan con el color elegido para
+              que el cliente distinga un plan de otro.
+            </p>
+            <ColorSwatches
+              label="Color del plan"
+              value={modeColor}
+              onChange={(hex) =>
+                setValue("mode_color", hex, { shouldDirty: true })
+              }
+            />
+          </fieldset>
+
           {/* Horas */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -779,23 +797,6 @@ export default function DaycareDetailPage() {
                 {errors.mode_description.message}
               </p>
             )}
-
-            <fieldset className="mt-3">
-              <legend className="block text-[13px] font-semibold text-ink-2 mb-1">
-                Color del plan
-              </legend>
-              <p className="text-xs text-ink-3 mb-2">
-                La app pinta la tarjeta del plan con este color para distinguir
-                los planes entre sí.
-              </p>
-              <ColorSwatches
-                label="Color del plan"
-                value={modeColor}
-                onChange={(hex) =>
-                  setValue("mode_color", hex, { shouldDirty: true })
-                }
-              />
-            </fieldset>
 
             <fieldset className="mt-3">
               <legend className="block text-[13px] font-semibold text-ink-2 mb-1">
