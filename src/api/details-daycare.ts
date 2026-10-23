@@ -28,8 +28,6 @@ export interface ServiceMode {
   price_period?: PricePeriod;
   /** Descripción breve del plan para el cliente. */
   description?: string;
-  /** Color del plan ("#RRGGBB" de la paleta): la app pinta la tarjeta con él. */
-  color?: string;
   days?: DaycareDay[];
   /** Horario de atención, "HH:mm". */
   start_time?: string;
@@ -42,6 +40,8 @@ export interface DetailDaycare {
   id: string;
   id_service: string;
   service_mode: ServiceMode | null;
+  /** Color del plan ("#RRGGBB" de la paleta): la app pinta la tarjeta con él. */
+  color: string | null;
   address_point: string | null;
   /** Punto de la sede elegido en el mapa del panel. */
   address_point_lat: number | null;
@@ -53,6 +53,8 @@ export interface DetailDaycare {
 export interface CreateDetailDaycareInput {
   id_service: string;
   service_mode?: ServiceMode;
+  /** null quita el color del plan. */
+  color?: string | null;
   address_point?: string;
   address_point_lat?: number | null;
   address_point_lng?: number | null;

@@ -104,7 +104,7 @@ function formValues(
     address_point_lng: item?.address_point_lng ?? null,
     mode_price_period: m.price_period ?? "",
     mode_description: m.description ?? "",
-    mode_color: m.color ?? "",
+    mode_color: item?.color ?? "",
     mode_days: m.days ?? [],
     mode_start_time: m.start_time ?? "",
     mode_end_time: m.end_time ?? "",
@@ -288,7 +288,6 @@ export default function DaycareDetailPage() {
         price_period: data.mode_price_period as PricePeriod,
       }),
       ...(description && { description }),
-      ...(data.mode_color && { color: data.mode_color }),
       ...(days.length > 0 && { days: days as DaycareDay[] }),
       ...(data.mode_start_time && { start_time: data.mode_start_time }),
       ...(data.mode_end_time && { end_time: data.mode_end_time }),
@@ -297,6 +296,8 @@ export default function DaycareDetailPage() {
     const payload: CreateDetailDaycareInput = {
       id_service: data.id_service,
       service_mode,
+      // Siempre se envía: null borra el color si se eligió "Sin color".
+      color: data.mode_color || null,
       address_point: data.address_point,
       address_point_lat: data.address_point_lat,
       address_point_lng: data.address_point_lng,
@@ -396,12 +397,12 @@ export default function DaycareDetailPage() {
               <GridCard key={item.id}>
                 <div className="flex items-start justify-between gap-3">
                   <h2 className="font-bold text-ink text-base flex items-center gap-2">
-                    {item.service_mode?.color && (
+                    {item.color && (
                       <span
                         className="w-3 h-3 rounded-full shrink-0"
-                        style={{ backgroundColor: item.service_mode.color }}
+                        style={{ backgroundColor: item.color }}
                         role="img"
-                        aria-label={`Color ${planColorName(item.service_mode.color)}`}
+                        aria-label={`Color ${planColorName(item.color)}`}
                       />
                     )}
                     {item.service_mode?.name ?? "Modalidad sin nombre"}
@@ -466,12 +467,12 @@ export default function DaycareDetailPage() {
                   className="border-b border-line/70 transition-colors hover:bg-primary-soft/50"
                 >
                   <td className="px-4 py-3.5 font-semibold text-ink text-sm">
-                    {item.service_mode?.color && (
+                    {item.color && (
                       <span
                         className="inline-block w-3 h-3 rounded-full mr-2 align-middle"
-                        style={{ backgroundColor: item.service_mode.color }}
+                        style={{ backgroundColor: item.color }}
                         role="img"
-                        aria-label={`Color ${planColorName(item.service_mode.color)}`}
+                        aria-label={`Color ${planColorName(item.color)}`}
                       />
                     )}
                     {item.service_mode?.name ?? (
