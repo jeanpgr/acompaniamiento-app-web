@@ -118,7 +118,8 @@ export const deleteScheduleAcompan = (id: string) =>
 export interface ScheduleTourism extends RefundFields, CouponFields {
   id: string;
   id_detail_tourism: string;
-  id_vehicle: string;
+  /** null hasta que el administrador asigna el vehículo (Distribución). */
+  id_vehicle: string | null;
   /** `{ name, tier }` por persona (ver lib/persons). */
   names_persons: unknown;
   quotas: number;
