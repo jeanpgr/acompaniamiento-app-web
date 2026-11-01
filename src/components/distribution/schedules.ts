@@ -101,7 +101,7 @@ function normalizeTourism(s: ScheduleTourism): Unified {
     dateTime: s.detail?.date_output ?? s.created_at,
     status: s.status,
     needsVehicle: true,
-    vehicleId: s.id_vehicle,
+    vehicleId: s.id_vehicle ?? undefined,
     ...refundOf(s),
     ...couponOf(s),
   };
